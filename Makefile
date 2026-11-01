@@ -199,10 +199,11 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-# msm_avx.cpp is for BLS12-381 / BLS12-377 (MCL_FP_BIT=384 only)
-ifneq ($(MCL_FP_BIT),384)
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1) and 384 (BLS12-381, BLS12-377, BN254, ...)
+ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
+# the curve of the AVX-512 asm functions (src/asm/bint-x64-*) and EcM (mulEach) : 381 or 377
 MCL_MSM_CURVE_BIT?=381
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
@@ -213,11 +214,11 @@ ifeq ($(MCL_MSM),1)
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
-$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
-src/$(MSM)_bls12_381.h: src/gen_msm_para.py
-	python3 src/gen_msm_para.py $(MCL_MSM_CURVE_BIT) > $@
+src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py
+	python3 src/gen_msm_para.py > $@
 else
   CFLAGS+=-DMCL_MSM=0
 endif

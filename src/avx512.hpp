@@ -163,6 +163,12 @@ inline void vmovdqu64(void *base, const Vec& v)
 	_mm512_storeu_epi64(base, v);
 }
 
+// store the lanes of k
+inline void vmovdqu64(void *base, const Vmask& k, const Vec& v)
+{
+	_mm512_mask_storeu_epi64(base, k, v);
+}
+
 // base must be 64-byte aligned
 inline Vec vmovdqa64(const void *base)
 {

@@ -11,7 +11,7 @@
 	#pragma init_seg(lib)
 #endif
 #define MCL_DLL_EXPORT
-#include <mcl/bls12_381.hpp>
+#include <mcl/bn.hpp>
 #include <stdint.h>
 #include "avx512.hpp"
 #include "msm.hpp"
@@ -31,8 +31,12 @@
 #endif
 
 //#define MCL_MSM_BLS12_377
-#define USE_ASM
+#if MCL_FP_BIT == 384
+	// src/asm/bint-x64-*.S has the AVX-512 functions of Fp of BLS12-381 (or BLS12-377 with MCL_MSM_BLS12_377) with N = 8
+	#define USE_ASM
+#endif
 
+#ifdef USE_ASM
 extern "C" {
 
 void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
@@ -50,6 +54,7 @@ void mcl_c5_vsubA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
 
 }
+#endif
 
 namespace {
 
@@ -59,24 +64,70 @@ using namespace mcl;
 typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
 static SplitRawFunc g_splitRaw;
 
-// only for BLS12-381
+static const size_t S = sizeof(Unit)*8-1; // 63
+static const size_t W = 52;
+static const size_t M = sizeof(Vec) / sizeof(Unit); // the number of lanes (8)
+#include "msm_avx_para.h"
+static const size_t N = MSM_N; // the number of 52-bit limbs of FpM (= ceil(MCL_FP_BIT / 52), 5 or 8)
+static const size_t unitN = MCL_FP_BIT / 64; // the number of 64-bit limbs of Fp (the max size, Fp::getOp().N <= unitN)
+static const uint64_t g_mask = (uint64_t(1) << W) - 1;
+static const CYBOZU_ALIGN(64) uint64_t g_offset_[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+// the raw data of Fr, Fp and G1 (MCL_FR_BIT = 256)
 struct FrA {
 	uint64_t v[4];
 };
 
 struct FpA {
-	uint64_t v[6];
+	uint64_t v[unitN];
 };
 
 struct G1A {
-	uint64_t v[6*3];
+	uint64_t v[unitN*3];
 };
 
-static const size_t S = sizeof(Unit)*8-1; // 63
-static const size_t W = 52;
-static const size_t N = 8; // = ceil(384/52)
-static const size_t M = sizeof(Vec) / sizeof(Unit);
-#include "msm_avx_bls12_381.h"
+/*
+	the constants of the current curve expanded to the SIMD lanes (set by initMsm from g_msmCurveTbl)
+	the A versions (VecA) have vN * M lanes
+*/
+struct RtPara {
+	uint64_t mask[M];
+	uint64_t rp[M];
+	uint64_t ap[N*M];
+	uint64_t zero[N*M];
+	uint64_t R[N*M];
+	uint64_t R2[N*M];
+	uint64_t rawOne[N*M];
+	uint64_t m64to52[N*M];
+	uint64_t m52to64[N*M];
+	uint64_t rw[N*M];
+	uint64_t b3[N*M];
+	uint64_t zeroJacobi[3*N*M]; // (0, 0, 0)
+	uint64_t zeroProj[3*N*M]; // (0, 1, 0)
+	uint64_t zeroA[N*M*vN];
+	uint64_t RA[N*M*vN];
+	uint64_t R2A[N*M*vN];
+	uint64_t rawOneA[N*M*vN];
+	uint64_t m64to52A[N*M*vN];
+	uint64_t m52to64A[N*M*vN];
+	uint64_t rwA[N*M*vN];
+	uint64_t b3A[N*M*vN];
+	uint64_t zeroJacobiA[3*N*M*vN];
+	uint64_t zeroProjA[3*N*M*vN];
+	uint64_t m64to52u[N]; // for FpM::mul(z, x, const uint64_t*) (broadcast)
+	uint64_t m52to64u[N];
+	uint64_t m52to64s[unitN]; // the Montgomery form of Fp
+	size_t pN; // Fp::getOp().N
+	bool useAsm; // the asm functions (for BLS12-381 only) are available
+	int curveType;
+};
+static CYBOZU_ALIGN(64) RtPara g_rt;
+
+struct G {
+	static const Vec& mask() { return *(const Vec*)g_rt.mask; }
+	static const Vec& rp() { return *(const Vec*)g_rt.rp; }
+	static const Vec* ap() { return (const Vec*)g_rt.ap; }
+};
 
 inline Unit getMask(int w)
 {
@@ -240,31 +291,35 @@ inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 	}
 }
 
+// the generic (intrinsics) versions : vaddG, vsubG, vmulG, vsqrG
 template<class VM=Vmask, class V>
-inline void vadd(V *z, const V *x, const V *y)
+inline void vaddG(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	vaddPre(sN, x, y);
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
+template<class VM=Vmask, class V>
+inline void vadd(V *z, const V *x, const V *y)
+{
+	vaddG<VM>(z, x, y);
+}
 #ifdef USE_ASM
 template<>
 inline void vadd(Vec *z, const Vec *x, const Vec *y)
 {
-	mcl_c5_vadd(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vadd(z, x, y); else vaddG<Vmask>(z, x, y);
 }
-#endif
-#ifdef USE_ASM
 template<>
 inline void vadd<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
-	mcl_c5_vaddA(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vaddA(z, x, y); else vaddG<VmaskA>(z, x, y);
 }
 #endif
 
 template<class VM=Vmask, class V>
-inline void vsub(V *z, const V *x, const V *y)
+inline void vsubG(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	VM c = vsubPre<VM>(sN, x, y);
@@ -272,18 +327,21 @@ inline void vsub(V *z, const V *x, const V *y)
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
+template<class VM=Vmask, class V>
+inline void vsub(V *z, const V *x, const V *y)
+{
+	vsubG<VM>(z, x, y);
+}
 #ifdef USE_ASM
 template<>
 inline void vsub(Vec *z, const Vec *x, const Vec *y)
 {
-	mcl_c5_vsub(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vsub(z, x, y); else vsubG<Vmask>(z, x, y);
 }
-#endif
-#ifdef USE_ASM
 template<>
 inline void vsub<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
-	mcl_c5_vsubA(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vsubA(z, x, y); else vsubG<VmaskA>(z, x, y);
 }
 #endif
 
@@ -381,7 +439,7 @@ inline VecA broadcast(const uint64_t& v)
 }
 
 template<class VM=Vmask, class V, typename U>
-inline void vmul(V *z, const V *x, const U *y)
+inline void vmulG(V *z, const V *x, const U *y)
 {
 #if 0
 	V xy[N*2];
@@ -406,23 +464,26 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
+template<class VM=Vmask, class V, typename U>
+inline void vmul(V *z, const V *x, const U *y)
+{
+	vmulG<VM>(z, x, y);
+}
 #ifdef USE_ASM
 template<>
 inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
-	mcl_c5_vmul(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vmul(z, x, y); else vmulG<Vmask>(z, x, y);
 }
-#endif
-#ifdef USE_ASM
 template<>
 inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
-	mcl_c5_vmulA(z, x, y);
+	if (g_rt.useAsm) mcl_c5_vmulA(z, x, y); else vmulG<VmaskA>(z, x, y);
 }
 #endif
 
 template<class VM=Vmask, class V>
-inline void vsqr(V *z, const V *x)
+inline void vsqrG(V *z, const V *x)
 {
 #if 0
 	V t[N*2];
@@ -470,21 +531,21 @@ inline void vsqr(V *z, const V *x)
 	VM c = vsubPre<VM>(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 }
-
-#if 1
+template<class VM=Vmask, class V>
+inline void vsqr(V *z, const V *x)
+{
+	vsqrG<VM>(z, x);
+}
+#ifdef USE_ASM
 template<>
 inline void vsqr(Vec *z, const Vec *x)
 {
-	mcl_c5_vsqr(z, x);
-//	mcl_c5_vmul(z, x, x);
+	if (g_rt.useAsm) mcl_c5_vsqr(z, x); else vsqrG<Vmask>(z, x);
 }
-#endif
-
-#if 1
 template<>
 inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
 {
-	mcl_c5_vmulA(z, x, x);
+	if (g_rt.useAsm) mcl_c5_vmulA(z, x, x); else vsqrG<VmaskA>(z, x);
 }
 #endif
 
@@ -500,147 +561,160 @@ inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 }
 
 /*
+	y[N] (52-bit limbs) = x[unitN] (64-bit limbs)
+	e.g. unitN = 6, N = 8 :
 	 |64   |64   |64   |64   |64    |64   |
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
-    y|52|52   |52   |52   |52  |52|52  |20|
+	y|52|52   |52   |52   |52  |52|52  |20|
+	the loops are unrolled with constant shifts (N and unitN are constants)
 */
 template<class V>
-inline void split52bit(V y[8], const V x[6])
+inline void split52bit(V y[N], const V x[unitN])
 {
 	assert(&y != &x);
-#if 1
-	const Vec m = vpbroadcastq(getMask(52));
-	// and(or(A, B), C) = andCorAB = 0xa8
-	const uint8_t imm = 0xA8;
-	y[0] = vpandq(x[0], m);
-	y[1] = vpternlogq<imm>(vpsrlq(x[0], 52), vpsllq(x[1], 12), m);
-	y[2] = vpternlogq<imm>(vpsrlq(x[1], 40), vpsllq(x[2], 24), m);
-	y[3] = vpternlogq<imm>(vpsrlq(x[2], 28), vpsllq(x[3], 36), m);
-	y[4] = vpternlogq<imm>(vpsrlq(x[3], 16), vpsllq(x[4], 48), m);
-	y[5] = vpandq(vpsrlq(x[4], 4), m);
-	y[6] = vpternlogq<imm>(vpsrlq(x[4], 56), vpsllq(x[5], 8), m);
-	y[7] = vpsrlq(x[5], 44);
-#else
-	y[0] = vpandq(x[0], G::mask());
-	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
-	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
-	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
-	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
-	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
-	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
-	y[7] = vpsrlq(x[5], 44);
-#endif
+	const Vec m = vpbroadcastq(g_mask);
+	for (size_t i = 0; i < N; i++) {
+		const size_t bit = W * i;
+		const size_t w = bit / 64;
+		const size_t s = bit % 64;
+		V t = (s == 0) ? x[w] : vpsrlq(x[w], s);
+		if (s + W > 64 && w + 1 < unitN) {
+			// and(or(A, B), C) = 0xA8
+			y[i] = vpternlogq<0xA8>(t, vpsllq(x[w+1], 64 - s), m);
+		} else if (i < N - 1) {
+			y[i] = vpandq(t, m);
+		} else {
+			y[i] = t; // the top limb has at most 52 bits
+		}
+	}
 }
 
 /*
+	y[unitN] (64-bit limbs) = x[N] (52-bit limbs)
+	e.g. unitN = 6, N = 8 :
 	 |52|52   |52   |52   |52  |52|52  |20|
 	x|52|12:40|24:28|36:16|48:4|52|8:44|20|
-    y|64   |64   |64   |64   |64    |64
+	y|64   |64   |64   |64   |64    |64
 */
 template<class V>
-inline void concat52bit(V y[6], const V x[8])
+inline void concat52bit(V y[unitN], const V x[N])
 {
 	assert(&y != &x);
-	y[0] = vporq(x[0], vpsllq(x[1], 52));
-	y[1] = vporq(vpsrlq(x[1], 12), vpsllq(x[2], 40));
-	y[2] = vporq(vpsrlq(x[2], 24), vpsllq(x[3], 28));
-	y[3] = vporq(vpsrlq(x[3], 36), vpsllq(x[4], 16));
-#if 1
-	// or(A, B, C) = orABC = 0xFE
-	y[4] = vpternlogq<0xFE>(vpsrlq(x[4], 48), vpsllq(x[5], 4), vpsllq(x[6], 56));
-#else
-	y[4] = vporq(vporq(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
-#endif
-	y[5] = vporq(vpsrlq(x[6], 8), vpsllq(x[7], 44));
+	for (size_t w = 0; w < unitN; w++) {
+		V t = vzero<V>();
+		bool first = true;
+		for (size_t i = 0; i < N; i++) {
+			const size_t lo = W * i; // the limb i has the bits [lo, lo + W)
+			if (lo + W <= 64 * w || lo >= 64 * (w + 1)) continue;
+			V u = (lo >= 64 * w) ? vpsllq(x[i], lo - 64 * w) : vpsrlq(x[i], 64 * w - lo);
+			if (lo == 64 * w) u = x[i];
+			t = first ? u : vporq(t, u);
+			first = false;
+		}
+		y[w] = t;
+	}
+}
+
+// the scalar version of concat52bit for one point
+inline void concat52bitScalar(Unit y[unitN], const Unit x[N])
+{
+	for (size_t w = 0; w < unitN; w++) {
+		Unit t = 0;
+		for (size_t i = 0; i < N; i++) {
+			const size_t lo = W * i;
+			if (lo + W <= 64 * w || lo >= 64 * (w + 1)) continue;
+			t |= (lo >= 64 * w) ? x[i] << (lo - 64 * w) : x[i] >> (64 * w - lo);
+		}
+		y[w] = t;
+	}
 }
 
 /*
-	384bit = 6U (U=64)
-	G1(=6U x 3(x, y, z)) x 8 => 8Ux8x3
+	G1 (= unitN U x 3 (x, y, z)) x 8 => N U x 8 x 3
+	the index table of vpgatherqq : the i-th lane picks up the i-th G1 (or Fp)
 */
-static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[] = {
-	18*0, 18*1, 18*2, 18*3, 18*4, 18*5, 18*6, 18*7,
-//	18*8, 18*9, 18*10, 18*11, 18*12, 18*13, 18*14, 18*15,
+template<size_t stride>
+struct PickUp {
+	static const Vec& get()
+	{
+		static const CYBOZU_ALIGN(64) uint64_t tbl[M] = {
+			stride*0, stride*1, stride*2, stride*3, stride*4, stride*5, stride*6, stride*7,
+		};
+		return *(const Vec*)tbl;
+	}
 };
-static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
-//static const VecA& v_pickUpEcA = *(const VecA*)g_pickUpEc;
+inline const Vec& pickUpEc() { return PickUp<unitN*3>::get(); }
+inline const Vec& pickUpFp() { return PickUp<unitN>::get(); }
+
+/*
+	gather the i-th 64-bit limb of the 8 elements (stride Units each) from x into t[i] for i < unitN
+	the limbs of Fp beyond Fp::getOp().N may be garbage (Fp does not clear them), so they are set to zero
+*/
+inline void gatherFpx8(Vec t[unitN], const Unit *x, const Vec& idx)
+{
+	for (size_t i = 0; i < unitN; i++) {
+		t[i] = (i < g_rt.pN) ? vpgatherqq(idx, x+i) : vzero();
+	}
+}
 
 // convert G1.x (, y or z) to Vec
 inline void cvtFromG1Ax(Vec *y, const Unit *x)
 {
-#if 1
-	Vec t[6];
-	for (int i = 0; i < 6; i++) {
-		t[i] = vpgatherqq(v_pickUpEc, x+i);
-	}
-#else // faster
-	Vec s[8], t[8]; // need 8 size work area
-	Vmask v = getMask(6);
-	for (int i = 0; i < 8; i++) {
-		s[i] = vmovdqu64(v, x+i*6*3);
-	}
-	trans8x8<false>(t, s);
-#endif
+	Vec t[unitN];
+	gatherFpx8(t, x, pickUpEc());
 	split52bit(y, t);
 }
 
 // convert G1.x (, y or z) to VecA
 inline void cvtFromG1Ax(VecA *y, const Unit *x)
 {
-	VecA t[6];
-	for (int i = 0; i < 6; i++) {
-#if 1
-		assert(vN == 2);
-		t[i].v[0] = vpgatherqq(v_pickUpEc, x+i);
-		t[i].v[1] = vpgatherqq(v_pickUpEc, x+i+18*8);
-#else
-		t[i] = vpgatherqq(v_pickUpEcA, x+i);
-#endif
+	VecA t[unitN];
+	assert(vN == 2);
+	Vec t0[unitN], t1[unitN];
+	gatherFpx8(t0, x, pickUpEc());
+	gatherFpx8(t1, x+unitN*3*M, pickUpEc());
+	for (size_t i = 0; i < unitN; i++) {
+		t[i].v[0] = t0[i];
+		t[i].v[1] = t1[i];
 	}
 	split52bit(y, t);
 }
 
-// EcM(=8Ux8x3) => G1(=6U x 3) x 8
+// EcM(=N U x 8 x 3) => G1(= unitN U x 3) x 8
 // convert Vec to G1.x
 inline void cvtToG1Ax(Unit *y, const Vec *x)
 {
-	Vec t[6];
+	Vec t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpEc, t[i]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpEc(), t[i]);
 	}
 }
 
 inline void cvtToG1Ax(Unit *y, const VecA *x)
 {
-	VecA t[6];
+	VecA t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpEc, t[i].v[0]);
-		vpscatterqq(y+i+18*8, v_pickUpEc, t[i].v[1]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpEc(), t[i].v[0]);
+		vpscatterqq(y+i+unitN*3*M, pickUpEc(), t[i].v[1]);
 	}
 }
 
-static const CYBOZU_ALIGN(64) uint64_t g_pickUpFp[8] = {
-	6*0, 6*1, 6*2, 6*3, 6*4, 6*5, 6*6, 6*7,
-};
-static const Vec& v_pickUpFp = *(const Vec*)g_pickUpFp;
-// FpM(8Ux8) => Fp(=6U) x 8
-inline void cvt8Ux8to6Ux8(Unit y[6*8], const Vec x[8])
+// FpM(N U x 8) => Fp(= unitN U) x 8
+inline void cvtFpMToFpAx(Unit y[unitN*M], const Vec x[N])
 {
-	Vec t[6];
+	Vec t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpFp, t[i]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpFp(), t[i]);
 	}
 }
-// Fp(=6U)x8 => FpM(8Ux8)
-inline void cvt6Ux8to8Ux8Fp(Vec y[8], const Unit x[6*8])
+// Fp(= unitN U) x 8 => FpM(N U x 8)
+inline void cvtFpAxToFpM(Vec y[N], const Unit x[unitN*M])
 {
-	Vec t[6];
-	for (int i = 0; i < 6; i++) {
-		t[i] = vpgatherqq(v_pickUpFp, x+i);
-	}
+	Vec t[unitN];
+	gatherFpx8(t, x, pickUpFp());
 	split52bit(y, t);
 }
 
@@ -786,25 +860,23 @@ struct FpMT {
 
 struct FpM : FpMT<FpM, Vmask, Vec> {
 	static const Vec& offset() { return *(const Vec*)g_offset_; }
-	static const FpM& zero() { return *(const FpM*)g_zero_; }
-	static const FpM& one() { return *(const FpM*)g_R_; }
-	static const FpM& R2() { return *(const FpM*)g_R2_; }
-	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
-	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
-	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
-	static const FpM& rw() { return *(const FpM*)g_rw_; }
+	static const FpM& zero() { return *(const FpM*)g_rt.zero; }
+	static const FpM& one() { return *(const FpM*)g_rt.R; }
+	static const FpM& R2() { return *(const FpM*)g_rt.R2; }
+	static const FpM& rawOne() { return *(const FpM*)g_rt.rawOne; }
+	static const FpM& m64to52() { return *(const FpM*)g_rt.m64to52; }
+	static const FpM& m52to64() { return *(const FpM*)g_rt.m52to64; }
+	static const FpM& rw() { return *(const FpM*)g_rt.rw; }
 	void setFpA(const FpA v[M])
 	{
-		cvt6Ux8to8Ux8Fp(this->v, v[0].v);
-//		FpM::mul(*this, *this, FpM::m64to52());
-		FpM::mul(*this, *this, g_m64to52u_);
+		cvtFpAxToFpM(this->v, v[0].v);
+		FpM::mul(*this, *this, g_rt.m64to52u);
 	}
 	void getFpA(FpA v[M]) const
 	{
 		FpM t;
-//		FpM::mul(t, *this, FpM::m52to64());
-		FpM::mul(t, *this, g_m52to64u_);
-		cvt8Ux8to6Ux8((Unit*)v, t.v);
+		FpM::mul(t, *this, g_rt.m52to64u);
+		cvtFpMToFpAx((Unit*)v, t.v);
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
@@ -862,16 +934,34 @@ inline const AffM* getAffM(const AffM *base, uint32_t i)
 	return i == mcl::ec::local::msmNone ? &g_zeroAffM : base + (i & mcl::ec::local::msmIdxMask);
 }
 
-// (x, y) = the 8 points base[idx[j]] transposed to FpM (requires N == 8)
+// load the N limbs of a coordinate of AffM (64-byte aligned if N == 8)
+inline Vec loadLimbs(const Unit *p)
+{
+	if (N == 8) return vmovdqa64(p);
+	return vmovdqu64(Vmask((1 << N) - 1), p);
+}
+inline void storeLimbs(Unit *p, const Vec& v)
+{
+	if (N == 8) {
+		vmovdqa64(p, v);
+	} else {
+		vmovdqu64(p, Vmask((1 << N) - 1), v);
+	}
+}
+
+// (x, y) = the 8 points base[idx[j]] transposed to FpM (the limbs i >= N of s[] are ignored)
 inline void loadAffM(FpM& x, FpM& y, const AffM *base, const uint32_t idx[8])
 {
 	const AffM *P[8];
 	Vec s[8];
 	for (size_t j = 0; j < 8; j++) P[j] = getAffM(base, idx[j]);
-	for (size_t j = 0; j < 8; j++) s[j] = vmovdqa64(P[j]->x);
-	trans8x8(x.v, s);
-	for (size_t j = 0; j < 8; j++) s[j] = vmovdqa64(P[j]->y);
-	trans8x8(y.v, s);
+	for (size_t j = 0; j < 8; j++) s[j] = loadLimbs(P[j]->x);
+	Vec d[8];
+	trans8x8(d, s);
+	for (size_t i = 0; i < N; i++) x.v[i] = d[i];
+	for (size_t j = 0; j < 8; j++) s[j] = loadLimbs(P[j]->y);
+	trans8x8(d, s);
+	for (size_t i = 0; i < N; i++) y.v[i] = d[i];
 }
 
 // R[j] = (x, y) of the lane j for j in [0, m) (m <= 8)
@@ -879,11 +969,13 @@ inline void storeAffM(AffM *R, const FpM& x, const FpM& y, size_t m)
 {
 	Vec s[8], d[8];
 	for (size_t i = 0; i < N; i++) s[i] = x.v[i];
+	for (size_t i = N; i < 8; i++) s[i] = vzero();
 	trans8x8(d, s);
-	for (size_t j = 0; j < m; j++) vmovdqa64(R[j].x, d[j]);
+	for (size_t j = 0; j < m; j++) storeLimbs(R[j].x, d[j]);
 	for (size_t i = 0; i < N; i++) s[i] = y.v[i];
+	for (size_t i = N; i < 8; i++) s[i] = vzero();
 	trans8x8(d, s);
-	for (size_t j = 0; j < m; j++) vmovdqa64(R[j].y, d[j]);
+	for (size_t j = 0; j < m; j++) storeLimbs(R[j].y, d[j]);
 }
 
 // dst[i] = xVec[i] (affine or zero) for i in [0, n)
@@ -904,9 +996,9 @@ void cvtBaseAffM(void *dst, const void *xVec, size_t n)
 		const Unit *p = (const Unit*)src;
 		FpM X, Y;
 		cvtFromG1Ax(X.v, p);
-		cvtFromG1Ax(Y.v, p + 6);
-		FpM::mul(X, X, g_m64to52u_);
-		FpM::mul(Y, Y, g_m64to52u_);
+		cvtFromG1Ax(Y.v, p + unitN);
+		FpM::mul(X, X, g_rt.m64to52u);
+		FpM::mul(Y, Y, g_rt.m64to52u);
 		uint8_t nz = 0; // the lanes of the non-zero points
 		for (size_t j = 0; j < 8; j++) {
 			if (!src[j].z.isZero()) nz |= uint8_t(1 << j);
@@ -1013,27 +1105,22 @@ void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_
 }
 
 /*
-	convert a coordinate of AffM (the Montgomery form of FpM, a 2^(W N) mod p < p) to Fp (a 2^384 mod p)
-	by Fp::mul with 2^-32 (whose Montgomery form 2^352 is g_m52to64s_)
+	convert a coordinate of AffM (the Montgomery form of FpM, a R52 mod p < p) to Fp (a R64 mod p)
+	by Fp::mul with R64 / R52 (whose Montgomery form is g_rt.m52to64s)
 */
 inline void cvtAffMtoFp(Fp& y, const Unit x[N])
 {
-	// concat52bit for one point
-	Unit t[6];
-	t[0] = x[0] | (x[1] << 52);
-	t[1] = (x[1] >> 12) | (x[2] << 40);
-	t[2] = (x[2] >> 24) | (x[3] << 28);
-	t[3] = (x[3] >> 36) | (x[4] << 16);
-	t[4] = (x[4] >> 48) | (x[5] << 4) | (x[6] << 56);
-	t[5] = (x[6] >> 8) | (x[7] << 44);
+	Unit t[unitN];
+	concat52bitScalar(t, x);
 	const mcl::fp::Op& op = Fp::getOp();
-	op.fp_mul((Unit*)&y, t, g_m52to64s_, op.p);
+	op.fp_mul((Unit*)&y, t, g_rt.m52to64s, op.p);
 }
 
 /*
 	the window size for n (split) scalars of mulVec with the kernel (see glvGetBucketSize in src/glv.hpp)
-	measured on Xeon w9-3495X with BLS12-381 G1 : the pair addition is cheaper than the generic one,
-	so the bucket reduction is relatively more expensive and b is smaller for 2^9 <= n < 2^17
+	measured on Xeon w9-3495X with BLS12-381 G1 (N = 8) and BN254 G1 (N = 5) by sweeping b for 2^7 to 2^20 points :
+	the pair addition is cheaper than the generic one, so the bucket reduction is relatively more expensive
+	and b is smaller for 2^9 <= n < 2^17. the two tables differ by at most one (the differences are a few %)
 */
 size_t getBucketSizeAffM(size_t n)
 {
@@ -1041,11 +1128,15 @@ size_t getBucketSizeAffM(size_t n)
 	const size_t log2n = mcl::ec::ilog2(n);
 	const size_t tblMin = 8;
 	if (log2n < tblMin) return 3;
-	static const size_t tbl[] = {
 	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
+	static const size_t tbl8[] = {
 		5, 6, 6, 8, 8, 8, 10, 11, 11, 13, 13, 13, 15, 15, 16
 	};
-	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
+	static const size_t tbl5[] = {
+		6, 6, 6, 7, 8, 8, 9, 10, 11, 13, 13, 14, 14, 15, 16
+	};
+	const size_t *tbl = (N == 5) ? tbl5 : tbl8;
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl8) + tblMin) return 16;
 	return tbl[log2n - tblMin];
 }
 
@@ -1465,13 +1556,13 @@ struct EcM : EcMT<EcM, FpM> {
 	template<bool isNormalized = false>
 	void setG1A(const G1A v[M], bool JacobiToProj = true)
 	{
-		cvtFromG1Ax(x.v, v[0].v+0*6);
-		cvtFromG1Ax(y.v, v[0].v+1*6);
-		cvtFromG1Ax(z.v, v[0].v+2*6);
+		cvtFromG1Ax(x.v, v[0].v+0*unitN);
+		cvtFromG1Ax(y.v, v[0].v+1*unitN);
+		cvtFromG1Ax(z.v, v[0].v+2*unitN);
 
-		FpM::mul(x, x, g_m64to52u_);
-		FpM::mul(y, y, g_m64to52u_);
-		FpM::mul(z, z, g_m64to52u_);
+		FpM::mul(x, x, g_rt.m64to52u);
+		FpM::mul(y, y, g_rt.m64to52u);
+		FpM::mul(z, z, g_rt.m64to52u);
 
 		if (JacobiToProj) {
 			if (!isNormalized) mcl::ec::JacobiToProj(*this, *this);
@@ -1483,9 +1574,9 @@ struct EcM : EcMT<EcM, FpM> {
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
 
-		FpM::mul(T.x, T.x, g_m52to64u_);
-		FpM::mul(T.y, T.y, g_m52to64u_);
-		FpM::mul(T.z, T.z, g_m52to64u_);
+		FpM::mul(T.x, T.x, g_rt.m52to64u);
+		FpM::mul(T.y, T.y, g_rt.m52to64u);
+		FpM::mul(T.z, T.z, g_rt.m52to64u);
 
 		cvtToG1Ax(v[0].v+0*6, T.x.v);
 		cvtToG1Ax(v[0].v+1*6, T.y.v);
@@ -1550,9 +1641,9 @@ struct EcM : EcMT<EcM, FpM> {
 #endif
 };
 
-const FpM& EcM::b3_ = *(const FpM*)g_b3_;
-const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
-const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
+const FpM& EcM::b3_ = *(const FpM*)g_rt.b3;
+const EcM& EcM::zeroProj_ = *(const EcM*)g_rt.zeroProj;
+const EcM& EcM::zeroJacobi_ = *(const EcM*)g_rt.zeroJacobi;
 
 template<class G>
 inline void reduceSum(G1A& Q, const G& P)
@@ -1634,13 +1725,13 @@ inline void mulVecAVX512_inner(G1A& P, const G *xVec, const V *yVec, size_t n, s
 
 struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	static const VecA& offset() { return *(const VecA*)g_offset_; }
-	static const FpMA& zero() { return *(const FpMA*)g_zeroA_; }
-	static const FpMA& one() { return *(const FpMA*)g_RA_; }
-	static const FpMA& R2() { return *(const FpMA*)g_R2A_; }
-	static const FpMA& rawOne() { return *(const FpMA*)g_rawOneA_; }
-	static const FpMA& m64to52() { return *(const FpMA*)g_m64to52A_; }
-	static const FpMA& m52to64() { return *(const FpMA*)g_m52to64A_; }
-	static const FpMA& rw() { return *(const FpMA*)g_rwA_; }
+	static const FpMA& zero() { return *(const FpMA*)g_rt.zeroA; }
+	static const FpMA& one() { return *(const FpMA*)g_rt.RA; }
+	static const FpMA& R2() { return *(const FpMA*)g_rt.R2A; }
+	static const FpMA& rawOne() { return *(const FpMA*)g_rt.rawOneA; }
+	static const FpMA& m64to52() { return *(const FpMA*)g_rt.m64to52A; }
+	static const FpMA& m52to64() { return *(const FpMA*)g_rt.m52to64A; }
+	static const FpMA& rw() { return *(const FpMA*)g_rt.rwA; }
 	void setFpA(const FpA v[M*vN])
 	{
 		FpM t[vN];
@@ -1724,13 +1815,13 @@ struct EcMA : EcMT<EcMA, FpMA> {
 #if 1
 		assert(vN == 2);
 
-		cvtFromG1Ax(x.v, v[0].v+0*6);
-		cvtFromG1Ax(y.v, v[0].v+1*6);
-		cvtFromG1Ax(z.v, v[0].v+2*6);
+		cvtFromG1Ax(x.v, v[0].v+0*unitN);
+		cvtFromG1Ax(y.v, v[0].v+1*unitN);
+		cvtFromG1Ax(z.v, v[0].v+2*unitN);
 
-		FpMA::mul(x, x, g_m64to52u_);
-		FpMA::mul(y, y, g_m64to52u_);
-		FpMA::mul(z, z, g_m64to52u_);
+		FpMA::mul(x, x, g_rt.m64to52u);
+		FpMA::mul(y, y, g_rt.m64to52u);
+		FpMA::mul(z, z, g_rt.m64to52u);
 
 		if (JacobiToProj) {
 			// Jacobi = Proj if normalized
@@ -1751,9 +1842,9 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		EcMA T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
 
-		FpMA::mul(T.x, T.x, g_m52to64u_);
-		FpMA::mul(T.y, T.y, g_m52to64u_);
-		FpMA::mul(T.z, T.z, g_m52to64u_);
+		FpMA::mul(T.x, T.x, g_rt.m52to64u);
+		FpMA::mul(T.y, T.y, g_rt.m52to64u);
+		FpMA::mul(T.z, T.z, g_rt.m52to64u);
 
 		cvtToG1Ax(v[0].v+0*6, T.x.v);
 		cvtToG1Ax(v[0].v+1*6, T.y.v);
@@ -1768,9 +1859,9 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 };
 
-const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
-const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_zeroProjA_;
-const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
+const FpMA& EcMA::b3_ = *(const FpMA*)g_rt.b3A;
+const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_rt.zeroProjA;
+const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_rt.zeroJacobiA;
 
 #ifdef MCL_MSM_TEST
 /*
@@ -1911,17 +2002,13 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 	}
 }
 
-// AVX-512 IFMA is required
-bool initMsm(const mcl::CurveParam& cp, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
+/*
+	set the constants of the current curve (Fp::getOp().p) from g_msmCurveTbl and register
+	the kernel of the batch affine addition (G1::setMsmKernel) and mulEachAVX512 (BLS12-381 only)
+	return false if the curve is not supported (AVX-512 IFMA is required)
+*/
+bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
 {
-	if (splitRaw == 0) return false;
-	g_splitRaw = splitRaw;
-	assert(EcM::a_ == 0);
-#ifdef MCL_MSM_BLS12_377
-	assert(EcM::b_ == 1);
-#else
-	assert(EcM::b_ == 4);
-#endif
 	(void)EcM::a_; // disable unused warning
 	(void)EcM::b_;
 	(void)EcM::zeroProj_;
@@ -1931,12 +2018,94 @@ bool initMsm(const mcl::CurveParam& cp, uint32_t (*splitRaw)(Unit *a, Unit *b, c
 	(void)EcMA::b3_;
 	(void)EcMA::zeroProj_;
 	(void)EcMA::zeroJacobi_;
-
+	if (splitRaw == 0) return false;
+	const mcl::fp::Op& op = Fp::getOp();
+	if (op.N > unitN) return false;
+	const MsmCurvePara *para = 0;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_msmCurveTbl); i++) {
+		const MsmCurvePara& t = g_msmCurveTbl[i];
+		if (t.curveType != curveType || t.pN != op.N) continue;
+		bool eq = true;
+		for (size_t j = 0; j < op.N; j++) {
+			if (t.p[j] != op.p[j]) eq = false;
+		}
+		if (eq) {
+			para = &t;
+			break;
+		}
+	}
+	if (para == 0) return false;
+	// expand the constants to the lanes
+	for (size_t j = 0; j < M; j++) {
+		g_rt.mask[j] = g_mask;
+		g_rt.rp[j] = para->rp;
+	}
+	struct Local {
+		static void expand(uint64_t *dst, const uint64_t *src, size_t lanes)
+		{
+			for (size_t i = 0; i < N; i++) {
+				for (size_t j = 0; j < lanes; j++) {
+					dst[i * lanes + j] = src[i];
+				}
+			}
+		}
+	};
+	const uint64_t zero[8] = {};
+	Local::expand(g_rt.ap, para->ap, M);
+	Local::expand(g_rt.zero, zero, M);
+	Local::expand(g_rt.R, para->R, M);
+	Local::expand(g_rt.R2, para->R2, M);
+	Local::expand(g_rt.rawOne, para->rawOne, M);
+	Local::expand(g_rt.m64to52, para->m64to52, M);
+	Local::expand(g_rt.m52to64, para->m52to64, M);
+	Local::expand(g_rt.rw, para->rw, M);
+	Local::expand(g_rt.b3, para->b3, M);
+	Local::expand(g_rt.zeroJacobi, zero, M);
+	Local::expand(g_rt.zeroJacobi + N*M, zero, M);
+	Local::expand(g_rt.zeroJacobi + 2*N*M, zero, M);
+	Local::expand(g_rt.zeroProj, zero, M);
+	Local::expand(g_rt.zeroProj + N*M, para->R, M); // (0, 1, 0)
+	Local::expand(g_rt.zeroProj + 2*N*M, zero, M);
+	Local::expand(g_rt.zeroA, zero, M*vN);
+	Local::expand(g_rt.RA, para->R, M*vN);
+	Local::expand(g_rt.R2A, para->R2, M*vN);
+	Local::expand(g_rt.rawOneA, para->rawOne, M*vN);
+	Local::expand(g_rt.m64to52A, para->m64to52, M*vN);
+	Local::expand(g_rt.m52to64A, para->m52to64, M*vN);
+	Local::expand(g_rt.rwA, para->rw, M*vN);
+	Local::expand(g_rt.b3A, para->b3, M*vN);
+	Local::expand(g_rt.zeroJacobiA, zero, M*vN);
+	Local::expand(g_rt.zeroJacobiA + N*M*vN, zero, M*vN);
+	Local::expand(g_rt.zeroJacobiA + 2*N*M*vN, zero, M*vN);
+	Local::expand(g_rt.zeroProjA, zero, M*vN);
+	Local::expand(g_rt.zeroProjA + N*M*vN, para->R, M*vN);
+	Local::expand(g_rt.zeroProjA + 2*N*M*vN, zero, M*vN);
+	for (size_t i = 0; i < N; i++) {
+		g_rt.m64to52u[i] = para->m64to52[i];
+		g_rt.m52to64u[i] = para->m52to64[i];
+	}
+	for (size_t i = 0; i < unitN; i++) {
+		g_rt.m52to64s[i] = para->m52to64s[i];
+	}
+	g_rt.pN = op.N;
+	g_rt.curveType = curveType;
+	g_splitRaw = splitRaw;
+	// the asm functions and EcM (b_ = 4 or 1) are for BLS12-381 (or BLS12-377) only
 #ifdef MCL_MSM_BLS12_377
-	if (cp != mcl::BLS12_377) return false;
+	const bool isBLS12 = curveType == MCL_BLS12_377;
 #else
-	if (cp != mcl::BLS12_381) return false;
+	const bool isBLS12 = curveType == MCL_BLS12_381;
 #endif
+#ifdef USE_ASM
+	g_rt.useAsm = isBLS12;
+#else
+	g_rt.useAsm = false;
+#endif
+	G1::setMsmKernel(getMsmKernelAVX512());
+	if (isBLS12) {
+		assert(EcM::a_ == 0);
+		G1::setMulEachOpti(mulEachAVX512);
+	}
 	return true;
 }
 
@@ -2260,6 +2429,7 @@ void forcedRead(const T& x)
 	(void)dummy;
 }
 
+#ifdef USE_ASM
 void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
 	CYBOZU_ALIGN(64) mcl::Fp z[8];
@@ -2310,7 +2480,6 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	}
 }
 
-#ifdef USE_ASM
 CYBOZU_TEST_AUTO(asm)
 {
 	cybozu::XorShift rg;
@@ -2327,7 +2496,6 @@ CYBOZU_TEST_AUTO(asm)
 		asmTest(x, y);
 	}
 }
-#endif
 
 CYBOZU_TEST_AUTO(vaddPre)
 {
@@ -2479,12 +2647,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 #endif
 }
 
+#endif // USE_ASM
+
 template<class T>
 void lpN(void f(T&, const T&, const T&), T *z, const T *x, const T *y, size_t n)
 {
 	for (size_t i = 0; i < n; i++) f(z[i], x[i], y[i]);
 }
 
+#if MCL_FP_BIT == 384 // EcM / EcMA (b = 4) and the old MSM are for BLS12-381 only
 CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8; // fixed
@@ -2579,7 +2750,7 @@ CYBOZU_TEST_AUTO(op)
 		CYBOZU_BENCH_C("FpM::add", C, FpM::add, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("FpM::mul", C, FpM::mul, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("FpM::sqr", C, FpM::sqr, a[0], a[0]);
-		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_m64to52u_);
+		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_rt.m64to52u);
 		CYBOZU_BENCH_C("addn", C, lpN, FpM::add, a, a, b, n);
 		CYBOZU_BENCH_C("muln", C, lpN, FpM::mul, a, a, b, n);
 	}
@@ -2824,6 +2995,8 @@ CYBOZU_TEST_AUTO(mulVec)
 #endif
 }
 
+#endif // MCL_FP_BIT == 384
+
 void naiveMulVec(G1& Q, const G1 *P, const Fr *x, size_t n)
 {
 	Q.clear();
@@ -2921,6 +3094,20 @@ CYBOZU_TEST_AUTO(kernelBench)
 	void *base = Xbyak::AlignedMalloc(kn.pointSize * n, 64);
 	void *R = Xbyak::AlignedMalloc(kn.pointSize * m, 64);
 	void *work = Xbyak::AlignedMalloc(kn.workSize, 64);
+	// the cost of FpM::mul (asm if available, and the intrinsics version)
+	{
+		FpM a, b;
+		a = FpM::one();
+		b = FpM::R2();
+		CYBOZU_BENCH_C("FpM::mul", 1000, FpM::mul, a, a, b);
+		CYBOZU_BENCH_C("FpM::sqr", 1000, FpM::sqr, a, a);
+		const bool useAsm = g_rt.useAsm;
+		g_rt.useAsm = false;
+		CYBOZU_BENCH_C("FpM::mul(G)", 1000, FpM::mul, a, a, b);
+		CYBOZU_BENCH_C("FpM::sqr(G)", 1000, FpM::sqr, a, a);
+		CYBOZU_BENCH_C("FpM::add(G)", 1000, FpM::add, a, a, b);
+		g_rt.useAsm = useAsm;
+	}
 	CYBOZU_BENCH_C("cvtBase", 100, kn.cvtBase, base, P.data(), n);
 	CYBOZU_BENCH_C("addPairs(4096)", 100, kn.addPairs, R, base, ia.data(), ib.data(), m, work);
 	CYBOZU_BENCH_C("addPairs(256)", 1000, kn.addPairs, R, base, ia.data(), ib.data(), 256, work);
@@ -2959,10 +3146,12 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 	G1 P1;
 	for (size_t d = db; d <= de; d++) {
 		size_t n = size_t(1) << d;
+#if MCL_FP_BIT == 384
 		size_t b1 = glvGetBucketSizeAVX512(n/8);
 		printf("old % 8zd % 2zd", n, b1);
 		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b1);
-		size_t b2 = b ? b : mcl::ec::glvGetBucketSize(n * 2);
+#endif
+		size_t b2 = b ? b : getBucketSizeAffM(n * 2);
 		printf("new % 8zd % 2zd", n, b2);
 		CYBOZU_BENCH_C(" ", C, mulVecKernel, P1, Pvec.data(), xVec.data(), n, b2);
 	}
@@ -3011,13 +3200,20 @@ int main(int argc, char *argv[])
 	if (de == 0) {
 		de = d;
 	}
-#ifdef MCL_MSM_BLS12_377
+#if MCL_FP_BIT == 256
+	puts("BN254");
+	initPairing(mcl::BN254);
+#elif defined(MCL_MSM_BLS12_377)
 	puts("BLS12_377");
 	initPairing(mcl::BLS12_377);
 #else
 	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
 #endif
+	if (G1::msmKernel == 0) {
+		puts("ERR the AVX-512 MSM is not available");
+		return 1;
+	}
 	g_mont.init(mcl::Fp::getOp().mp);
 	if (msm) {
 		msmBench(C, db, de, b);
