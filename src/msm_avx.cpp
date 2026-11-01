@@ -31,30 +31,6 @@
 #endif
 
 //#define MCL_MSM_BLS12_377
-#if MCL_FP_BIT == 384
-	// src/asm/bint-x64-*.S has the AVX-512 functions of Fp of BLS12-381 (or BLS12-377 with MCL_MSM_BLS12_377) with N = 8
-	#define USE_ASM
-#endif
-
-#ifdef USE_ASM
-extern "C" {
-
-void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
-void mcl_c5_vaddPreA(VecA *, const VecA *, const VecA *);
-
-void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
-
-void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsub(Vec *, const Vec *, const Vec *);
-void mcl_c5_vmul(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsqr(Vec *, const Vec *);
-void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
-void mcl_c5_vsubA(VecA *, const VecA *, const VecA *);
-void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
-
-}
-#endif
 
 namespace {
 
@@ -118,7 +94,6 @@ struct RtPara {
 	uint64_t m52to64u[N];
 	uint64_t m52to64s[unitN]; // the Montgomery form of Fp
 	size_t pN; // Fp::getOp().N
-	bool useAsm; // the asm functions (for BLS12-381 only) are available
 	int curveType;
 };
 static CYBOZU_ALIGN(64) RtPara g_rt;
@@ -291,35 +266,17 @@ inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 	}
 }
 
-// the generic (intrinsics) versions : vaddG, vsubG, vmulG, vsqrG
 template<class VM=Vmask, class V>
-inline void vaddG(V *z, const V *x, const V *y)
+inline void vadd(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	vaddPre(sN, x, y);
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
-template<class VM=Vmask, class V>
-inline void vadd(V *z, const V *x, const V *y)
-{
-	vaddG<VM>(z, x, y);
-}
-#ifdef USE_ASM
-template<>
-inline void vadd(Vec *z, const Vec *x, const Vec *y)
-{
-	if (g_rt.useAsm) mcl_c5_vadd(z, x, y); else vaddG<Vmask>(z, x, y);
-}
-template<>
-inline void vadd<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	if (g_rt.useAsm) mcl_c5_vaddA(z, x, y); else vaddG<VmaskA>(z, x, y);
-}
-#endif
 
 template<class VM=Vmask, class V>
-inline void vsubG(V *z, const V *x, const V *y)
+inline void vsub(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	VM c = vsubPre<VM>(sN, x, y);
@@ -327,23 +284,6 @@ inline void vsubG(V *z, const V *x, const V *y)
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
-template<class VM=Vmask, class V>
-inline void vsub(V *z, const V *x, const V *y)
-{
-	vsubG<VM>(z, x, y);
-}
-#ifdef USE_ASM
-template<>
-inline void vsub(Vec *z, const Vec *x, const Vec *y)
-{
-	if (g_rt.useAsm) mcl_c5_vsub(z, x, y); else vsubG<Vmask>(z, x, y);
-}
-template<>
-inline void vsub<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	if (g_rt.useAsm) mcl_c5_vsubA(z, x, y); else vsubG<VmaskA>(z, x, y);
-}
-#endif
 
 template<class V>
 inline void vmulUnit(V *z, const V *x, const V& y)
@@ -439,7 +379,7 @@ inline VecA broadcast(const uint64_t& v)
 }
 
 template<class VM=Vmask, class V, typename U>
-inline void vmulG(V *z, const V *x, const U *y)
+inline void vmul(V *z, const V *x, const U *y)
 {
 #if 0
 	V xy[N*2];
@@ -464,26 +404,9 @@ inline void vmulG(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-template<class VM=Vmask, class V, typename U>
-inline void vmul(V *z, const V *x, const U *y)
-{
-	vmulG<VM>(z, x, y);
-}
-#ifdef USE_ASM
-template<>
-inline void vmul(Vec *z, const Vec *x, const Vec *y)
-{
-	if (g_rt.useAsm) mcl_c5_vmul(z, x, y); else vmulG<Vmask>(z, x, y);
-}
-template<>
-inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	if (g_rt.useAsm) mcl_c5_vmulA(z, x, y); else vmulG<VmaskA>(z, x, y);
-}
-#endif
 
 template<class VM=Vmask, class V>
-inline void vsqrG(V *z, const V *x)
+inline void vsqr(V *z, const V *x)
 {
 #if 0
 	V t[N*2];
@@ -531,23 +454,6 @@ inline void vsqrG(V *z, const V *x)
 	VM c = vsubPre<VM>(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 }
-template<class VM=Vmask, class V>
-inline void vsqr(V *z, const V *x)
-{
-	vsqrG<VM>(z, x);
-}
-#ifdef USE_ASM
-template<>
-inline void vsqr(Vec *z, const Vec *x)
-{
-	if (g_rt.useAsm) mcl_c5_vsqr(z, x); else vsqrG<Vmask>(z, x);
-}
-template<>
-inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
-{
-	if (g_rt.useAsm) mcl_c5_vmulA(z, x, x); else vsqrG<VmaskA>(z, x);
-}
-#endif
 
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
@@ -2090,16 +1996,11 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 	g_rt.pN = op.N;
 	g_rt.curveType = curveType;
 	g_splitRaw = splitRaw;
-	// the asm functions and EcM (b_ = 4 or 1) are for BLS12-381 (or BLS12-377) only
+	// EcM (b_ = 4 or 1) is for BLS12-381 (or BLS12-377) only
 #ifdef MCL_MSM_BLS12_377
 	const bool isBLS12 = curveType == MCL_BLS12_377;
 #else
 	const bool isBLS12 = curveType == MCL_BLS12_381;
-#endif
-#ifdef USE_ASM
-	g_rt.useAsm = isBLS12;
-#else
-	g_rt.useAsm = false;
 #endif
 	G1::setMsmKernel(getMsmKernelAVX512());
 	if (isBLS12) {
@@ -2330,7 +2231,7 @@ CYBOZU_TEST_AUTO(sqr)
 	for (size_t i = 0; i < n; i++) dump(v[i], "v");
 
 	vsqr(z1, v);
-	mcl_c5_vsqr(z2, v);
+	vmul(z2, v, v);
 	for (size_t i = 0; i < n*2; i++) {
 		printf("i=%zd eq=%s\n", i, memcmp(&z1[i], &z2[i], sizeof(Vec)) == 0 ? "o" : "x");
 		dump(z1[i], "z1");
@@ -2429,8 +2330,8 @@ void forcedRead(const T& x)
 	(void)dummy;
 }
 
-#ifdef USE_ASM
-void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
+// FpM::add/sub/mul/sqr (intrinsics) vs mcl::Fp
+void fpmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
 	CYBOZU_ALIGN(64) mcl::Fp z[8];
 	FpM xm, ym, zm, wm;
@@ -2440,21 +2341,21 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::add(z[i], x[i], y[i]);
 	}
-	mcl_c5_vadd(zm.v, xm.v, ym.v);
+	FpM::add(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// sub
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::sub(z[i], x[i], y[i]);
 	}
-	mcl_c5_vsub(zm.v, xm.v, ym.v);
+	FpM::sub(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// mul
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::mul(z[i], x[i], y[i]);
 	}
-	mcl_c5_vmul(zm.v, xm.v, ym.v);
+	FpM::mul(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
@@ -2468,7 +2369,7 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::sqr(z[i], x[i]);
 	}
-	mcl_c5_vsqr(zm.v, xm.v);
+	FpM::sqr(zm, xm);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
@@ -2480,7 +2381,7 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	}
 }
 
-CYBOZU_TEST_AUTO(asm)
+CYBOZU_TEST_AUTO(fpm)
 {
 	cybozu::XorShift rg;
 	mcl::Fp x[8], y[8];
@@ -2493,7 +2394,7 @@ CYBOZU_TEST_AUTO(asm)
 				y[k] = j*8+k;
 			}
 		}
-		asmTest(x, y);
+		fpmTest(x, y);
 	}
 }
 
@@ -2508,16 +2409,11 @@ CYBOZU_TEST_AUTO(vaddPre)
 			setRand(x[j], rg);
 			setRand(y[j], rg);
 			vaddPre(z[j].v, x[j].v, y[j].v);
-			Vec t[N];
-			mcl_c5_vaddPre(t, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(t[k], z[j].v[k]));
-			}
 			vsubPre(w[j].v, z[j].v, x[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], y[j].v[k]));
 			}
-			mcl_c5_vsubPre(w[j].v, z[j].v, y[j].v);
+			vsubPre(w[j].v, z[j].v, y[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], x[j].v[k]));
 			}
@@ -2529,8 +2425,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
-		mcl_c5_vaddPreA(wa.v, xa.v, ya.v);
-		CYBOZU_TEST_ASSERT(za == wa);
 		vsubPre<VmaskA>(za.v, za.v, ya.v);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
@@ -2539,12 +2433,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 		// vadd, vsub
 		for (size_t j = 0; j < vN; j++) {
 			vadd(z[j].v, x[j].v, y[j].v);
-			Vec u[8];
-			mcl_c5_vadd(u, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], u[k]));
-			}
-			mcl_c5_vsub(u, u, y[j].v);
+			Vec u[N];
+			vsub(u, z[j].v, y[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(x[j].v[k], u[k]));
 			}
@@ -2564,23 +2454,9 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
-		{ // vsubA
-			VecA u[8];
-			vsub<VmaskA>(u, xa.v, ya.v);
-			VecA w[8];
-			mcl_c5_vsubA(w, xa.v, ya.v);
-			for (size_t i = 0; i < 8; i++) {
-				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
-			}
-		}
 		// vmul
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
-			Vec w[8];
-			mcl_c5_vmul(w, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], w[k]));
-			}
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
@@ -2588,15 +2464,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
-		}
-		{ // vmulA
-			VecA u[8];
-			vmul<VmaskA>(u, xa.v, ya.v);
-			VecA w[8];
-			mcl_c5_vmulA(w, xa.v, ya.v);
-			for (size_t i = 0; i < 8; i++) {
-				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
-			}
 		}
 		// inv
 		for (size_t j = 0; j < vN; j++) {
@@ -2615,18 +2482,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vsubPre::VecA", C, vsubPre<VmaskA>, za.v, za.v, xa.v);
-#if 1
-	CYBOZU_BENCH_C("asm vaddPre", C, mcl_c5_vaddPre, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vsubPre", C, mcl_c5_vsubPre, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vsub", C, mcl_c5_vsub, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vmul", C, mcl_c5_vmul, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vsubA", C, mcl_c5_vsubA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vmulA", C, mcl_c5_vmulA, za.v, za.v, xa.v);
-#endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vadd::VecA", C, vadd<VmaskA>, za.v, za.v, xa.v);
@@ -2646,8 +2501,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 	forcedRead(za);
 #endif
 }
-
-#endif // USE_ASM
 
 template<class T>
 void lpN(void f(T&, const T&, const T&), T *z, const T *x, const T *y, size_t n)
@@ -3094,19 +2947,14 @@ CYBOZU_TEST_AUTO(kernelBench)
 	void *base = Xbyak::AlignedMalloc(kn.pointSize * n, 64);
 	void *R = Xbyak::AlignedMalloc(kn.pointSize * m, 64);
 	void *work = Xbyak::AlignedMalloc(kn.workSize, 64);
-	// the cost of FpM::mul (asm if available, and the intrinsics version)
+	// the cost of FpM::mul
 	{
 		FpM a, b;
 		a = FpM::one();
 		b = FpM::R2();
 		CYBOZU_BENCH_C("FpM::mul", 1000, FpM::mul, a, a, b);
 		CYBOZU_BENCH_C("FpM::sqr", 1000, FpM::sqr, a, a);
-		const bool useAsm = g_rt.useAsm;
-		g_rt.useAsm = false;
-		CYBOZU_BENCH_C("FpM::mul(G)", 1000, FpM::mul, a, a, b);
-		CYBOZU_BENCH_C("FpM::sqr(G)", 1000, FpM::sqr, a, a);
-		CYBOZU_BENCH_C("FpM::add(G)", 1000, FpM::add, a, a, b);
-		g_rt.useAsm = useAsm;
+		CYBOZU_BENCH_C("FpM::add", 1000, FpM::add, a, a, b);
 	}
 	CYBOZU_BENCH_C("cvtBase", 100, kn.cvtBase, base, P.data(), n);
 	CYBOZU_BENCH_C("addPairs(4096)", 100, kn.addPairs, R, base, ia.data(), ib.data(), m, work);

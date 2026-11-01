@@ -203,7 +203,7 @@ endif
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
-# the curve of the AVX-512 asm functions (src/asm/bint-x64-*) and EcM (mulEach) : 381 or 377
+# the curve of EcM (mulEach of msm_avx.cpp) : 381 or 377
 MCL_MSM_CURVE_BIT?=381
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
@@ -231,7 +231,7 @@ src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch -n $(BINT_MUL_N)
 src/llvm_proto.hpp: src/gen_llvm_proto.py src/primetbl.py
 	python3 $< -fpbit $(MCL_FP_BIT) > $@
-GEN_BINT_X64_OPT=-curveBit=$(MCL_MSM_CURVE_BIT) -n $(BINT_MUL_N)
+GEN_BINT_X64_OPT=-n $(BINT_MUL_N)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
 	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas $(WIN_API) > $@
