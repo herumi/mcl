@@ -6,6 +6,7 @@ cybozu::CpuClock clk;
 #include <mcl/bn.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
+#include "../src/msm.hpp"
 
 #if defined(__EMSCRIPTEN__) && !defined(MCL_AVOID_EXCEPTION_TEST)
 	#define MCL_AVOID_EXCEPTION_TEST
@@ -441,6 +442,13 @@ CYBOZU_TEST_AUTO(naive)
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
 		initPairing(ts.cp);
+#if MCL_MSM
+		if (ts.cp == mcl::BN254 || ts.cp == mcl::BN_SNARK1) {
+			const bool enabled = (mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA) != 0;
+			CYBOZU_TEST_EQUAL(G1::msmKernel != 0, enabled);
+			CYBOZU_TEST_EQUAL(G1::mulEachOpti != 0, enabled);
+		}
+#endif
 		const G1 P(ts.g1.a, ts.g1.b);
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
