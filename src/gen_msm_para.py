@@ -5,6 +5,10 @@ import sys
 import random
 from montgomery import Montgomery
 from primetbl import curveTbl
+from gen_glv import glvCurves, makeParam
+
+# rw of the GLV method verified on a point of G1 by gen_glv.py (mulLambda of msm_avx.cpp must use the same root)
+glvRw = {e[0]: makeParam(*e).rw for e in glvCurves}
 
 W = 52
 
@@ -59,7 +63,10 @@ class Para:
     self.m64to52 = toArray(toMont(pow(2, s, p)), N, W)
     self.m52to64 = toArray(toMont(pow(2, -s, p)), N, W)
     self.m52to64s = toArray(pow(2, -s, p) * R64 % p, self.pN, 64) # the Montgomery form of Fp
-    self.rw = toArray(toMont(cubeRootOfUnity(p)), N, W)
+    self.invR52 = toArray(pow(R52, -1, p), self.pN, 64) # for Fp not in the Montgomery form (secp256k1)
+    rw = cubeRootOfUnity(p)
+    assert rw == glvRw[cv.name], cv.name
+    self.rw = toArray(toMont(rw), N, W)
     assert cv.b > 0, cv.name
     self.b3 = toArray(toMont(3 * cv.b), N, W)
     self.p = toArray(p, self.pN, 64)
@@ -74,6 +81,11 @@ class Para:
       assert b == a
       c = m * (pow(2, -s, p) * R64 % p) * pow(R64, -1, p) % p # Fp::mul(m, m52to64s)
       assert c == a
+      # Fp not in the Montgomery form (secp256k1) : x -> x R52 by FpM::mul(x, R2), x R52 -> x by FpM::mul(x, 1) and by Fp::mul(x, invR52)
+      m = x * mont.R2 % p * pow(R52, -1, p) % p
+      assert m == x * R52 % p
+      assert m * 1 * pow(R52, -1, p) % p == x
+      assert m * pow(R52, -1, p) % p == x
     assert (self.rp * (p & ((1 << W) - 1)) + 1) % (1 << W) == 0
 
   def put(self):
@@ -81,7 +93,7 @@ class Para:
     N = self.N
     pad = lambda a, n: a + [0] * (n - len(a))
     print(f'\t{{ // {cv.name}')
-    print(f'\t\t{cv.c}, {self.pN},')
+    print(f'\t\t{cv.c}, {self.pN}, {cv.b},')
     print(f'\t\t{{ {hexList(pad(self.p, 6))} }}, // p')
     print(f'\t\t{hex(self.rp)}, // rp')
     print(f'\t\t{{ {hexList(self.ap)} }}, // ap')
@@ -91,6 +103,7 @@ class Para:
     print(f'\t\t{{ {hexList(self.m64to52)} }}, // m64to52')
     print(f'\t\t{{ {hexList(self.m52to64)} }}, // m52to64')
     print(f'\t\t{{ {hexList(pad(self.m52to64s, 6))} }}, // m52to64s')
+    print(f'\t\t{{ {hexList(pad(self.invR52, 6))} }}, // invR52')
     print(f'\t\t{{ {hexList(self.rw)} }}, // rw')
     print(f'\t\t{{ {hexList(self.b3)} }}, // b3')
     print('\t},')
@@ -118,6 +131,7 @@ def main():
 struct MsmCurvePara {
 	int curveType; // MCL_BN254, MCL_BLS12_381, ...
 	size_t pN; // the number of 64-bit limbs of p (= Fp::getOp().N)
+	int b; // y^2 = x^3 + b (EcMT::specialB_)
 	uint64_t p[6]; // p in 64-bit limbs
 	uint64_t rp; // -p^-1 mod 2^52
 	uint64_t ap[8]; // p in 52-bit limbs
@@ -127,6 +141,7 @@ struct MsmCurvePara {
 	uint64_t m64to52[8]; // R52 (R52 / R64) mod p : Fp -> FpM by FpM::mul
 	uint64_t m52to64[8]; // R52 (R64 / R52) mod p : FpM -> Fp by FpM::mul
 	uint64_t m52to64s[6]; // R64 (R64 / R52) mod p in 64-bit limbs : FpM -> Fp by Fp::mul
+	uint64_t invR52[6]; // R52^-1 mod p in 64-bit limbs : FpM -> Fp by Fp::mul if Fp is not in the Montgomery form (secp256k1)
 	uint64_t rw[8]; // a primitive cube root of unity (for mulLambda)
 	uint64_t b3[8]; // 3 b of y^2 = x^3 + b
 };''')

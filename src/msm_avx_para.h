@@ -8,6 +8,7 @@
 struct MsmCurvePara {
 	int curveType; // MCL_BN254, MCL_BLS12_381, ...
 	size_t pN; // the number of 64-bit limbs of p (= Fp::getOp().N)
+	int b; // y^2 = x^3 + b (EcMT::specialB_)
 	uint64_t p[6]; // p in 64-bit limbs
 	uint64_t rp; // -p^-1 mod 2^52
 	uint64_t ap[8]; // p in 52-bit limbs
@@ -17,6 +18,7 @@ struct MsmCurvePara {
 	uint64_t m64to52[8]; // R52 (R52 / R64) mod p : Fp -> FpM by FpM::mul
 	uint64_t m52to64[8]; // R52 (R64 / R52) mod p : FpM -> Fp by FpM::mul
 	uint64_t m52to64s[6]; // R64 (R64 / R52) mod p in 64-bit limbs : FpM -> Fp by Fp::mul
+	uint64_t invR52[6]; // R52^-1 mod p in 64-bit limbs : FpM -> Fp by Fp::mul if Fp is not in the Montgomery form (secp256k1)
 	uint64_t rw[8]; // a primitive cube root of unity (for mulLambda)
 	uint64_t b3[8]; // 3 b of y^2 = x^3 + b
 };
@@ -24,7 +26,7 @@ struct MsmCurvePara {
 static const size_t MSM_N = 5; // the number of 52-bit limbs
 static const MsmCurvePara g_msmCurveTbl[] = {
 	{ // BN254
-		0, 4,
+		0, 4, 2,
 		{ 0xa700000000000013, 0x6121000000000013, 0xba344d8000000008, 0x2523648240000001, 0x0, 0x0 }, // p
 		0x35e50d79435e5, // rp
 		{ 0x13, 0x13a70, 0x8612100, 0x1ba344d800, 0x252364824000 }, // ap
@@ -34,11 +36,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0xfffffffff7d14, 0xffffff789543f, 0xfffc642b89bff, 0xf418ef99f9fff, 0x181f6e7effff }, // m64to52
 		{ 0xfffffffffff8e, 0xffffffff8a15f, 0xfffffcdb939ff, 0xfff5a2c62efff, 0x212ba4f27fff }, // m52to64
 		{ 0x0, 0x0, 0x0, 0x1000000000000000, 0x0, 0x0 }, // m52to64s
+		{ 0x5ad762ae9cf6d3c5, 0xc068f5140174d62c, 0x6d3f0290ed568247, 0x22262c3da491f119, 0x0, 0x0 }, // invR52
 		{ 0x39717960340a, 0xec7284639bdb1, 0xb29bdbe051bf6, 0x1dd9f6c57ca6, 0x1ce3995f8000 }, // rw
 		{ 0xfffffffffcef1, 0xffffffcd41ccf, 0xfffea5d35caff, 0xfb8a36f3e47ff, 0x1b9d7bb0bfff }, // b3
 	},
 	{ // BN-SNARK
-		4, 4,
+		4, 4, 3,
 		{ 0x3c208c16d87cfd47, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029, 0x0, 0x0 }, // p
 		0x20782e4866389, // rp
 		{ 0x8c16d87cfd47, 0x916871ca8d3c2, 0x181585d97816a, 0xa029b85045b68, 0x30644e72e131 }, // ap
@@ -48,11 +51,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0xb0f2afaec667a, 0xed9626b0fffbd, 0x9e2a0fcad825a, 0xe357276f48b70, 0xd791464ef86 }, // m64to52
 		{ 0xd438dc58f0d9d, 0x28f5c70b3dd35, 0x879462c0a78eb, 0xdf2f666ea36f7, 0xe0a77c19a07 }, // m52to64
 		{ 0x0, 0x0, 0x0, 0x1000000000000000, 0x0, 0x0 }, // m52to64s
+		{ 0xf736cbda0b09dd16, 0x5cbb5610a2123cc3, 0xb9c17ff814dd8c05, 0x30447ae2c8bce28a, 0x0, 0x0 }, // invR52
 		{ 0x5f7cf18a4da6c, 0xfcd08fecf4638, 0xf454044c2d458, 0xfc115c5806fd4, 0x237ab40d91cd }, // rw
 		{ 0xf9016747317f1, 0xc085bce228433, 0x68051c8a04a35, 0xe3fb1960c4790, 0x25d2cc80937a }, // b3
 	},
 	{ // secp256k1
-		102, 4,
+		102, 4, 7,
 		{ 0xfffffffefffffc2f, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x0, 0x0 }, // p
 		0x8091dd2253531, // rp
 		{ 0xffffefffffc2f, 0xfffffffffffff, 0xfffffffffffff, 0xfffffffffffff, 0xffffffffffff }, // ap
@@ -62,6 +66,7 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x1000003d100, 0x0, 0x0, 0x0, 0x0 }, // m64to52
 		{ 0x1000003d1, 0x0, 0x0, 0x0, 0x0 }, // m52to64
 		{ 0x0, 0x0, 0x0, 0x1000000000000000, 0x0, 0x0 }, // m52to64s
+		{ 0x9d83809130867f30, 0x1bcb223fedc24a05, 0x99c46c2c295f2b76, 0xac9bd19051553839, 0x0, 0x0 }, // invR52
 		{ 0x361cfe818af97, 0x31c4b80af58a4, 0x2e390503fde16, 0xd53f8e98978d0, 0xa4a36aebcbb3 }, // rw
 		{ 0x15000050250, 0x0, 0x0, 0x0, 0x0 }, // b3
 	},
@@ -71,7 +76,7 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 static const size_t MSM_N = 8; // the number of 52-bit limbs
 static const MsmCurvePara g_msmCurveTbl[] = {
 	{ // BN254
-		0, 4,
+		0, 4, 2,
 		{ 0xa700000000000013, 0x6121000000000013, 0xba344d8000000008, 0x2523648240000001, 0x0, 0x0 }, // p
 		0x35e50d79435e5, // rp
 		{ 0x13, 0x13a70, 0x8612100, 0x1ba344d800, 0x252364824000, 0x0, 0x0, 0x0 }, // ap
@@ -81,11 +86,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x6ff5e7e2a206e, 0x2b96e1d9e2a09, 0x5e20de9c264, 0x80a4173645f7b, 0x78eb53c67b3, 0x0, 0x0, 0x0 }, // m64to52
 		{ 0xfffffffffff8e, 0xffffffff8a15f, 0xfffffcdb939ff, 0xfff5a2c62efff, 0x212ba4f27fff, 0x0, 0x0, 0x0 }, // m52to64
 		{ 0x0, 0x100000000, 0x0, 0x0, 0x0, 0x0 }, // m52to64s
+		{ 0x6c221b48b0bdbe2, 0x16ab9f9ab6d71817, 0xe2efc72dae1f5759, 0x12cd12e9040e1974, 0x0, 0x0 }, // invR52
 		{ 0x41f4f82af7867, 0x30c5164e074a5, 0xdcc942473ae0e, 0xea08fabd98258, 0x196896447276, 0x0, 0x0, 0x0 }, // rw
 		{ 0x9ce8df60b544d, 0xd564f454de231, 0xaafb6476ce790, 0x7d8206b5c7e3a, 0xe833dfebe77, 0x0, 0x0, 0x0 }, // b3
 	},
 	{ // BN-SNARK
-		4, 4,
+		4, 4, 3,
 		{ 0x3c208c16d87cfd47, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029, 0x0, 0x0 }, // p
 		0x20782e4866389, // rp
 		{ 0x8c16d87cfd47, 0x916871ca8d3c2, 0x181585d97816a, 0xa029b85045b68, 0x30644e72e131, 0x0, 0x0, 0x0 }, // ap
@@ -95,11 +101,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x1204d3a76eb9e, 0x1873dd7ae1f3b, 0xc30f3cf4d1cc8, 0xf4c9e6e30da92, 0x2401bbe190f3, 0x0, 0x0, 0x0 }, // m64to52
 		{ 0xd438dc58f0d9d, 0x28f5c70b3dd35, 0x879462c0a78eb, 0xdf2f666ea36f7, 0xe0a77c19a07, 0x0, 0x0, 0x0 }, // m52to64
 		{ 0x0, 0x100000000, 0x0, 0x0, 0x0, 0x0 }, // m52to64s
+		{ 0x4e5214337f40879e, 0xdf487290228a51e2, 0xbd1d73f3bdc1bf9, 0x1447ee6eb3a99c6, 0x0, 0x0 }, // invR52
 		{ 0x163241ba213ac, 0x579b5577cdd6a, 0xccbcd68073de7, 0x756de1eef1c40, 0x15197938a2ee, 0x0, 0x0, 0x0 }, // rw
 		{ 0x7621ebf7b75a, 0x31d082136e4a1, 0x50fec3e0685cb, 0x9d007f73e50b1, 0x12cdff54a1c7, 0x0, 0x0, 0x0 }, // b3
 	},
 	{ // BLS12-381
-		5, 6,
+		5, 6, 4,
 		{ 0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a }, // p
 		0x3fffcfffcfffd, // rp
 		{ 0xeffffffffaaab, 0xfeb153ffffb9f, 0x6b0f6241eabff, 0x12bf6730d2a0f, 0x764774b84f385, 0x1ba7b6434bacd, 0x1ea397fe69a4b, 0x1a011 }, // ap
@@ -109,11 +116,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x7fde37dba9366, 0x4e27525bc342b, 0x1f5b1e9778489, 0xb872b2b91b9dc, 0xb206f497dfcaf, 0x4137cc89a9b0b, 0xd9d20d7e39959, 0x411c }, // m64to52
 		{ 0x900000002fffd, 0xbc40c0002760, 0x3c758baebf400, 0x57455f4898575, 0xd77ce58537052, 0x71a97a256ec6, 0xec3fa80e4935c, 0x15f65 }, // m52to64
 		{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x100000000 }, // m52to64s
+		{ 0x563bfca80d3357da, 0x49ad31af38b4d1ff, 0x1570c7a87408dd, 0xbfcacba62ee6ff12, 0x60405e9a0c4ba44f, 0xcf3587083336882 }, // invR52
 		{ 0xa424657e25648, 0xc75706049e739, 0xb59085299e0e2, 0xd9cf17286a964, 0x69ec7cb33aa8, 0x35e995b239c7e, 0x82faa0ff3c329, 0x17601 }, // rw
 		{ 0x460afeaf7b431, 0xcd5122beb5b19, 0xc4664aadd2de0, 0x1d78417c77713, 0xa4d7d1f9b9711, 0x4b2b884890e, 0x717302e000d24, 0xf618 }, // b3
 	},
 	{ // BLS12-377
-		8, 6,
+		8, 6, 1,
 		{ 0x8508c00000000001, 0x170b5d4430000000, 0x1ef3622fba094800, 0x1a22d9f300f5138f, 0xc63b05c06ca1493b, 0x1ae3a4617c510ea }, // p
 		0x8bfffffffffff, // rp
 		{ 0x8c00000000001, 0x4430000000850, 0xa094800170b5d, 0x138f1ef3622fb, 0xb1a22d9f300f5, 0x3b05c06ca1493, 0xa4617c510eac6, 0x1ae3 }, // ap
@@ -123,11 +131,12 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x7ccefe7c5a25, 0x9dee49ccfcf9a, 0x3dc3ff79f2a81, 0xb7eaa16af28b0, 0xe5d18e3b07d04, 0x85efd62fb7463, 0x8c84314d2bbc1, 0x197 }, // m64to52
 		{ 0xdffffffffff68, 0x837fffffb102c, 0xa7d3ff251409f, 0x63059f7db3a98, 0x87b4e97b76e7c, 0xf495bf803c84e, 0x661e2fdf49a4c, 0x8d6 }, // m52to64
 		{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x100000000 }, // m52to64s
+		{ 0xc77c0c8f48649094, 0x3f3a915f22d7de52, 0xc05f148d9ae160eb, 0x118096cb224db88e, 0x332e943238827ea3, 0x13a259f1fe5cb37 }, // invR52
 		{ 0xe797229e24af8, 0x88eb884fdc8d7, 0xd85b7c8689d17, 0x8cd5ec9089993, 0xd54916fa5f147, 0xadcc10da3c3cc, 0x15a96d267b27b, 0x1127 }, // rw
 		{ 0x9be370396366d, 0x3af53e69a8fd3, 0x82cd0ecf80737, 0x3a0680ea74af3, 0xa52b59300fd38, 0x71d9b337d74bd, 0x26a7aff4ceb8e, 0x7a }, // b3
 	},
 	{ // secp256k1
-		102, 4,
+		102, 4, 7,
 		{ 0xfffffffefffffc2f, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x0, 0x0 }, // p
 		0x8091dd2253531, // rp
 		{ 0xffffefffffc2f, 0xfffffffffffff, 0xfffffffffffff, 0xfffffffffffff, 0xffffffffffff, 0x0, 0x0, 0x0 }, // ap
@@ -137,6 +146,7 @@ static const MsmCurvePara g_msmCurveTbl[] = {
 		{ 0x0, 0xa2000e90a1000, 0x1000007, 0x0, 0x0, 0x0, 0x0, 0x0 }, // m64to52
 		{ 0x1000003d1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, // m52to64
 		{ 0x0, 0x100000000, 0x0, 0x0, 0x0, 0x0 }, // m52to64s
+		{ 0x15538399904199cd, 0x4034830ac9bd1905, 0x2a7f3bb9ac91b0be, 0xc0528c7b6421533, 0x0, 0x0 }, // invR52
 		{ 0x57d873be92ad3, 0xf1c373df17846, 0x1f5ee323f7e96, 0x361d08cbc1cf7, 0x1c4b80af58a4, 0x0, 0x0, 0x0 }, // rw
 		{ 0x0, 0x0, 0x0, 0x15000050250, 0x0, 0x0, 0x0, 0x0 }, // b3
 	},

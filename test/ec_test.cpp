@@ -41,7 +41,7 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 	const Fp y(para.gy);
 	Ec P(x, y);
 	P += P;
-	const int N = 100;
+	const int N = 300;
 	Ec xVec[N];
 	Zn yVec[N];
 	Ec Q1, Q2;
@@ -51,7 +51,13 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mul(xVec[i], P, i + 3);
 		yVec[i].setByCSPRNG(rg);
 	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33, N };
+	xVec[7].clear();
+	xVec[N-1].clear();
+	yVec[1] = 0;
+	yVec[2] = 1;
+	yVec[3] = -1;
+	// n >= 128 (2n >= MCL_MSM_BATCH_MIN_N) uses the batch affine addition (the AVX-512 kernel if available)
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33, 100, 127, 128, 129, 255, 256, 257, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		CYBOZU_TEST_ASSERT(n <= N);
@@ -59,6 +65,17 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
+		{
+			// mulEach (mulEachOpti if available) : xVec2[i] = xVec[i] * yVec[i]
+			Ec xVec2[N];
+			for (size_t j = 0; j < n; j++) xVec2[j] = xVec[j];
+			Ec::mulEach(xVec2, yVec, n);
+			for (size_t j = 0; j < n; j++) {
+				Ec T;
+				Ec::mul(T, xVec[j], yVec[j]);
+				CYBOZU_TEST_EQUAL(xVec2[j], T);
+			}
+		}
 		{
 			// mulVecConstRef does not modify xVec
 			Ec xVec2[N];

@@ -203,21 +203,16 @@ endif
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
-# the curve of EcM (mulEach of msm_avx.cpp) : 381 or 377
-MCL_MSM_CURVE_BIT?=381
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
     MSM=msm_avx
-    ifeq ($(MCL_MSM_CURVE_BIT),377)
-      CFLAGS+=-DMCL_MSM_BLS12_377
-    endif
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
-src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py
+src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py src/gen_glv.py
 	python3 src/gen_msm_para.py > $@
 else
   CFLAGS+=-DMCL_MSM=0
@@ -404,6 +399,9 @@ SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
+ifeq ($(MCL_MSM),1)
+  TEST_EXE+=$(EXE_DIR)/msm_test.exe # src/msm_avx.cpp with -DMCL_MSM_TEST (mulEachCurves tests every curve of the AVX-512 MSM)
+endif
 test_ci: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do echo $$i; env LSAN_OPTIONS=verbosity=0:log_threads=1 $$i; done'
 test: $(TEST_EXE)
