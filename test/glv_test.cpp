@@ -310,8 +310,10 @@ CYBOZU_TEST_AUTO(glv)
 		const char *name;
 	} tbl[] = {
 //		{ mcl::BN_P256, "BN_P256" },
+#if MCL_FP_BIT >= 384
 		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BLS12_381, "BLS12_381" },
+#endif
 		{ mcl::BN254, "BN254" },
 		{ mcl::BN_SNARK1, "BN_SNARK1" },
 	};
