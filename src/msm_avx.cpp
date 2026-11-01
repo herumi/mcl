@@ -1831,7 +1831,7 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 
 /*
 	set the constants of the current curve (Fp::getOp().p) from g_msmCurveTbl and register
-	the kernel of the batch affine addition (G1::setMsmKernel) and mulEachAVX512 (if a = 0)
+	the kernel of the batch affine addition (G1::setMsmKernel) and mulEachAVX512 (Jacobian, a = 0)
 	return false if the curve is not supported (AVX-512 IFMA is required)
 */
 bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
@@ -1928,8 +1928,8 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 	}
 	g_splitRaw = splitRaw;
 	G1::setMsmKernel(getMsmKernelAVX512());
-	// EcM assumes a = 0 (all the curves of g_msmCurveTbl)
-	if (G1::a_.isZero()) {
+	// mulEachAVX512 returns Jacobian coordinates and assumes a = 0.
+	if (G1::a_.isZero() && G1::getMode() == ec::Jacobi) {
 		G1::setMulEachOpti(mulEachAVX512);
 	}
 	return true;

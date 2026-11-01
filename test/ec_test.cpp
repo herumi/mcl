@@ -777,6 +777,7 @@ mul 499.00usec
 */
 	void run() const
 	{
+		mulEach();
 		mulVecTest(para, ecMode);
 		equalOrMinusTest();
 		normalizeVecTest();
@@ -794,6 +795,30 @@ mul 499.00usec
 		compare();
 		addCT();
 		ProjJacobi();
+	}
+	void mulEach() const
+	{
+		const size_t n = 33;
+		Ec P(Fp(para.gx), Fp(para.gy));
+		Ec points[n], expected[n], actual[n];
+		Zn scalars[n];
+		const int scalarTbl[] = { 17, 0, 1, -1, -2 };
+		for (size_t i = 0; i < n; i++) {
+			Ec::mul(points[i], P, i + 1);
+			if (i == 7) points[i].clear();
+			scalars[i] = scalarTbl[i % CYBOZU_NUM_OF_ARRAY(scalarTbl)];
+			Ec::mul(expected[i], points[i], scalars[i]);
+		}
+		const size_t sizes[] = { 15, 16, 17, 31, 32, 33 };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(sizes); i++) {
+			for (size_t j = 0; j < n; j++) actual[j] = points[j];
+			Ec::mulEach(actual, scalars, sizes[i]);
+			for (size_t j = 0; j < sizes[i]; j++) {
+				CYBOZU_TEST_EQUAL(actual[j], expected[j]);
+				CYBOZU_TEST_ASSERT(actual[j].isValid());
+			}
+			for (size_t j = sizes[i]; j < n; j++) CYBOZU_TEST_EQUAL(actual[j], points[j]);
+		}
 	}
 private:
 	Test(const Test&);

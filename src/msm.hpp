@@ -16,7 +16,7 @@ namespace msm {
 /*
 	set the constants of the current curve (curveType = MCL_BN254, MCL_BLS12_381, ...) and register
 	the SIMD kernel of the batch affine addition of G1::mulVec (G1::setMsmKernel, see src/glv.hpp)
-	and mulEachAVX512 (BLS12-381 only). return false if the curve is not supported.
+	and mulEachAVX512 (Jacobian coordinates, a = 0). return false if the curve is not supported.
 	splitRaw : the fixed-width GLV split of G1 (GLV1::splitRaw, used by mulEachAVX512)
 	AVX-512 IFMA is required
 */
