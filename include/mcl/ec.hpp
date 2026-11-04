@@ -1018,8 +1018,9 @@ struct MsmKernel {
 	void (*addPairs)(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work);
 	// tbl (+)= P(i), see msmAddToBucket in src/glv.hpp (tbl is EcT, base is in the layout of the kernel)
 	void (*addToBucket)(void *tbl, const void *base, uint32_t i);
-	// the window size for n (split) scalars (0 : glvGetBucketSize in src/glv.hpp)
-	size_t (*getBucketSize)(size_t n);
+	// the window size for n (split) scalars of maxBitSize bits with the bucket table of pointSize bytes per point
+	// (0 : glvGetBucketSizeByCost in src/glv.hpp)
+	size_t (*getBucketSize)(size_t n, size_t maxBitSize, size_t pointSize);
 };
 
 struct StaticMember {

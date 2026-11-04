@@ -1028,27 +1028,17 @@ inline void cvtAffMtoFp(Fp& y, const Unit x[N])
 }
 
 /*
-	the window size for n (split) scalars of mulVec with the kernel (see glvGetBucketSize in src/glv.hpp)
-	measured on Xeon w9-3495X with BLS12-381 G1 (N = 8) and BN254 G1 (N = 5) by sweeping b for 2^7 to 2^20 points :
-	the pair addition is cheaper than the generic one, so the bucket reduction is relatively more expensive
-	and b is smaller for 2^9 <= n < 2^17. the two tables differ by at most one (the differences are a few %)
+	the window size for n (split) scalars of mulVec with the kernel (see glvGetBucketSizeByCost in src/glv.hpp)
+	the weights of the cost model fitted on Xeon w9-3495X with BLS12-381 G1 (N = 8) and BN254 G1 (N = 5) :
+	the pair addition is much cheaper than the generic one, so the bucket reduction (r) and the fixed cost of a window
+	(cvtBase, the sort and the inversions, c0) are relatively expensive and b is smaller than the generic one.
+	the model is within 8% of the measured best for n in [2^7, 2^18] (the valley is shallow, see CYBOZU_TEST_AUTO(bucketSize))
 */
-size_t getBucketSizeAffM(size_t n)
+size_t getBucketSizeAffM(size_t n, size_t maxBitSize, size_t pointSize)
 {
-	if (n <= 2) return 2;
-	const size_t log2n = mcl::ec::ilog2(n);
-	const size_t tblMin = 8;
-	if (log2n < tblMin) return 3;
-	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
-	static const size_t tbl8[] = {
-		5, 6, 6, 8, 8, 8, 10, 11, 11, 13, 13, 13, 15, 15, 16
-	};
-	static const size_t tbl5[] = {
-		6, 6, 6, 7, 8, 8, 9, 10, 11, 13, 13, 14, 14, 15, 16
-	};
-	const size_t *tbl = (N == 5) ? tbl5 : tbl8;
-	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl8) + tblMin) return 16;
-	return tbl[log2n - tblMin];
+	static const mcl::ec::MsmCostParam prm8 = { 498, 9558 }; // r = 7.78, c0 = 149
+	static const mcl::ec::MsmCostParam prm5 = { 291, 5181 }; // r = 4.55, c0 = 81
+	return mcl::ec::glvGetBucketSizeByCost(n, maxBitSize, pointSize, (N == 5) ? prm5 : prm8);
 }
 
 // tbl (+)= P(i), see msmAddToBucket in src/glv.hpp
@@ -2981,7 +2971,7 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 		size_t b1 = glvGetBucketSizeAVX512(n/8);
 		printf("old % 8zd % 2zd", n, b1);
 		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b1);
-		size_t b2 = b ? b : getBucketSizeAffM(n * 2);
+		size_t b2 = b ? b : getBucketSizeAffM(n * 2, 128, sizeof(G1));
 		printf("new % 8zd % 2zd", n, b2);
 		CYBOZU_BENCH_C(" ", C, mulVecKernel, P1, Pvec.data(), xVec.data(), n, b2);
 	}
@@ -3100,6 +3090,30 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		initCurve<G1>(orgCurveType);
 	} else {
 		initPairing(*getCurveParam(orgCurveType));
+	}
+}
+
+/*
+	the cost model of the window size of the kernel (getBucketSizeAffM) vs the measured one
+	measured on Xeon w9-3495X by sweeping b (misc/msm_sweep.cpp, 2026-11-04) : n (split) scalars of 128 bits of G1,
+	[lo, hi] is the range of b whose time is within 8% of the best (the valley is shallow : BN254 n = 2^16 has
+	the best 11 and the model 13, 7.8% slower)
+*/
+CYBOZU_TEST_AUTO(bucketSize)
+{
+	const size_t nTbl[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144 };
+	const size_t lo8[] = { 5, 5, 5, 5, 6, 7, 8, 8, 9, 10, 10, 11 }; // BLS12-381 (N = 8)
+	const size_t hi8[] = { 6, 6, 6, 7, 8, 8, 9, 10, 11, 11, 13, 13 };
+	const size_t lo5[] = { 5, 5, 6, 6, 6, 8, 8, 9, 9, 10, 11, 12 }; // BN254 (N = 5)
+	const size_t hi5[] = { 6, 6, 7, 8, 8, 9, 10, 11, 12, 13, 14, 14 };
+	const size_t *lo = (N == 5) ? lo5 : lo8;
+	const size_t *hi = (N == 5) ? hi5 : hi8;
+	for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(nTbl); j++) {
+		const size_t n = nTbl[j];
+		const size_t b = getBucketSizeAffM(n, 128, sizeof(G1));
+		const bool ok = lo[j] <= b && b <= hi[j];
+		CYBOZU_TEST_ASSERT(ok);
+		if (!ok) printf("n=%zd model b=%zd measured [%zd, %zd]\n", n, b, lo[j], hi[j]);
 	}
 }
 

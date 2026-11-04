@@ -5,6 +5,8 @@
 #include <vector>
 
 #include <mcl/bls12_381.hpp>
+#define MCL_GLV_ONLY_FUNC
+#include "../src/glv.hpp"
 using namespace mcl::bn;
 
 /*
@@ -335,5 +337,42 @@ CYBOZU_TEST_AUTO(glv)
 		testMulVecSpecial(P, "G1");
 		testMulVecSpecial(Q, "G2");
 		testPowVec(e);
+	}
+}
+
+/*
+	the cost model of the window size b (glvGetBucketSizeByCost) vs the measured one
+	measured on Xeon w9-3495X by sweeping b (misc/msm_sweep.cpp, 2026-11-04) : n (split) scalars of 128 bits of G1,
+	[lo, hi] is the range of b whose time is within 6% of the best (the valley is shallow)
+	n >= 2^19 is bounded by MCL_MSM_MAX_TBL_BYTES, so it is not tested here
+*/
+CYBOZU_TEST_AUTO(bucketSizeModel)
+{
+	const size_t nTbl[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144 };
+	const size_t N = CYBOZU_NUM_OF_ARRAY(nTbl);
+	const struct {
+		const char *name;
+		const mcl::ec::MsmCostParam *prm;
+		size_t lo[N];
+		size_t hi[N];
+	} tbl[] = {
+		{ "generic BLS12-381", &mcl::ec::msmCostParamGeneric(), { 5, 6, 7, 8, 8, 9, 10, 10, 12, 12, 12, 13 }, { 6, 7, 8, 8, 10, 11, 12, 13, 13, 13, 13, 15 } },
+		{ "generic BN254", &mcl::ec::msmCostParamGeneric(), { 5, 6, 6, 7, 8, 9, 10, 10, 11, 12, 12, 13 }, { 6, 7, 8, 9, 10, 11, 12, 13, 13, 13, 14, 14 } },
+		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 11, 13, 13, 13, 15 } },
+		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 6, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 12, 13, 13, 14, 15 } },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		for (size_t j = 0; j < N; j++) {
+			const size_t n = nTbl[j];
+			const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), *tbl[i].prm);
+			const bool ok = tbl[i].lo[j] <= b && b <= tbl[i].hi[j];
+			CYBOZU_TEST_ASSERT(ok);
+			if (!ok) printf("%s n=%zd model b=%zd measured [%zd, %zd]\n", tbl[i].name, n, b, tbl[i].lo[j], tbl[i].hi[j]);
+		}
+	}
+	// the window size is bounded by MCL_MSM_MAX_TBL_BYTES (2 MiB) : 2^(b-1) * sizeof(G1) <= 2 MiB
+	for (size_t n = 1 << 19; n <= (size_t(1) << 24); n *= 4) {
+		const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), mcl::ec::msmCostParamBatch());
+		CYBOZU_TEST_ASSERT((size_t(1) << (b - 1)) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES);
 	}
 }

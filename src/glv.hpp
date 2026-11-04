@@ -26,32 +26,6 @@ inline size_t estimateBucketSize(size_t n)
 }
 
 /*
-	return heuristic backet size which is faster than glvGetTheoreticBucketSize
-	n : the number of (split) scalars (= 2 * the number of G1 points of BN / BLS12 by GLV)
-	measured on Xeon w9-3495X with BN254 / BLS12-381 G1 (signed digits, 2^(b-1) buckets,
-	batch affine addition for n >= MCL_MSM_BATCH_MIN_N);
-	the batch affine addition makes the bucket addition cheaper, so the bucket reduction (2^b additions per window)
-	is relatively expensive and b is smaller than before for n < 2^16.
-	for n in [2^16, 2^19) b = 13 (2^12 buckets fit in L2) is the best, b = 15 for n in [2^19, 2^20),
-	for n >= 2^20 b = 16 (8 windows for the 128-bit split scalars) is the best
-*/
-inline size_t glvGetBucketSize(size_t n)
-{
-	if (n <= 2) return 2;
-	size_t log2n = ilog2(n);
-	const size_t tblMin = 8;
-	if (log2n < tblMin) return 3;
-	// n >= 2^tblMin
-	static const size_t tbl[] = {
-	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
-		3, 6, 7, 8, 8, 10, 10, 11, 12, 13, 13, 13, 15, 16, 16
-	};
-	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
-	size_t ret = tbl[log2n - tblMin];
-	return ret;
-}
-
-/*
 	First, get approximate value x and compute glvCost of x-1 and x+1,
 	and return the minimum value.
 */
@@ -66,11 +40,81 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	return x;
 }
 
+#ifndef MCL_MSM_MAX_TBL_BYTES
+	// the max byte size of the bucket table 2^(b-1) * sizeof(G) of mulVecCore (the random access to tbl[k] misses the cache
+	// beyond L2) : it bounds the window size b for large n instead of a cache term of the cost model (see glvGetBucketSizeByCost)
+	#define MCL_MSM_MAX_TBL_BYTES (size_t(2) << 20)
+#endif
+
+/*
+	cost model of the bucket method (mulVecCore) for n (split) scalars of maxBitSize bits with the window size b :
+	the number of windows winN = ceil(maxBitSize / b), B = 2^(b-1) buckets (signed digits), and per window
+	  (n - #nonempty buckets) bucket additions (cost 1 each) + B reductions (cost r each : sum += tbl[k], win += sum)
+	  + a fixed cost c0 (doublings, the sort and the inversions of the batch affine addition, etc.)
+	The weights are in units of 1/64 of a bucket addition and depend on the mode (the generic Jacobian addition,
+	the batch affine addition, the SIMD kernel), not on the curve (the ratios of the field operations are the same).
+	The expected number of nonempty buckets is B (1 - (1 - 1/B)^n).
+	The weights are fitted by misc/fit_msm.py on the sweep of b by misc/msm_sweep.cpp (see memo 2026-11-04).
+*/
+struct MsmCostParam {
+	int32_t r;
+	int32_t c0;
+};
+inline uint64_t glvCostModel(size_t n, size_t b, size_t maxBitSize, const MsmCostParam& prm)
+{
+	const uint64_t winN = (maxBitSize + b - 1) / b;
+	const uint64_t B = uint64_t(1) << (b - 1);
+	uint64_t adds;
+	if (n >= 16 * B) {
+		adds = n - B; // (1 - 1/B)^n < e^-16
+	} else {
+		// p = (1 - 1/B)^n in Q32 fixed point
+		uint64_t base = (uint64_t(1) << 32) - ((uint64_t(1) << 32) / B);
+		uint64_t p = uint64_t(1) << 32;
+		for (size_t e = n; e > 0; e >>= 1) {
+			if (e & 1) p = (p * base) >> 32;
+			base = (base * base) >> 32;
+		}
+		const uint64_t nonempty = B - ((B * p) >> 32);
+		adds = n - nonempty;
+	}
+	int64_t cost = int64_t(adds) * 64 + int64_t(B) * prm.r + prm.c0;
+	if (cost < 0) cost = 0;
+	return winN * uint64_t(cost);
+}
+/*
+	argmin_b glvCostModel for b in [2, bMax] where 2^(bMax-1) * pointSize <= MCL_MSM_MAX_TBL_BYTES (bMax <= 16)
+	pointSize : sizeof(G) of the bucket table
+*/
+inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSize, const MsmCostParam& prm)
+{
+	size_t bMax = 2;
+	while (bMax < 16 && (size_t(1) << bMax) * pointSize <= MCL_MSM_MAX_TBL_BYTES) bMax++;
+	size_t best = 2;
+	uint64_t bestCost = uint64_t(-1);
+	for (size_t b = 2; b <= bMax; b++) {
+		const uint64_t c = glvCostModel(n, b, maxBitSize, prm);
+		if (c < bestCost) {
+			bestCost = c;
+			best = b;
+		}
+	}
+	return best;
+}
+/*
+	the weights fitted on Xeon w9-3495X (BLS12-381 and BN254 G1 together, n <= 2^16 split scalars)
+	the model is within 6% of the measured best for n in [2^7, 2^18] (test/glv_test.cpp)
+*/
+// the generic Jacobian mixed addition : r = 2.22, c0 = -12.2
+inline const MsmCostParam& msmCostParamGeneric() { static const MsmCostParam prm = { 142, -778 }; return prm; }
+// the batch affine addition : r = 2.88, c0 = 28.3 (the cheaper bucket addition makes the reduction relatively expensive)
+inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm = { 184, 1813 }; return prm; }
+
 #ifndef MCL_GLV_ONLY_FUNC
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
-	// use (1 << glvGetBucketSize(n)) * sizeof(G) bytes stack + alpha
-	// (1 << b) * sizeof(G) bytes with b = glvGetBucketSize(n) <= 8 : about 24KiB (G1) or 48KiB (G2) for n = 1024
+	// use (1 << b) * sizeof(G) bytes stack + alpha
+	// b = glvGetBucketSizeByCost(n, ...) <= 8 for n <= 1024 : about 36KiB (G1) or 72KiB (G2)
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
@@ -551,17 +595,23 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 
 	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
 	G *tbl = 0;
-	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own window size table
+	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own cost model of the window size
 	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
-	if (b == 0 && kernel && kernel->getBucketSize && local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N) {
-		b = kernel->getBucketSize(n);
+	// the batch affine addition is used if wk.init succeeds (see below)
+	const bool tryBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N;
+	const size_t bArg = b;
+	if (b == 0) {
+		if (tryBatch && kernel && kernel->getBucketSize) {
+			b = kernel->getBucketSize(n, maxBitSize, sizeof(G));
+		} else {
+			b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), tryBatch ? msmCostParamBatch() : msmCostParamGeneric());
+		}
 	}
 
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
-		if (b == 0) b = glvGetBucketSize(n);
 		tblN = size_t(1) << b;
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
@@ -571,8 +621,11 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	}
 #endif
 	// n is small or malloc fails so use stack
-	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-	if (b == 0) b = glvGetBucketSize(n);
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+		n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
+		// recompute b for the reduced n (the generic model : the batch affine addition is not used for this n if MCL_MSM_BATCH_MIN_N > n)
+		if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), (local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N) ? msmCostParamBatch() : msmCostParamGeneric());
+	}
 	tblN = size_t(1) << b;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
