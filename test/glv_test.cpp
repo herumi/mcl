@@ -99,6 +99,22 @@ void testGLV(const G& P, const char *name)
 		G::mul(P2, P, ss);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
+	// the edge values of the GLV split : 2^k, r - 2^k, (r - 1) >> k
+	{
+		const mpz_class& r = Fr::getOp().mp;
+		const size_t bitSize = Fr::getBitSize();
+		for (size_t k = 0; k < bitSize; k++) {
+			const mpz_class pk = mpz_class(1) << k;
+			const mpz_class tbl[] = { pk, r - pk, (r - 1) >> k, pk - 1 };
+			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+				Fr s;
+				s.setMpz(tbl[j]);
+				G::mulGeneric(P1, P, s.getMpz());
+				G::mul(P2, P, s);
+				CYBOZU_TEST_EQUAL(P1, P2);
+			}
+		}
+	}
 }
 
 template<class G>
@@ -153,6 +169,67 @@ void testMulVec(const G& P, const char *name)
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVec", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 #endif
+	}
+}
+
+/*
+	special inputs for the batch affine addition of mulVec (src/glv.hpp)
+	all scalars are equal, scalars in {0, 1}, zero points, P + P and P + (-P) in the same bucket
+*/
+template<class G>
+void testMulVecSpecial(const G& P, const char *name)
+{
+	printf("testMulVecSpecial %s\n", name);
+	const size_t N = 3000; // > MCL_MSM_BATCH_MIN_N / 2
+	std::vector<G> xVec(N);
+	std::vector<Fr> yVec(N);
+	for (size_t i = 0; i < N; i++) {
+		G::mul(xVec[i], P, i + 3);
+	}
+	G Q1, Q2;
+	// all scalars are equal
+	{
+		Fr y;
+		y.setByCSPRNG();
+		for (size_t i = 0; i < N; i++) yVec[i] = y;
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// scalars in {0, 1}
+	{
+		cybozu::XorShift rg;
+		for (size_t i = 0; i < N; i++) yVec[i] = rg.get32() & 1;
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// small scalars (many equal digits), zero points and equal points
+	{
+		cybozu::XorShift rg;
+		for (size_t i = 0; i < N; i++) {
+			yVec[i] = rg.get32() % 7;
+			if (i % 5 == 1) xVec[i].clear();
+			if (i % 5 == 2) xVec[i] = xVec[i - 1];
+			if (i % 5 == 3) xVec[i] = xVec[0];
+		}
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// P + P (doubling) and P + (-P) (zero) in a bucket : the same point with y and -y
+	{
+		for (size_t i = 0; i < N; i++) {
+			G::mul(xVec[i], P, i / 3 + 3);
+			yVec[i].setByCSPRNG();
+		}
+		for (size_t i = 0; i + 2 < N; i += 3) {
+			yVec[i + 1] = yVec[i]; // xVec[i] + xVec[i+1] = 2 xVec[i]
+			Fr::neg(yVec[i + 2], yVec[i]); // xVec[i] - xVec[i+2] = 0
+		}
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 }
 
@@ -233,9 +310,12 @@ CYBOZU_TEST_AUTO(glv)
 		const char *name;
 	} tbl[] = {
 //		{ mcl::BN_P256, "BN_P256" },
+#if MCL_FP_BIT >= 384
 		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BLS12_381, "BLS12_381" },
+#endif
 		{ mcl::BN254, "BN254" },
+		{ mcl::BN_SNARK1, "BN_SNARK1" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("name=%s\n", tbl[i].name);
@@ -252,6 +332,8 @@ CYBOZU_TEST_AUTO(glv)
 		testGT(e);
 		testMulVec(P, "G1");
 		testMulVec(Q, "G2");
+		testMulVecSpecial(P, "G1");
+		testMulVecSpecial(Q, "G2");
 		testPowVec(e);
 	}
 }

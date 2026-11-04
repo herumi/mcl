@@ -32,44 +32,71 @@ struct AsConstArray {
 	void operator+=(size_t i) { p += i; }
 };
 
-template<class Tout, class Tin, class T>
+/*
+	y[i] = 1/x[i] for x[i] not in {0, 1}, y[i] = x[i] otherwise
+	t must be T[n]
+	the elements not in {0, 1} are multiplied in K independent product chains
+	(chain c = x[c] x[c+K] x[c+2K] ...) to hide the latency of mul
+	and the products of the chains are inverted at once
+	checkZeroOne = false : assume all x[i] != 0 and skip the check
+*/
+template<bool checkZeroOne, class Tout, class Tin, class T>
 size_t invVecWork(Tout& y, Tin& x, size_t n, T *t)
 {
+	const size_t K = 4;
 	size_t pos = 0;
 	for (size_t i = 0; i < n; i++) {
-		if (!(x[i].isZero() || x[i].isOne())) {
-			if (pos == 0) {
+		if (!checkZeroOne || !(x[i].isZero() || x[i].isOne())) {
+			if (pos < K) {
 				t[pos] = x[i];
 			} else {
-				T::mul(t[pos], t[pos - 1], x[i]);
+				T::mul(t[pos], t[pos - K], x[i]);
 			}
 			pos++;
 		}
 	}
 	const size_t retNum = pos;
-	T inv;
-	if (pos > 0) {
-		T::inv(inv, t[pos - 1]);
-		pos--;
+	const size_t kc = pos < K ? pos : K; // num of non-empty chains
+	T ic[K]; // ic[c] = the inverse of the product of chain c
+	if (kc > 0) {
+		// t[last[c]] = the product of chain c
+		size_t last[K];
+		T q[K]; // q[c] = t[last[0]] ... t[last[c]]
+		for (size_t c = 0; c < kc; c++) {
+			last[c] = (pos - 1 - c) / K * K + c;
+			if (c == 0) {
+				q[0] = t[last[0]];
+			} else {
+				T::mul(q[c], q[c - 1], t[last[c]]);
+			}
+		}
+		T inv;
+		T::inv(inv, q[kc - 1]);
+		for (size_t c = kc - 1; c > 0; c--) {
+			T::mul(ic[c], inv, q[c - 1]);
+			T::mul(inv, inv, t[last[c]]);
+		}
+		ic[0] = inv;
 	}
 	bool x_is_equal_y = &x[0] == &y[0];
 	for (size_t i = 0; i < n; i++) {
 		const size_t idx = n - 1 - i;
-		if (x[idx].isZero() || x[idx].isOne()) {
+		if (checkZeroOne && (x[idx].isZero() || x[idx].isOne())) {
 			if (!x_is_equal_y) y[idx] = x[idx];
 		} else {
-			if (pos > 0) {
+			pos--;
+			const size_t c = pos % K;
+			if (pos >= K) {
 				if (x_is_equal_y) {
 					T tmp = x[idx];
-					T::mul(y[idx], inv, t[pos - 1]);
-					inv *= tmp;
+					T::mul(y[idx], ic[c], t[pos - K]);
+					ic[c] *= tmp;
 				} else {
-					T::mul(y[idx], inv, t[pos - 1]);
-					inv *= x[idx];
+					T::mul(y[idx], ic[c], t[pos - K]);
+					ic[c] *= x[idx];
 				}
-				pos--;
 			} else {
-				y[idx] = inv;
+				y[idx] = ic[c];
 			}
 		}
 	}
@@ -92,7 +119,7 @@ size_t invVecT(Tout& y, Tin& x, size_t n, size_t N = 1024)
 	size_t retNum = 0;
 	for (;;) {
 		size_t doneN = (n < N) ? n : N;
-		retNum += mcl::local::invVecWork(y, x, doneN, t);
+		retNum += mcl::local::invVecWork<true>(y, x, doneN, t);
 		n -= doneN;
 		if (n == 0) return retNum;
 		y += doneN;

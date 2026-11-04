@@ -132,7 +132,8 @@ namespace mcl {
 	template Ec::MulVecOptiFunc Ec::mulVecOpti; \
 	template Ec::IsValidOrderFastFunc Ec::isValidOrderFast; \
 	template int Ec::mode_; \
-	template Ec::MulEachOptiFunc Ec::mulEachOpti;
+	template Ec::MulEachOptiFunc Ec::mulEachOpti; \
+	template Ec::MsmKernelPtr Ec::msmKernel;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
 #undef MCL_EC_STATIC_INST
@@ -712,8 +713,15 @@ namespace mcl {
 void initForSecp256k1()
 {
 	typedef GLV1T<G1> GLV1;
-	GLV1::initForSecp256k1();
+	bool b = GLV1::useParamTbl(MCL_SECP256K1);
+	assert(b);
+	(void)b;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
+#if MCL_MSM == 1
+	if (bint::getCpuType() & bint::tAVX512_IFMA) {
+		mcl::msm::initMsm(MCL_SECP256K1, GLV1::splitRaw);
+	}
+#endif
 }
 
 namespace ec {

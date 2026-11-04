@@ -41,6 +41,45 @@
 #endif
 #endif
 
+/*
+	use SHA-NI intrinsics for the built-in SHA-256 if the CPU supports it (detected at runtime)
+	define CYBOZU_DONT_USE_SHA_NI to always use the portable code
+*/
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL && !defined(CYBOZU_DONT_USE_SHA_NI) && (defined(__GNUC__) || defined(_MSC_VER))
+	#define CYBOZU_SHA_NI
+#endif
+
+/*
+	CYBOZU_USE_BUILTIN_SHA256 selects the implementation of SHA-256 when a library (CommonCrypto/bcrypt/OpenSSL) is available
+	undefined (default) : On x64, the built-in SHA-256 is used if the CPU has SHA-NI (detected at runtime),
+	                      otherwise the library is used. The per-call overhead of the libraries (a few hundred clk)
+	                      makes them slower than the built-in SHA-NI code for short messages, but the portable code
+	                      is much slower than the libraries, so the library is used on a CPU without SHA-NI.
+	                      On other platforms the library is used.
+	0 : always the library
+	1 : always the built-in code (the portable code on a CPU without SHA-NI)
+	SHA-512 always uses the library because the built-in SHA-512 has no SHA-NI.
+*/
+#if CYBOZU_USE_APPLE_COMMONCRYPTO == 1 || defined(CYBOZU_USE_BCRYPT_SHA) || defined(CYBOZU_USE_OPENSSL_SHA)
+	#define CYBOZU_SHA2_HAS_LIB // internal
+#else
+	// internal : the built-in code is used for both if no library is selected
+	#define CYBOZU_USE_BUILTIN_SHA512
+	#undef CYBOZU_USE_BUILTIN_SHA256
+	#define CYBOZU_USE_BUILTIN_SHA256 1
+#endif
+#if defined(CYBOZU_SHA2_HAS_LIB) && !defined(CYBOZU_USE_BUILTIN_SHA256)
+	#if defined(CYBOZU_SHA_NI) && CYBOZU_OS_BIT == 64
+		#define CYBOZU_SHA2_DISPATCH_SHA256 // internal : select the built-in code or the library at runtime
+	#else
+		#define CYBOZU_USE_BUILTIN_SHA256 0
+	#endif
+#endif
+// internal : the built-in SHA-256 is compiled if it may be used
+#if defined(CYBOZU_SHA2_DISPATCH_SHA256) || CYBOZU_USE_BUILTIN_SHA256 == 1
+	#define CYBOZU_SHA2_NEED_BUILTIN_SHA256
+#endif
+
 #include <memory.h>
 
 #if CYBOZU_USE_APPLE_COMMONCRYPTO == 1
@@ -53,7 +92,9 @@
 
 namespace cybozu {
 
-class Sha256 {
+namespace sha2_local {
+
+class Sha256Lib {
 	CC_SHA256_CTX ctx_;
 	/*
 		CC_SHA256_Update takes CC_LONG(=uint32_t) as a size,
@@ -61,7 +102,7 @@ class Sha256 {
 	*/
 	static const size_t maxUpdateSize_ = size_t(1) << 30;
 public:
-	Sha256()
+	Sha256Lib()
 	{
 		clear();
 	}
@@ -87,6 +128,8 @@ public:
 		return CC_SHA256_DIGEST_LENGTH;
 	}
 };
+
+} // cybozu::sha2_local
 
 class Sha512 {
 	CC_SHA512_CTX ctx_;
@@ -289,12 +332,10 @@ public:
 	}
 };
 
-} // cybozu::sha2_local
-
-class Sha256 {
-	sha2_local::BCryptHash<32> ctx_;
+class Sha256Lib {
+	BCryptHash<32> ctx_;
 public:
-	Sha256() : ctx_(BCRYPT_SHA256_ALGORITHM) {}
+	Sha256Lib() : ctx_(BCRYPT_SHA256_ALGORITHM) {}
 	void clear() { ctx_.clear(); }
 	void update(const void *buf, size_t bufSize) { ctx_.update(buf, bufSize); }
 	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
@@ -302,6 +343,8 @@ public:
 		return ctx_.digest(md, mdSize, buf, bufSize);
 	}
 };
+
+} // cybozu::sha2_local
 
 class Sha512 {
 	sha2_local::BCryptHash<64> ctx_;
@@ -348,31 +391,76 @@ namespace cybozu {
 #if CYBOZU_USE_OPENSSL_NEW_HASH == 1
 namespace local {
 
+/*
+	the context is created on demand (EVP_MD_CTX_new and EVP_get_digestbyname cost a few hundred clk),
+	so an instance which is not used costs nothing
+*/
 template<size_t MD_SIZE_>
 struct NewHash {
 	static const size_t MD_SIZE = MD_SIZE_;
+	const char *name_;
 	EVP_MD_CTX *mdctx_;
 	const EVP_MD *md_;
 	explicit NewHash(const char *name)
-		: mdctx_(EVP_MD_CTX_new())
-		, md_(EVP_get_digestbyname(name))
+		: name_(name)
+		, mdctx_(0)
+		, md_(0)
 	{
-		if (md_ == 0) {
-			fprintf(stderr, "fatal error NewHash %s\n", name);
+	}
+	NewHash(const NewHash& rhs)
+		: name_(rhs.name_)
+		, mdctx_(0)
+		, md_(rhs.md_)
+	{
+		copyCtx(rhs);
+	}
+	NewHash& operator=(const NewHash& rhs)
+	{
+		if (this != &rhs) {
+			name_ = rhs.name_;
+			md_ = rhs.md_;
+			copyCtx(rhs);
 		}
-		assert(md_);
+		return *this;
 	}
 	~NewHash()
 	{
-		EVP_MD_CTX_free(mdctx_);
+		if (mdctx_) EVP_MD_CTX_free(mdctx_);
+	}
+	// create the context if necessary and initialize it
+	void init()
+	{
+		if (mdctx_ == 0) {
+			md_ = EVP_get_digestbyname(name_);
+			if (md_ == 0) {
+				fprintf(stderr, "fatal error NewHash %s\n", name_);
+			}
+			assert(md_);
+			mdctx_ = EVP_MD_CTX_new();
+		} else {
+			EVP_MD_CTX_reset(mdctx_);
+		}
+		EVP_DigestInit_ex(mdctx_, md_, NULL);
+	}
+	void copyCtx(const NewHash& rhs)
+	{
+		if (rhs.mdctx_ == 0) {
+			if (mdctx_) {
+				EVP_MD_CTX_free(mdctx_);
+				mdctx_ = 0;
+			}
+			return;
+		}
+		if (mdctx_ == 0) mdctx_ = EVP_MD_CTX_new();
+		EVP_MD_CTX_copy_ex(mdctx_, rhs.mdctx_);
 	}
 	void clear()
 	{
-		EVP_MD_CTX_reset(mdctx_);
-		EVP_DigestInit_ex(mdctx_, md_, NULL);
+		if (mdctx_) init(); // otherwise init() is called by the next update/digest
 	}
 	void update(const void *buf, size_t bufSize)
 	{
+		if (mdctx_ == 0) init();
 		EVP_DigestUpdate(mdctx_, buf, bufSize);
 	}
 	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
@@ -389,14 +477,16 @@ struct NewHash {
 } // local
 #endif
 
-class Sha256 {
+namespace sha2_local {
+
+class Sha256Lib {
 #if CYBOZU_USE_OPENSSL_NEW_HASH == 1
 	local::NewHash<32> ctx_;
 #else
 	SHA256_CTX ctx_;
 #endif
 public:
-	Sha256()
+	Sha256Lib()
 #if CYBOZU_USE_OPENSSL_NEW_HASH == 1
 		: ctx_("sha256")
 #endif
@@ -431,6 +521,8 @@ public:
 #endif
 	}
 };
+
+} // cybozu::sha2_local
 
 class Sha512 {
 #if CYBOZU_USE_OPENSSL_NEW_HASH == 1
@@ -477,11 +569,24 @@ public:
 
 } // cybozu
 
-#else
+#endif
+
+#if defined(CYBOZU_SHA2_NEED_BUILTIN_SHA256) || defined(CYBOZU_USE_BUILTIN_SHA512)
 
 #include <cybozu/endian.hpp>
 #include <memory.h>
 #include <assert.h>
+
+#ifdef CYBOZU_SHA_NI
+	#include <immintrin.h>
+	#if defined(_MSC_VER) && !defined(__clang__) // clang on Windows also defines _MSC_VER but needs the target attribute
+		#include <intrin.h> // __cpuidex
+		#define CYBOZU_SHA_NI_TARGET
+	#else
+		#include <cpuid.h> // __cpuid_count
+		#define CYBOZU_SHA_NI_TARGET __attribute__((target("sha,sse4.1")))
+	#endif
+#endif
 
 namespace cybozu {
 
@@ -489,6 +594,34 @@ namespace sha2_local {
 
 template<class T>
 T min_(T x, T y) { return x < y ? x : y;; }
+
+#ifdef CYBOZU_SHA_NI
+inline void cpuidex(int info[4], int leaf, int subleaf)
+{
+#if defined(_MSC_VER) && !defined(__clang__)
+	__cpuidex(info, leaf, subleaf);
+#else
+	__cpuid_count(leaf, subleaf, info[0], info[1], info[2], info[3]);
+#endif
+}
+
+// CPUID.(EAX=7,ECX=0):EBX bit 29 ; a CPU with SHA always has SSSE3/SSE4.1
+inline bool detectShaNi()
+{
+	int info[4];
+	cpuidex(info, 0, 0);
+	if (info[0] < 7) return false;
+	cpuidex(info, 7, 0);
+	return (info[1] & (1 << 29)) != 0;
+}
+
+// cpuid is slow (especially on VMs), so evaluate it once
+inline bool hasShaNi()
+{
+	static const bool v = detectShaNi();
+	return v;
+}
+#endif
 
 inline uint32_t rot32(uint32_t x, int s)
 {
@@ -556,10 +689,9 @@ struct Common {
 	}
 };
 
-} // cybozu::sha2_local
-
-class Sha256 : public sha2_local::Common<Sha256> {
-	friend struct sha2_local::Common<Sha256>;
+#ifdef CYBOZU_SHA2_NEED_BUILTIN_SHA256
+class Sha256Builtin : public Common<Sha256Builtin> {
+	friend struct Common<Sha256Builtin>;
 private:
 	static const size_t blockSize_ = 64;
 	static const size_t hSize_ = 8;
@@ -591,10 +723,89 @@ private:
 		h += ((a | b) & c) | (a & b);
 		s[i7] = h;
 	}
+#ifdef CYBOZU_SHA_NI
+	/*
+		one block by SHA-NI
+		state0 = ABEF, state1 = CDGH (the layout required by sha256rnds2)
+	*/
+	CYBOZU_SHA_NI_TARGET
+	void roundShaNi(const uint8_t *buf)
+	{
+#ifdef __AVX__
+		// sha256* have only the legacy SSE encoding
+		_mm256_zeroupper();
+#endif
+		const __m128i mask = _mm_set_epi64x(0x0c0d0e0f08090a0bLL, 0x0405060700010203LL);
+		const __m128i abcd = _mm_loadu_si128(cybozu::cast<const __m128i*>(h_));
+		const __m128i efgh = _mm_loadu_si128(cybozu::cast<const __m128i*>(h_ + 4));
+		__m128i t = _mm_shuffle_epi32(abcd, 0xb1); // CDAB
+		__m128i state1 = _mm_shuffle_epi32(efgh, 0x1b); // HGFE
+		__m128i state0 = _mm_alignr_epi8(t, state1, 8); // ABEF
+		state1 = _mm_blend_epi16(state1, t, 0xf0); // CDGH
+		const __m128i save0 = state0;
+		const __m128i save1 = state1;
+
+		__m128i msg0 = _mm_shuffle_epi8(_mm_loadu_si128(cybozu::cast<const __m128i*>(buf)), mask);
+		__m128i msg1 = _mm_shuffle_epi8(_mm_loadu_si128(cybozu::cast<const __m128i*>(buf + 16)), mask);
+		__m128i msg2 = _mm_shuffle_epi8(_mm_loadu_si128(cybozu::cast<const __m128i*>(buf + 32)), mask);
+		__m128i msg3 = _mm_shuffle_epi8(_mm_loadu_si128(cybozu::cast<const __m128i*>(buf + 48)), mask);
+		__m128i msg;
+		// 4 rounds with w[4i..4i+3] = m
+#define CYBOZU_SHA256_RNDS(i, m) \
+		msg = _mm_add_epi32(m, _mm_loadu_si128(cybozu::cast<const __m128i*>(k_ + (i) * 4))); \
+		state1 = _mm_sha256rnds2_epu32(state1, state0, msg); \
+		msg = _mm_shuffle_epi32(msg, 0x0e); \
+		state0 = _mm_sha256rnds2_epu32(state0, state1, msg)
+		// m0 = w[g..g+3], m1 = w[g+4..], m2 = w[g+8..], m3 = w[g+12..] -> m0 = w[g+16..g+19]
+#define CYBOZU_SHA256_MSG(m0, m1, m2, m3) \
+		m0 = _mm_sha256msg2_epu32(_mm_add_epi32(_mm_sha256msg1_epu32(m0, m1), _mm_alignr_epi8(m3, m2, 4)), m3)
+
+		CYBOZU_SHA256_RNDS(0, msg0); CYBOZU_SHA256_MSG(msg0, msg1, msg2, msg3);
+		CYBOZU_SHA256_RNDS(1, msg1); CYBOZU_SHA256_MSG(msg1, msg2, msg3, msg0);
+		CYBOZU_SHA256_RNDS(2, msg2); CYBOZU_SHA256_MSG(msg2, msg3, msg0, msg1);
+		CYBOZU_SHA256_RNDS(3, msg3); CYBOZU_SHA256_MSG(msg3, msg0, msg1, msg2);
+		CYBOZU_SHA256_RNDS(4, msg0); CYBOZU_SHA256_MSG(msg0, msg1, msg2, msg3);
+		CYBOZU_SHA256_RNDS(5, msg1); CYBOZU_SHA256_MSG(msg1, msg2, msg3, msg0);
+		CYBOZU_SHA256_RNDS(6, msg2); CYBOZU_SHA256_MSG(msg2, msg3, msg0, msg1);
+		CYBOZU_SHA256_RNDS(7, msg3); CYBOZU_SHA256_MSG(msg3, msg0, msg1, msg2);
+		CYBOZU_SHA256_RNDS(8, msg0); CYBOZU_SHA256_MSG(msg0, msg1, msg2, msg3);
+		CYBOZU_SHA256_RNDS(9, msg1); CYBOZU_SHA256_MSG(msg1, msg2, msg3, msg0);
+		CYBOZU_SHA256_RNDS(10, msg2); CYBOZU_SHA256_MSG(msg2, msg3, msg0, msg1);
+		CYBOZU_SHA256_RNDS(11, msg3); CYBOZU_SHA256_MSG(msg3, msg0, msg1, msg2);
+		CYBOZU_SHA256_RNDS(12, msg0);
+		CYBOZU_SHA256_RNDS(13, msg1);
+		CYBOZU_SHA256_RNDS(14, msg2);
+		CYBOZU_SHA256_RNDS(15, msg3);
+#undef CYBOZU_SHA256_RNDS
+#undef CYBOZU_SHA256_MSG
+
+		state0 = _mm_add_epi32(state0, save0);
+		state1 = _mm_add_epi32(state1, save1);
+		t = _mm_shuffle_epi32(state0, 0x1b); // FEBA
+		state1 = _mm_shuffle_epi32(state1, 0xb1); // DCHG
+		state0 = _mm_blend_epi16(t, state1, 0xf0); // DCBA
+		state1 = _mm_alignr_epi8(state1, t, 8); // HGFE
+		_mm_storeu_si128(cybozu::cast<__m128i*>(h_), state0);
+		_mm_storeu_si128(cybozu::cast<__m128i*>(h_ + 4), state1);
+	}
+#endif
 	/**
 		@param buf [in] buffer(64byte)
 	*/
 	void round(const uint8_t *buf)
+	{
+#ifdef CYBOZU_SHA_NI
+		if (sha2_local::hasShaNi()) {
+			roundShaNi(buf);
+		} else
+#endif
+		{
+			roundSoft(buf);
+		}
+		totalSize_ += blockSize_;
+	}
+	// portable code
+	void roundSoft(const uint8_t *buf)
 	{
 		using namespace sha2_local;
 		uint32_t w[64];
@@ -625,10 +836,9 @@ private:
 		for (int i = 0; i < 8; i++) {
 			h_[i] += s[i];
 		}
-		totalSize_ += blockSize_;
 	}
 public:
-	Sha256()
+	Sha256Builtin()
 	{
 		clear();
 	}
@@ -672,7 +882,11 @@ public:
 		return outByteSize_;
 	}
 };
+#endif // CYBOZU_SHA2_NEED_BUILTIN_SHA256
 
+} // cybozu::sha2_local
+
+#ifdef CYBOZU_USE_BUILTIN_SHA512
 class Sha512 : public sha2_local::Common<Sha512> {
 	friend struct sha2_local::Common<Sha512>;
 private:
@@ -797,12 +1011,53 @@ public:
 		return outByteSize_;
 	}
 };
+#endif // CYBOZU_USE_BUILTIN_SHA512
 
 } // cybozu
 
-#endif
+#endif // defined(CYBOZU_SHA2_NEED_BUILTIN_SHA256) || defined(CYBOZU_USE_BUILTIN_SHA512)
 
 namespace cybozu {
+
+#ifdef CYBOZU_SHA2_DISPATCH_SHA256
+/*
+	the built-in SHA-256 with SHA-NI if the CPU has it, otherwise the library
+	both members are cheap to construct (the context of the library is created on demand)
+*/
+class Sha256 {
+	sha2_local::Sha256Builtin builtin_;
+	sha2_local::Sha256Lib lib_;
+public:
+	void clear()
+	{
+		if (sha2_local::hasShaNi()) {
+			builtin_.clear();
+		} else {
+			lib_.clear();
+		}
+	}
+	void update(const void *buf, size_t bufSize)
+	{
+		if (sha2_local::hasShaNi()) {
+			builtin_.update(buf, bufSize);
+		} else {
+			lib_.update(buf, bufSize);
+		}
+	}
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		if (sha2_local::hasShaNi()) {
+			return builtin_.digest(md, mdSize, buf, bufSize);
+		} else {
+			return lib_.digest(md, mdSize, buf, bufSize);
+		}
+	}
+};
+#elif CYBOZU_USE_BUILTIN_SHA256 == 1
+typedef sha2_local::Sha256Builtin Sha256;
+#else
+typedef sha2_local::Sha256Lib Sha256;
+#endif
 
 namespace sha2_local {
 

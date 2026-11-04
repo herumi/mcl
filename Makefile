@@ -139,6 +139,13 @@ endif
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(BASE_OBJ)
+  # the Fp2 functions of src/base{32,64}.ll (and src/asm/x86-64.S) have sizeof(Fp) fixed to
+  # the MCL_FP_BIT of their generation, recorded as MCL_FP_BIT_LLVM in src/llvm_proto.hpp.
+  # x64 with Xbyak does not use them (fp.cpp checks it by #error where it matters).
+  MCL_FP_BIT_LLVM=$(shell sed -n 's/^\#define MCL_FP_BIT_LLVM //p' src/llvm_proto.hpp)
+  ifneq ($(MCL_FP_BIT),$(MCL_FP_BIT_LLVM))
+    $(warning MCL_FP_BIT=$(MCL_FP_BIT) but src/base{32,64}.ll were generated with MCL_FP_BIT=$(MCL_FP_BIT_LLVM); non-x64 or MCL_USE_XBYAK=0 builds need: make update_all_asm MCL_FP_BIT=$(MCL_FP_BIT) && make header)
+  endif
 endif
 # for debug
 asm: $(BASE_LL)
@@ -192,29 +199,34 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-MCL_MSM_CURVE_BIT?=381
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1) and 384 (BLS12-381, BLS12-377, BN254, ...)
+ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
+  override MCL_MSM=0
+endif
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
     MSM=msm_avx
-    ifeq ($(MCL_MSM_CURVE_BIT),377)
-      CFLAGS+=-DMCL_MSM_BLS12_377
-    endif
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
-$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
-src/$(MSM)_bls12_381.h: src/gen_msm_para.py
-	python3 src/gen_msm_para.py $(MCL_MSM_CURVE_BIT) > $@
+src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py src/gen_glv.py
+	python3 src/gen_msm_para.py > $@
 else
   CFLAGS+=-DMCL_MSM=0
 endif
+# the parameters of the GLV method for G1 (included by src/glv.hpp)
+src/glv_param.hpp: src/gen_glv.py src/primetbl.py
+	python3 src/gen_glv.py > $@
+update_glv_param:
+	python3 src/gen_glv.py > src/glv_param.hpp
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch -n $(BINT_MUL_N)
 src/llvm_proto.hpp: src/gen_llvm_proto.py src/primetbl.py
 	python3 $< -fpbit $(MCL_FP_BIT) > $@
-GEN_BINT_X64_OPT=-curveBit=$(MCL_MSM_CURVE_BIT) -n $(BINT_MUL_N)
+GEN_BINT_X64_OPT=-n $(BINT_MUL_N)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
 	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas $(WIN_API) > $@
@@ -387,6 +399,9 @@ SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
+ifeq ($(MCL_MSM),1)
+  TEST_EXE+=$(EXE_DIR)/msm_test.exe # src/msm_avx.cpp with -DMCL_MSM_TEST (mulEachCurves tests every curve of the AVX-512 MSM)
+endif
 test_ci: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do echo $$i; env LSAN_OPTIONS=verbosity=0:log_threads=1 $$i; done'
 test: $(TEST_EXE)

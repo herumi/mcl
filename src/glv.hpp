@@ -2,6 +2,8 @@
 
 namespace mcl {
 
+template<class Ec> struct GLV1T;
+
 namespace ec {
 
 inline size_t ilog2(size_t n)
@@ -23,7 +25,16 @@ inline size_t estimateBucketSize(size_t n)
 	return log2n - ilog2(log2n);
 }
 
-//	return heuristic backet size which is faster than glvGetTheoreticBucketSize
+/*
+	return heuristic backet size which is faster than glvGetTheoreticBucketSize
+	n : the number of (split) scalars (= 2 * the number of G1 points of BN / BLS12 by GLV)
+	measured on Xeon w9-3495X with BN254 / BLS12-381 G1 (signed digits, 2^(b-1) buckets,
+	batch affine addition for n >= MCL_MSM_BATCH_MIN_N);
+	the batch affine addition makes the bucket addition cheaper, so the bucket reduction (2^b additions per window)
+	is relatively expensive and b is smaller than before for n < 2^16.
+	for n in [2^16, 2^19) b = 13 (2^12 buckets fit in L2) is the best, b = 15 for n in [2^19, 2^20),
+	for n >= 2^20 b = 16 (8 windows for the 128-bit split scalars) is the best
+*/
 inline size_t glvGetBucketSize(size_t n)
 {
 	if (n <= 2) return 2;
@@ -32,9 +43,10 @@ inline size_t glvGetBucketSize(size_t n)
 	if (log2n < tblMin) return 3;
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
-		3, 4, 5, 5, 8, 8, 9, 10, 11, 12, 13, 13, 13, 16, 16, 16, 18, 19, 19, 19, 19, 19
+	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
+		3, 6, 7, 8, 8, 10, 10, 11, 12, 13, 13, 13, 15, 16, 16
 	};
-	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 19;
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
 	size_t ret = tbl[log2n - tblMin];
 	return ret;
 }
@@ -54,94 +66,54 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	return x;
 }
 
-/*
-	split x in [0, r-1] to (a, b) such that x = a + b L, 0 <= a < L, 0 <= b <= L+1
-	a[] : 128 bit
-	b[] : 128 bit
-	x[] : 256 bit
-*/
-inline void optimizedSplitForBLS12_381(Unit *a, Unit *b, const Unit *x)
-{
-	/*
-		z = -0xd201000000010000
-		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-		s=255
-		q = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
-		H = 1<<128
-	*/
-	static const Unit L[] = { MCL_U64_TO_UNIT(0x00000000ffffffff), MCL_U64_TO_UNIT(0xac45a4010001a402) };
-	static const Unit q[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
-	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
-	static const size_t n = 128 / mcl::UnitBitSize;
-	Unit xH[n+1]; // x = xH * (H/2) + xL
-	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-1); // >>127
-	Unit t[n*2];
-	mcl::bint::mulT<n>(t, xH, q);
-	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
-	mcl::bint::mulT<n>(t, b, L); // bL
-	mcl::bint::subT<n*2>(t, x, t); // x - bL
-	Unit d = mcl::bint::subT<n>(a, t, L);
-	if (t[n] - d == 0) {
-		mcl::bint::addT<n>(b, b, one);
-	} else {
-		mcl::bint::copyT<n>(a, t);
-	}
-}
-
-inline void optimizedSplitForBLS12_377(Unit *a, Unit *b, const Unit *x)
-{
-	/*
-		z = -0xd201000000010000
-		L = z^2-1 = 0x452217cc900000010a11800000000000
-		s=254
-		q = (1<<s)//L = 0xecfdeaa5a7f4dc581fdcbb4cabe4060b
-		H = 1<<128
-	*/
-	static const Unit L[] = { MCL_U64_TO_UNIT(0x0a11800000000000), MCL_U64_TO_UNIT(0x452217cc90000001) };
-	static const Unit q[] = { MCL_U64_TO_UNIT(0x1fdcbb4cabe4060b), MCL_U64_TO_UNIT(0xecfdeaa5a7f4dc58) };
-	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
-	static const size_t n = 128 / mcl::UnitBitSize;
-	Unit xH[n+1]; // x = xH * (H/4) + xL
-	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-2); // >>126
-	Unit t[n*2];
-	mcl::bint::mulT<n>(t, xH, q);
-	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
-	mcl::bint::mulT<n>(t, b, L); // bL
-	mcl::bint::subT<n*2>(t, x, t); // x - bL
-	Unit d = mcl::bint::subT<n>(a, t, L);
-	if (d == 0) {
-		mcl::bint::addT<n>(b, b, one);
-	} else {
-		mcl::bint::copyT<n>(a, t);
-	}
-}
-
 #ifndef MCL_GLV_ONLY_FUNC
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
 	// use (1 << glvGetBucketSize(n)) * sizeof(G) bytes stack + alpha
-	// about 18KiB (G1) or 36KiB (G2) for n = 1024
+	// (1 << b) * sizeof(G) bytes with b = glvGetBucketSize(n) <= 8 : about 24KiB (G1) or 48KiB (G2) for n = 1024
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
 
 /*
-	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
-	tbl[v-1] += xVec[i]
-	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
+	Extract b bits from yVec[i] starting at the pos-th bit as a signed digit d:
+	d = v + c where v is the b-bit value and c is the (pos-1)-th bit (the carry from the lower window),
+	and d -= 2^b if the top bit of v is set (= the carry into the upper window),
+	so |d| <= 2^(b-1) and tbl needs tblN = 2^(b-1) entries.
+	(The lower pos bits are represented in [-2^(pos-1), 2^(pos-1)] by the lower windows, so
+	the carry into this window is 1 iff the (pos-1)-th bit is set.)
+	tbl[|d|-1] += sign(d) xVec[i]
+	win (+)= tbl[0] + 2 tbl[1] + 3 tbl[2] + ... + tblN tbl[tblN-1]
+	isTop : the top window has no carry out, so d = v + c in [0, 2^rem] is used as is
+	(rem = the bit size of the window <= b) and the caller passes tblN = 2^rem.
 */
-template<class G>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first)
+namespace local {
+
+// msmSign, msmIdxMask and msmNone are defined in ec.hpp (used by ec::MsmKernel)
+
+/*
+	return (|d| - 1) | (d < 0 ? msmSign : 0), or msmNone if d = 0
+	see mulVecUpdateTable for the signed digit d
+*/
+inline uint32_t getSignedDigit(const Unit *y, size_t yUnitSize, size_t pos, size_t b, bool isTop)
 {
-	for (size_t i = 0; i < tblN; i++) {
-		tbl[i].clear();
+	const size_t full = size_t(1) << b;
+	const Unit mask = Unit(full - 1);
+	const size_t v = size_t(fp::getUnitAt(y, yUnitSize, pos) & mask);
+	const size_t c = pos > 0 ? size_t(fp::getUnitAt(y, yUnitSize, pos - 1) & 1) : 0;
+	if (isTop || v < full / 2) {
+		const size_t d = v + c; // d <= 2^(b-1) (<= 2^rem if isTop)
+		return d ? uint32_t(d - 1) : msmNone;
+	} else {
+		const size_t d = full - v - c; // d <= 2^(b-1)
+		return d ? uint32_t(d - 1) | msmSign : msmNone;
 	}
-	for (size_t i = 0; i < n; i++) {
-		Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, pos) & tblN;
-		if (v) {
-			tbl[v - 1] += xVec[i];
-		}
-	}
+}
+
+// win (+)= tbl[0] + 2 tbl[1] + 3 tbl[2] + ... + tblN tbl[tblN-1]
+template<class G>
+void mulVecReduceTable(G& win, const G *tbl, size_t tblN, bool first)
+{
 	G sum = tbl[tblN - 1];
 	if (first) {
 		win = sum;
@@ -153,15 +125,419 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *y
 		win += sum;
 	}
 }
+
+} // mcl::ec::local
+
+template<class G>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop)
+{
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = local::getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		if (d == local::msmNone) continue;
+		const size_t k = d & local::msmIdxMask;
+		assert(k < tblN);
+		if (d & local::msmSign) {
+			tbl[k] -= xVec[i];
+		} else {
+			tbl[k] += xVec[i];
+		}
+	}
+	local::mulVecReduceTable(win, tbl, tblN, first);
+}
+
+/*
+	batch affine addition for the bucket method (see mulVecUpdateTableBatch)
+*/
+#ifndef MCL_MSM_BATCH_MIN_N
+	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N
+	#define MCL_MSM_BATCH_MIN_N 256
+#endif
+#ifndef MCL_MSM_BATCH_CHUNK
+	// the number of entries folded at once (the work array S has this number of points)
+	#define MCL_MSM_BATCH_CHUNK 8192
+#endif
+#ifndef MCL_MSM_BATCH_SUB
+	// the number of pairs sharing one inversion
+	#define MCL_MSM_BATCH_SUB 512
+#endif
+
+namespace local {
+
+/*
+	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m)
+	where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask] and P(msmNone) = 0
+	base[*] must be affine (z = 1) or zero (z = 0), then R[j] is affine or zero
+	R may overlap base if &R[j] <= &base[ia[j] & msmIdxMask], &base[ib[j] & msmIdxMask] for all j
+	(the inputs of the j-th pair are read before R[j] is written and R[0], R[1], ... are written in this order)
+	work : Fp[3 * MCL_MSM_BATCH_SUB]
+	cost : 5M + 1S + inv/MCL_MSM_BATCH_SUB per pair
+*/
+template<class G>
+void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
+{
+	typedef typename G::Fp F;
+	const size_t SUB = MCL_MSM_BATCH_SUB;
+	F *d = work; // the denominator of lambda, then its inverse
+	F *num = work + SUB; // the numerator of lambda
+	F *prod = work + 2 * SUB;
+	uint8_t st[SUB]; // 0 : R = lambda formula, 1 : R = P(ia), 2 : R = P(ib), 3 : R = 0
+	const F one(1);
+	for (size_t j0 = 0; j0 < m; j0 += SUB) {
+		const size_t mm = (m - j0 < SUB) ? m - j0 : SUB;
+		// classify the pairs and compute d and num
+		for (size_t j = 0; j < mm; j++) {
+			const uint32_t a = ia[j0 + j];
+			const uint32_t bb = ib[j0 + j];
+			if (bb == msmNone || base[bb & msmIdxMask].z.isZero()) {
+				st[j] = 1;
+				d[j] = one;
+				continue;
+			}
+			if (a == msmNone || base[a & msmIdxMask].z.isZero()) {
+				st[j] = 2;
+				d[j] = one;
+				continue;
+			}
+			const G& A = base[a & msmIdxMask];
+			const G& B = base[bb & msmIdxMask];
+			F::sub(d[j], B.x, A.x);
+			F ya, yb;
+			if (a & msmSign) F::neg(ya, A.y); else ya = A.y;
+			if (bb & msmSign) F::neg(yb, B.y); else yb = B.y;
+			if (!d[j].isZero()) {
+				F::sub(num[j], yb, ya);
+				st[j] = 0;
+				continue;
+			}
+			if (ya == yb) {
+				// doubling : lambda = (3x^2 + a) / (2y)
+				F::mul2(d[j], ya);
+				if (d[j].isZero()) {
+					st[j] = 3; // the point of order 2
+					d[j] = one;
+					continue;
+				}
+				F t;
+				F::sqr(t, A.x);
+				F::mul2(num[j], t);
+				num[j] += t;
+				if (G::specialA_ != Zero) num[j] += G::a_;
+				st[j] = 0;
+			} else {
+				st[j] = 3; // A = -B
+				d[j] = one;
+			}
+		}
+		mcl::local::invVecWork<false>(d, d, mm, prod); // d[j] = 1/d[j] (d[j] != 0)
+		// compute R
+		for (size_t j = 0; j < mm; j++) {
+			const uint32_t a = ia[j0 + j];
+			const uint32_t bb = ib[j0 + j];
+			G& r = R[j0 + j];
+			if (st[j] == 0) {
+				const G& A = base[a & msmIdxMask];
+				const G& B = base[bb & msmIdxMask];
+				F lambda, x3, t;
+				F::mul(lambda, num[j], d[j]);
+				F::sqr(x3, lambda);
+				x3 -= A.x;
+				x3 -= B.x; // = lambda^2 - 2 A.x if doubling
+				F::sub(t, A.x, x3);
+				t *= lambda;
+				if (a & msmSign) t += A.y; else t -= A.y; // y3 = lambda (x1 - x3) - y1
+				r.x = x3;
+				r.y = t;
+				r.z = one;
+				continue;
+			}
+			const uint32_t src = (st[j] == 1) ? a : (st[j] == 2) ? bb : msmNone;
+			if (src == msmNone || base[src & msmIdxMask].z.isZero()) {
+				r.clear();
+				continue;
+			}
+			const G& A = base[src & msmIdxMask];
+			if (src & msmSign) {
+				F::neg(r.y, A.y);
+			} else {
+				r.y = A.y;
+			}
+			r.x = A.x;
+			r.z = one;
+		}
+	}
+}
+
+struct MsmPart {
+	uint32_t k; // bucket index
+	uint32_t start; // the position of the first point
+	uint32_t cnt; // the number of points
+};
+
+// tbl (+)= P(i) where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask]
+template<class G>
+void msmAddToBucket(G& tbl, const G *base, uint32_t i)
+{
+	const G& P = base[i & msmIdxMask];
+	if (tbl.isZero()) {
+		tbl = P;
+		if (i & msmSign) G::neg(tbl, tbl);
+	} else if (i & msmSign) {
+		tbl -= P;
+	} else {
+		tbl += P;
+	}
+}
+
+/*
+	the generic kernel (ec::MsmKernel) of the batch affine addition :
+	the layout of a point is G (affine or zero) and the additions are done by addAffineBatch and msmAddToBucket
+*/
+template<class G>
+struct MsmGenericKernel {
+	static void addPairs(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work)
+	{
+		addAffineBatch((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
+	}
+	static void addToBucket(void *tbl, const void *base, uint32_t i)
+	{
+		msmAddToBucket(*(G*)tbl, (const G*)base, i);
+	}
+	static void set(ec::MsmKernel& kn)
+	{
+		kn.pointSize = sizeof(G);
+		kn.workSize = sizeof(typename G::Fp) * 3 * MCL_MSM_BATCH_SUB;
+		kn.cvtBase = 0;
+		kn.addPairs = addPairs;
+		kn.addToBucket = addToBucket;
+		kn.getBucketSize = 0;
+	}
+};
+
+// work buffers for mulVecUpdateTableBatch
+template<class G>
+struct MsmBatchWork {
+	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
+	ec::MsmKernel kn; // the kernel of the batch affine addition
+	uint32_t *D; // [n] (bucket | sign) of each scalar
+	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
+	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
+	uint32_t *ia; // [CHUNK] the pairs of the current level
+	uint32_t *ib; // [CHUNK]
+	MsmPart *part[2]; // [CHUNK + 1] the parts (a bucket in the chunk) of the current and next level
+	void *S; // [CHUNK * kn.pointSize] the work array of the points (64-byte aligned)
+	void *work; // [kn.workSize] the work area of kn.addPairs (64-byte aligned)
+	void *base; // [n * kn.pointSize] xVec converted by kn.cvtBase (0 if kn.cvtBase == 0)
+	void *buf_;
+	MsmBatchWork() : buf_(0) {}
+	~MsmBatchWork() { if (buf_) free(buf_); }
+	// kernel : the SIMD kernel (0 : the generic one)
+	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel)
+	{
+		if (n >= msmIdxMask) return false;
+		if (kernel) {
+			kn = *kernel;
+		} else {
+			MsmGenericKernel<G>::set(kn);
+		}
+		const size_t align = 64;
+		const size_t sSize = (kn.pointSize * CHUNK + align - 1) / align * align;
+		const size_t wSize = (kn.workSize + align - 1) / align * align;
+		const size_t bSize = kn.cvtBase ? (kn.pointSize * n + align - 1) / align * align : 0;
+		size_t size = align + sSize + wSize + bSize;
+		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * CHUNK) + sizeof(MsmPart) * 2 * (CHUNK + 1);
+		buf_ = malloc(size);
+		if (buf_ == 0) return false;
+		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
+		S = p; p += sSize;
+		work = p; p += wSize;
+		base = kn.cvtBase ? p : 0; p += bSize;
+		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
+		ia = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		ib = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (CHUNK + 1);
+		part[1] = (MsmPart*)p;
+		return true;
+	}
+};
+
+// the batch affine addition is available only for EcT (not for GroupMtoA)
+template<class G>
+struct MsmBatch {
+	static const bool enabled = false;
+	struct Work {
+		ec::MsmKernel kn;
+		void *base;
+		bool init(size_t, size_t, const ec::MsmKernel *) { return false; }
+	};
+	static const ec::MsmKernel* getKernel() { return 0; }
+};
+template<class Fp>
+struct MsmBatch<EcT<Fp> > {
+	static const bool enabled = true;
+	typedef MsmBatchWork<EcT<Fp> > Work;
+	static const ec::MsmKernel* getKernel() { return EcT<Fp>::msmKernel; }
+};
+
+} // mcl::ec::local
+
+/*
+	the batch affine version of mulVecUpdateTable
+	xVec[i] must be affine (z = 1) or zero
+	1. D[i] = (bucket, sign) of the digit of yVec[i], off[k] = the offset of the bucket k (counting sort)
+	2. idx[off[k] ...] = the indexes of the scalars whose bucket is k (with the sign bit)
+	3. for each chunk of CHUNK entries of idx : fold the points of each bucket by a binary tree
+	   level 0 : pairs of xVec[idx[]] -> S, level >= 1 : pairs of S -> S (in place),
+	   a bucket with one point is added to tbl[k] (a bucket may be split by the chunk boundary)
+	   all the additions of a level are done by addAffineBatch (sharing one inversion per MCL_MSM_BATCH_SUB pairs)
+	4. win (+)= tbl[0] + 2 tbl[1] + ... (tbl[k] is affine or zero, so addJacobi uses the Q.z = 1 formula)
+	The number of additions is the same as mulVecUpdateTable (n - the number of non-empty buckets)
+	and the batches do not degenerate even if all scalars are equal.
+	base : xVec in the layout of the kernel wk.kn (xVec itself for the generic kernel)
+*/
+template<class G>
+void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
+{
+	using namespace local;
+	const size_t CHUNK = MsmBatchWork<G>::CHUNK;
+	const ec::MsmKernel& kn = wk.kn;
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	uint32_t *off = wk.off;
+	for (size_t k = 0; k <= tblN; k++) off[k] = 0;
+	// off[k + 1] = the number of the scalars in the bucket k
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		wk.D[i] = d;
+		if (d == msmNone) continue;
+		const size_t k = d & msmIdxMask;
+		assert(k < tblN);
+		off[k + 1]++;
+	}
+	for (size_t k = 0; k < tblN; k++) off[k + 1] += off[k];
+	const size_t total = off[tblN];
+	// scatter : idx[off[k] + j] = the j-th scalar of the bucket k
+	// use off[k] as the write position, then restore it
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = wk.D[i];
+		if (d == msmNone) continue;
+		const size_t k = d & msmIdxMask;
+		wk.idx[off[k]++] = uint32_t(i) | (d & msmSign);
+	}
+	for (size_t k = tblN; k > 0; k--) off[k] = off[k - 1];
+	off[0] = 0;
+	// fold each chunk
+	size_t k = 0; // the current bucket
+	for (size_t e0 = 0; e0 < total; e0 += CHUNK) {
+		const size_t e1 = (total - e0 < CHUNK) ? total : e0 + CHUNK;
+		// level 0 : the parts of this chunk are read from xVec via idx and written to S
+		MsmPart *cur = wk.part[0];
+		size_t partN = 0;
+		size_t m = 0; // the number of pairs
+		size_t outPos = 0;
+		while (k < tblN && off[k] < e1) {
+			const size_t start = off[k] > e0 ? off[k] : e0;
+			const size_t end = off[k + 1] < e1 ? off[k + 1] : e1;
+			if (end > start) {
+				const size_t cnt = end - start;
+				if (cnt == 1) {
+					kn.addToBucket(&tbl[k], base, wk.idx[start]);
+				} else {
+					for (size_t j = 0; j + 1 < cnt; j += 2) {
+						wk.ia[m] = wk.idx[start + j];
+						wk.ib[m] = wk.idx[start + j + 1];
+						m++;
+					}
+					if (cnt & 1) {
+						wk.ia[m] = wk.idx[end - 1];
+						wk.ib[m] = msmNone;
+						m++;
+					}
+					cur[partN].k = uint32_t(k);
+					cur[partN].start = uint32_t(outPos);
+					cur[partN].cnt = uint32_t((cnt + 1) / 2);
+					partN++;
+					outPos += (cnt + 1) / 2;
+				}
+			}
+			if (off[k + 1] <= e1) {
+				k++;
+			} else {
+				break;
+			}
+		}
+		if (m == 0) continue;
+		kn.addPairs(wk.S, base, wk.ia, wk.ib, m, wk.work);
+		// level >= 1 : fold S in place
+		MsmPart *nxt = wk.part[1];
+		while (partN > 0) {
+			size_t nxtN = 0;
+			m = 0;
+			outPos = 0;
+			for (size_t p = 0; p < partN; p++) {
+				const size_t cnt = cur[p].cnt;
+				const size_t start = cur[p].start;
+				if (cnt == 1) {
+					kn.addToBucket(&tbl[cur[p].k], wk.S, uint32_t(start));
+					continue;
+				}
+				for (size_t j = 0; j + 1 < cnt; j += 2) {
+					wk.ia[m] = uint32_t(start + j);
+					wk.ib[m] = uint32_t(start + j + 1);
+					m++;
+				}
+				if (cnt & 1) {
+					wk.ia[m] = uint32_t(start + cnt - 1);
+					wk.ib[m] = msmNone;
+					m++;
+				}
+				nxt[nxtN].k = cur[p].k;
+				nxt[nxtN].start = uint32_t(outPos);
+				nxt[nxtN].cnt = uint32_t((cnt + 1) / 2);
+				nxtN++;
+				outPos += (cnt + 1) / 2;
+			}
+			if (m > 0) kn.addPairs(wk.S, wk.S, wk.ia, wk.ib, m, wk.work);
+			MsmPart *t = cur; cur = nxt; nxt = t;
+			partN = nxtN;
+		}
+	}
+	local::mulVecReduceTable(win, tbl, tblN, first);
+}
+
+namespace local {
+
+template<class G>
+struct mulVecUpdateTableBatchT {
+	template<class W>
+	static void call(G&, G *, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
+};
+template<class Fp>
+struct mulVecUpdateTableBatchT<EcT<Fp> > {
+	typedef EcT<Fp> G;
+	static void call(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
+	{
+		mulVecUpdateTableBatch(win, tbl, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
+	}
+};
+
+} // mcl::ec::local
+
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
 	return numbers of done, which may be smaller than n if malloc fails
 	@note xVec may be normlized
 	fast for n >= 256
+	maxBitSize : the max bit size of yVec[i] (yUnitSize * UnitBitSize if 0)
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0)
 {
 	if (n == 0) {
 		z.clear();
@@ -171,16 +547,22 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		G::mulArray(z, xVec[0], yVec, yUnitSize);
 		return 1;
 	}
+	if (maxBitSize == 0) maxBitSize = sizeof(Unit) * yUnitSize * 8;
 
-	size_t tblN;
+	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
 	G *tbl = 0;
+	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own window size table
+	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
+	if (b == 0 && kernel && kernel->getBucketSize && local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N) {
+		b = kernel->getBucketSize(n);
+	}
 
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 		if (b == 0) b = glvGetBucketSize(n);
-		tblN = (1 << b) - 1;
+		tblN = size_t(1) << b;
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
 			tbl = tbl_;
@@ -191,24 +573,40 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
 	if (b == 0) b = glvGetBucketSize(n);
-	tblN = (1 << b) - 1;
+	tblN = size_t(1) << b;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
 #ifndef MCL_DONT_USE_MALLOC
 main:
 #endif
-	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = (maxBitSize + b-1) / b;
+	const size_t rem = maxBitSize - b * (winN-1); // the bit size of the top window in [1, b]
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1), n, true);
+	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
+	typename local::MsmBatch<G>::Work wk;
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N && wk.init(n, tblN, kernel);
+	const void *base = xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
+	if (useBatch && wk.base) {
+		wk.kn.cvtBase(wk.base, xVec, n);
+		base = wk.base;
+	}
+	if (useBatch) {
+		local::mulVecUpdateTableBatchT<G>::call(z, tbl, size_t(1) << rem, b, base, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
+	} else {
+		mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
+	}
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < b; i++) {
 			G::dbl(z, z);
 		}
-		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false);
+		if (useBatch) {
+			local::mulVecUpdateTableBatchT<G>::call(z, tbl, tblN / 2, b, base, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
+		} else {
+			mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
+		}
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
@@ -216,19 +614,29 @@ main:
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0)
 {
-	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize, maxBitSize);
 	if (done == n) return;
 	do {
 		xVec += done;
 		yVec += next * done;
 		n -= done;
 		G t;
-		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize, maxBitSize);
 		z += t;
 	} while (done < n);
 }
+
+namespace local {
+
+// the fixed-width split of GLV1T (0 if not available), see GLV1T::splitRaw
+typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
+inline SplitRawFunc getSplitRaw(const void *) { return 0; }
+template<class Ec>
+SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
+
+} // mcl::ec::local
 
 // for n >= 128
 template<class GLV, class G>
@@ -256,8 +664,29 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
 		}
 	}
+	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
+	// the fixed-width split (no mpz) if available
+	const local::SplitRawFunc splitRaw = (splitN == 2) ? local::getSplitRaw((const GLV*)0) : 0;
+	const size_t rawN = 128 / UnitBitSize; // the size of a, b of splitRaw
+	assert(next >= rawN);
 	for (size_t i = 0; i < n; i++) {
 		getUnitAt(y, yVec, i);
+		if (splitRaw) {
+			Unit *ya = &yp[i * next];
+			Unit *yb = &yp[(n + i) * next];
+			const uint32_t neg = splitRaw(ya, yb, y);
+			for (size_t k = rawN; k < next; k++) {
+				ya[k] = 0;
+				yb[k] = 0;
+			}
+			if (neg & 1) G::neg(tbl[i], tbl[i]);
+			if (neg & 2) G::neg(tbl[n + i], tbl[n + i]);
+			size_t bitSize = fp::getBitSize(ya, rawN);
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
+			bitSize = fp::getBitSize(yb, rawN);
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
+			continue;
+		}
 		GLV::split(u, y);
 		for (size_t j = 0; j < splitN; j++) {
 			size_t idx = j * n + i;
@@ -268,9 +697,16 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			bool b;
 			mcl::gmp::getArray(&b, &yp[idx * next], next, u[j]);
 			assert(b); (void)b;
+			size_t bitSize = fp::getBitSize(&yp[idx * next], next);
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN, false, bucket);
+	if (maxBitSize == 0) {
+		z.clear();
+	} else {
+		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
+		mulVecLong(z, tbl, yp, yUnitSize, next, n * splitN, bucket, false, maxBitSize);
+	}
 	free(tbl);
 	return true;
 }
@@ -442,6 +878,8 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime 
 
 #ifndef MCL_GLV_ONLY_FUNC
 
+#include "glv_param.hpp"
+
 // r = the order of Ec
 template<class Ec>
 struct GLV1T {
@@ -453,7 +891,23 @@ struct GLV1T {
 	static mpz_class v0, v1;
 	static mpz_class B[2][2];
 	static bool isBLS12;
-	static void (*optimizedSplit)(Unit *a, Unit *b, const Unit *x); // for BLS12-381/377
+	/*
+		the fixed-width split without mpz (0 if not available, then split() uses mpz)
+		x = a + b lambda mod r, |a|, |b| < 2^128 (a, b : rawN Unit), return the sign bits (bit0 : a < 0, bit1 : b < 0)
+		x : the lower 256 bits of the scalar (x < r < 2^256)
+	*/
+	typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
+	static SplitRawFunc splitRaw;
+	static const size_t rawN = 128 / UnitBitSize;
+	// the parameters of splitRawTbl (see src/glv_param.hpp)
+	static const size_t xn = 256 / UnitBitSize; // the size of x of splitRaw
+	static const size_t bn = 192 / UnitBitSize; // the size of BU
+	static Unit v0U[xn];
+	static Unit v1U[xn];
+	static Unit BU[2][2][bn]; // |B[i][j]| < 2^(128 + UnitBitSize) : BU[i][j][rawN] is the top Unit, BU[i][j][k] = 0 for k > rawN
+	static uint32_t Bneg; // the bit (i * 2 + j) is set if B[i][j] < 0
+	static Unit LU[rawN]; // L = z^2 - 1 for BLS12
+	static Unit qU[rawN]; // floor(2^rBitSize / L) for BLS12
 public:
 #ifndef CYBOZU_DONT_USE_STRING
 	static void dump(const mpz_class& x)
@@ -487,15 +941,16 @@ public:
 		const fp::Op& op = Fr::getOp();
 		assert(bint::cmpLtN(_x, op.p, op.N)); // _x < r
 		bool ok;
-		if (optimizedSplit) {
-			static const size_t n = 128 / mcl::UnitBitSize;
-			Unit a[n], b[n];
-			optimizedSplit(a, b, _x);
-			gmp::setArray(&ok, u[0], a, n);
+		if (splitRaw) {
+			Unit a[rawN], b[rawN];
+			const uint32_t neg = splitRaw(a, b, _x);
+			gmp::setArray(&ok, u[0], a, rawN);
 			assert(ok);
-			gmp::setArray(&ok, u[1], b, n);
+			gmp::setArray(&ok, u[1], b, rawN);
 			assert(ok);
 			(void)ok;
+			if (neg & 1) u[0] = -u[0];
+			if (neg & 2) u[1] = -u[1];
 			return;
 		}
 		mpz_class x;
@@ -517,28 +972,186 @@ public:
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
 	/*
-		init() is defined in bn.hpp
+		the fixed-width version of split for BLS12 in glv1ParamBLS12Tbl
+		x = a + b L, 0 <= a < L, 0 <= b <= L+1 (L = z^2-1, r = L^2 + L + 1)
+		b = ((x >> (rBitSize - 128)) q) >> 128 with q = floor(2^rBitSize / L), a = x - bL
+		b <= x/L so a >= 0, and a < 2L is verified in src/gen_glv.py, so a -= L, b += 1 once if a >= L
 	*/
-	static void initForSecp256k1()
+	static uint32_t splitRawBLS12(Unit *a, Unit *b, const Unit *x)
 	{
-		bool b = Fp::squareRoot(rw, -3);
+		const Unit *L = LU;
+		Unit xH[rawN]; // x >> (rBitSize - 128) < 2^128 because x < r < 2^rBitSize
+		shrRaw(xH, x, rBitSize - 128);
+		Unit t[rawN * 2];
+		bint::mulT<rawN>(t, xH, qU);
+		bint::copyT<rawN>(b, t + rawN); // (xH q) >> 128
+		bint::mulT<rawN>(t, b, L); // bL
+		bint::subT<rawN * 2>(t, x, t); // x - bL < 2L (may be 129 bits)
+		Unit d = bint::subT<rawN>(a, t, L);
+		if (t[rawN] - d == 0) { // x - bL >= L
+			Unit one[rawN];
+			bint::clearT<rawN>(one);
+			one[0] = 1;
+			bint::addT<rawN>(b, b, one);
+		} else {
+			bint::copyT<rawN>(a, t);
+		}
+		return 0;
+	}
+	// y[rawN] = (x >> s) mod 2^128 ; x must have (s / UnitBitSize) + rawN + 1 Unit
+	static void shrRaw(Unit *y, const Unit *x, size_t s)
+	{
+		const size_t q = s / UnitBitSize;
+		const size_t rem = s % UnitBitSize;
+		if (rem == 0) {
+			bint::copyT<rawN>(y, x + q);
+		} else {
+			Unit t[rawN + 1];
+			bint::shrN(t, x + q, rem, rawN + 1);
+			bint::copyT<rawN>(y, t);
+		}
+	}
+	// y[rawN] = |x[xn]| (x is two's complement and |x| < 2^128), return 1 if x < 0
+	static uint32_t absRaw(Unit *y, Unit *x)
+	{
+		const uint32_t neg = uint32_t(x[xn - 1] >> (UnitBitSize - 1));
+		if (neg) {
+			Unit zero[xn];
+			bint::clearT<xn>(zero);
+			bint::subT<xn>(x, zero, x);
+		}
+		bint::copyT<rawN>(y, x);
+		for (size_t i = rawN; i < xn; i++) {
+			assert(x[i] == 0);
+			(void)x;
+		}
+		return neg;
+	}
+	/*
+		the fixed-width version of split for BN and secp256k1 in glv1ParamBNTbl
+		t = (x v0 + 2^(rBitSize-1)) >> rBitSize, b0 = (x v1 + 2^(rBitSize-1)) >> rBitSize (rounding, rBitSize = 256 + 64)
+		a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11) (mod 2^256)
+		|a|, |b| < 2^128 is verified in src/gen_glv.py (the intermediate values may wrap mod 2^256)
+	*/
+	static uint32_t splitRawTbl(Unit *a, Unit *b, const Unit *x)
+	{
+		Unit t[rawN], b0[rawN];
+		{
+			Unit z[xn * 2];
+			bint::mulT<xn>(z, x, v0U);
+			roundShrRaw(t, z, rBitSize);
+			bint::mulT<xn>(z, x, v1U);
+			roundShrRaw(b0, z, rBitSize);
+		}
+		Unit p0[xn], p1[xn], acc[xn];
+		// a = x - (B00 t + B10 b0)
+		mulB(p0, t, BU[0][0]);
+		mulB(p1, b0, BU[1][0]);
+		bint::copyT<xn>(acc, x);
+		if (Bneg & 1) bint::addT<xn>(acc, acc, p0); else bint::subT<xn>(acc, acc, p0);
+		if (Bneg & 4) bint::addT<xn>(acc, acc, p1); else bint::subT<xn>(acc, acc, p1);
+		uint32_t neg = absRaw(a, acc);
+		// b = -(B01 t + B11 b0)
+		mulB(p0, t, BU[0][1]);
+		mulB(p1, b0, BU[1][1]);
+		bint::clearT<xn>(acc);
+		if (Bneg & 2) bint::addT<xn>(acc, acc, p0); else bint::subT<xn>(acc, acc, p0);
+		if (Bneg & 8) bint::addT<xn>(acc, acc, p1); else bint::subT<xn>(acc, acc, p1);
+		neg |= absRaw(b, acc) << 1;
+		return neg;
+	}
+	// y[xn] = (t[rawN] * B) mod 2^256 where B = B[rawN] 2^128 + B[0..rawN)
+	static void mulB(Unit *y, const Unit *t, const Unit *B)
+	{
+		bint::mulT<rawN>(y, t, B);
+		const Unit top = B[rawN];
+		if (top) {
+			Unit q[rawN + 1];
+			bint::mulUnitT<rawN>(q, t, top);
+			bint::addT<rawN>(y + rawN, y + rawN, q);
+		}
+	}
+	// y[rawN] = ((x[xn * 2] + 2^(s-1)) >> s) mod 2^128 ; x is broken
+	static void roundShrRaw(Unit *y, Unit *x, size_t s)
+	{
+		const size_t q = (s - 1) / UnitBitSize;
+		const Unit half = Unit(1) << ((s - 1) % UnitBitSize);
+		assert(q < xn * 2);
+		bint::addUnit(x + q, xn * 2 - q, half);
+		shrRaw(y, x, s);
+	}
+	// Unit y[yn] = uint64_t x[xn]
+	static void cvtU64ToUnit(Unit *y, size_t yn, const uint64_t *x, size_t xn)
+	{
+		const size_t m = 64 / UnitBitSize;
+		assert(yn == xn * m);
+		(void)yn;
+		for (size_t i = 0; i < xn; i++) {
+			for (size_t j = 0; j < m; j++) {
+				y[i * m + j] = Unit(x[i] >> (j * UnitBitSize));
+			}
+		}
+	}
+	static void setMpz(mpz_class& z, const uint64_t *x, size_t xn, bool neg)
+	{
+		const size_t m = 64 / UnitBitSize;
+		Unit u[4 * m];
+		assert(xn <= 4);
+		cvtU64ToUnit(u, xn * m, x, xn);
+		bool b;
+		gmp::setArray(&b, z, u, xn * m);
 		assert(b);
 		(void)b;
-		rw = -(rw + 1) / 2;
-		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
-		gmp::setStr(&b, B[0][0], "0x3086d221a7d46bcde86c90e49284eb15");
-		assert(b); (void)b;
-		gmp::setStr(&b, B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");
-		assert(b); (void)b;
-		gmp::setStr(&b, B[1][0], "0x114ca50f7a8e2f3f657c1108d9d44cfd8");
-		assert(b); (void)b;
-		B[1][1] = B[0][0];
-		const mpz_class& r = Fr::getOp().mp;
-		v0 = ((B[1][1]) << rBitSize) / r;
-		v1 = ((-B[0][1]) << rBitSize) / r;
-		isBLS12 = false;
-		optimizedSplit = 0;
+		if (neg) z = -z;
+	}
+	/*
+		set the parameters from glv1ParamBNTbl / glv1ParamBLS12Tbl (generated by src/gen_glv.py)
+		return false if not found
+	*/
+	static bool useParamTbl(int curveType)
+	{
+		if (curveType < 0) return false;
+		if (Fr::getOp().bitSize > 256) return false;
+		bool b;
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(glv1ParamBNTbl); i++) {
+			const GLV1ParamBN& prm = glv1ParamBNTbl[i];
+			if (prm.curveType != curveType) continue;
+			rw.setStr(&b, prm.rw, 16);
+			if (!b) return false;
+			isBLS12 = false;
+			rBitSize = prm.shift;
+			setMpz(v0, prm.v0, 4, false);
+			setMpz(v1, prm.v1, 4, false);
+			for (int j = 0; j < 2; j++) {
+				for (int k = 0; k < 2; k++) {
+					setMpz(B[j][k], prm.B[j][k], 3, (prm.Bneg & (1 << (j * 2 + k))) != 0);
+					cvtU64ToUnit(BU[j][k], bn, prm.B[j][k], 3);
+					for (size_t m = rawN + 1; m < bn; m++) {
+						assert(BU[j][k][m] == 0);
+						(void)m;
+					}
+				}
+			}
+			cvtU64ToUnit(v0U, xn, prm.v0, 4);
+			cvtU64ToUnit(v1U, xn, prm.v1, 4);
+			Bneg = prm.Bneg;
+			splitRaw = splitRawTbl;
+			return true;
+		}
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(glv1ParamBLS12Tbl); i++) {
+			const GLV1ParamBLS12& prm = glv1ParamBLS12Tbl[i];
+			if (prm.curveType != curveType) continue;
+			rw.setStr(&b, prm.rw, 16);
+			if (!b) return false;
+			isBLS12 = true;
+			rBitSize = prm.rBitSize;
+			setMpz(B[0][0], prm.L, 2, false); // for dump
+			cvtU64ToUnit(LU, rawN, prm.L, 2);
+			cvtU64ToUnit(qU, rawN, prm.q, 2);
+			splitRaw = splitRawBLS12;
+			return true;
+		}
+		return false;
 	}
 };
 
@@ -549,61 +1162,24 @@ template<class Ec> mpz_class GLV1T<Ec>::v0;
 template<class Ec> mpz_class GLV1T<Ec>::v1;
 template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
 template<class Ec> bool GLV1T<Ec>::isBLS12;
-template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(Unit *a, Unit *b, const Unit *x);
+template<class Ec> typename GLV1T<Ec>::SplitRawFunc GLV1T<Ec>::splitRaw;
+template<class Ec> Unit GLV1T<Ec>::v0U[GLV1T<Ec>::xn];
+template<class Ec> Unit GLV1T<Ec>::v1U[GLV1T<Ec>::xn];
+template<class Ec> Unit GLV1T<Ec>::BU[2][2][GLV1T<Ec>::bn];
+template<class Ec> uint32_t GLV1T<Ec>::Bneg;
+template<class Ec> Unit GLV1T<Ec>::LU[GLV1T<Ec>::rawN];
+template<class Ec> Unit GLV1T<Ec>::qU[GLV1T<Ec>::rawN];
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
 */
 struct GLV1 : GLV1T<G1> {
-	static bool usePrecomputedTable(int curveType)
-	{
-		if (curveType < 0) return false;
-		const struct Tbl {
-			int curveType;
-			const char *rw;
-			size_t rBitSize;
-			const char *v0, *v1;
-			const char *B[2][2];
-		} tbl[] = {
-			{
-				MCL_BN254,
-				"49b36240000000024909000000000006cd80000000000007",
-				256,
-				"2a01fab7e04a017b9c0eb31ff36bf3357",
-				"37937ca688a6b4904",
-				{
-					{
-						"61818000000000028500000000000004",
-						"8100000000000001",
-					},
-					{
-						"8100000000000001",
-						"-61818000000000020400000000000003",
-					},
-				},
-			},
-		};
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			if (tbl[i].curveType != curveType) continue;
-			bool b;
-			rw.setStr(&b, tbl[i].rw, 16); if (!b) continue;
-			rBitSize = tbl[i].rBitSize;
-			gmp::setStr(&b, v0, tbl[i].v0, 16); if (!b) continue;
-			gmp::setStr(&b, v1, tbl[i].v1, 16); if (!b) continue;
-			gmp::setStr(&b, B[0][0], tbl[i].B[0][0], 16); if (!b) continue;
-			gmp::setStr(&b, B[0][1], tbl[i].B[0][1], 16); if (!b) continue;
-			gmp::setStr(&b, B[1][0], tbl[i].B[1][0], 16); if (!b) continue;
-			gmp::setStr(&b, B[1][1], tbl[i].B[1][1], 16); if (!b) continue;
-			return true;
-		}
-		return false;
-	}
 	static void init(const mpz_class& z, bool isBLS12, int curveType)
 	{
 		GLV1::isBLS12 = isBLS12;
-		optimizedSplit = 0;
-		if (usePrecomputedTable(curveType)) return;
+		splitRaw = 0;
+		if (useParamTbl(curveType)) return;
 		bool b = Fp::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
@@ -620,11 +1196,6 @@ struct GLV1 : GLV1T<G1> {
 			const mpz_class& r = Fr::getOp().mp;
 			B[0][0] = z * z - 1; // L
 			v0 = (B[0][0] << rBitSize) / r;
-			if (curveType == BLS12_381.curveType) {
-				optimizedSplit = ec::optimizedSplitForBLS12_381;
-			} else if (curveType == BLS12_377.curveType) {
-				optimizedSplit = ec::optimizedSplitForBLS12_377;
-			}
 		} else {
 			/*
 				BN

@@ -41,7 +41,7 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 	const Fp y(para.gy);
 	Ec P(x, y);
 	P += P;
-	const int N = 100;
+	const int N = 300;
 	Ec xVec[N];
 	Zn yVec[N];
 	Ec Q1, Q2;
@@ -51,7 +51,13 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mul(xVec[i], P, i + 3);
 		yVec[i].setByCSPRNG(rg);
 	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33, N };
+	xVec[7].clear();
+	xVec[N-1].clear();
+	yVec[1] = 0;
+	yVec[2] = 1;
+	yVec[3] = -1;
+	// n >= 128 (2n >= MCL_MSM_BATCH_MIN_N) uses the batch affine addition (the AVX-512 kernel if available)
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33, 100, 127, 128, 129, 255, 256, 257, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		CYBOZU_TEST_ASSERT(n <= N);
@@ -59,6 +65,17 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
+		{
+			// mulEach (mulEachOpti if available) : xVec2[i] = xVec[i] * yVec[i]
+			Ec xVec2[N];
+			for (size_t j = 0; j < n; j++) xVec2[j] = xVec[j];
+			Ec::mulEach(xVec2, yVec, n);
+			for (size_t j = 0; j < n; j++) {
+				Ec T;
+				Ec::mul(T, xVec[j], yVec[j]);
+				CYBOZU_TEST_EQUAL(xVec2[j], T);
+			}
+		}
 		{
 			// mulVecConstRef does not modify xVec
 			Ec xVec2[N];
@@ -605,6 +622,35 @@ struct Test {
 		}
 		Fp::setIoMode(mcl::IoAuto);
 	}
+	// mul (the GLV method on secp256k1) and mulGeneric must agree for the edge scalars of the GLV split
+	void glv() const
+	{
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P(x, y);
+		const mpz_class& r = Zn::getOp().mp;
+		const size_t bitSize = Zn::getBitSize();
+		cybozu::XorShift rg;
+		Ec P1, P2;
+		for (size_t k = 0; k < bitSize; k++) {
+			const mpz_class pk = mpz_class(1) << k;
+			const mpz_class tbl[] = { pk, r - pk, (r - 1) >> k, pk - 1 };
+			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+				Zn s;
+				s.setMpz(tbl[j]);
+				Ec::mulGeneric(P1, P, s.getMpz());
+				Ec::mul(P2, P, s);
+				CYBOZU_TEST_EQUAL(P1, P2);
+			}
+		}
+		for (int i = 0; i < 100; i++) {
+			Zn s;
+			s.setByCSPRNG(rg);
+			Ec::mulGeneric(P1, P, s.getMpz());
+			Ec::mul(P2, P, s);
+			CYBOZU_TEST_EQUAL(P1, P2);
+		}
+	}
 	void mulCT() const
 	{
 		Fp x(para.gx);
@@ -731,6 +777,7 @@ mul 499.00usec
 */
 	void run() const
 	{
+		mulEach();
 		mulVecTest(para, ecMode);
 		equalOrMinusTest();
 		normalizeVecTest();
@@ -744,9 +791,34 @@ mul 499.00usec
 		str();
 		ioMode();
 		mulCT();
+		glv();
 		compare();
 		addCT();
 		ProjJacobi();
+	}
+	void mulEach() const
+	{
+		const size_t n = 33;
+		Ec P(Fp(para.gx), Fp(para.gy));
+		Ec points[n], expected[n], actual[n];
+		Zn scalars[n];
+		const int scalarTbl[] = { 17, 0, 1, -1, -2 };
+		for (size_t i = 0; i < n; i++) {
+			Ec::mul(points[i], P, i + 1);
+			if (i == 7) points[i].clear();
+			scalars[i] = scalarTbl[i % CYBOZU_NUM_OF_ARRAY(scalarTbl)];
+			Ec::mul(expected[i], points[i], scalars[i]);
+		}
+		const size_t sizes[] = { 15, 16, 17, 31, 32, 33 };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(sizes); i++) {
+			for (size_t j = 0; j < n; j++) actual[j] = points[j];
+			Ec::mulEach(actual, scalars, sizes[i]);
+			for (size_t j = 0; j < sizes[i]; j++) {
+				CYBOZU_TEST_EQUAL(actual[j], expected[j]);
+				CYBOZU_TEST_ASSERT(actual[j].isValid());
+			}
+			for (size_t j = sizes[i]; j < n; j++) CYBOZU_TEST_EQUAL(actual[j], points[j]);
+		}
 	}
 private:
 	Test(const Test&);

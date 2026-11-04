@@ -11,7 +11,7 @@
 	#pragma init_seg(lib)
 #endif
 #define MCL_DLL_EXPORT
-#include <mcl/bls12_381.hpp>
+#include <mcl/bn.hpp>
 #include <stdint.h>
 #include "avx512.hpp"
 #include "msm.hpp"
@@ -30,49 +30,78 @@
 #endif
 #endif
 
-//#define MCL_MSM_BLS12_377
-#define USE_ASM
-
-extern "C" {
-
-void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
-void mcl_c5_vaddPreA(VecA *, const VecA *, const VecA *);
-
-void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
-
-void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsub(Vec *, const Vec *, const Vec *);
-void mcl_c5_vmul(Vec *, const Vec *, const Vec *);
-void mcl_c5_vsqr(Vec *, const Vec *);
-void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
-void mcl_c5_vsubA(VecA *, const VecA *, const VecA *);
-void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
-
-}
-
 namespace {
 
 using namespace mcl;
 
-// only for BLS12-381
+// the fixed-width GLV split of G1 (set by initMsm, see GLV1T::splitRaw in src/glv.hpp)
+typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
+static SplitRawFunc g_splitRaw;
+
+static const size_t S = sizeof(Unit)*8-1; // 63
+static const size_t W = 52;
+static const size_t M = sizeof(Vec) / sizeof(Unit); // the number of lanes (8)
+#include "msm_avx_para.h"
+static const size_t N = MSM_N; // the number of 52-bit limbs of FpM (= ceil(MCL_FP_BIT / 52), 5 or 8)
+static const size_t unitN = MCL_FP_BIT / 64; // the number of 64-bit limbs of Fp (the max size, Fp::getOp().N <= unitN)
+static const uint64_t g_mask = (uint64_t(1) << W) - 1;
+static const CYBOZU_ALIGN(64) uint64_t g_offset_[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+// the raw data of Fr, Fp and G1 (MCL_FR_BIT = 256)
 struct FrA {
 	uint64_t v[4];
 };
 
 struct FpA {
-	uint64_t v[6];
+	uint64_t v[unitN];
 };
 
 struct G1A {
-	uint64_t v[6*3];
+	uint64_t v[unitN*3];
 };
 
-static const size_t S = sizeof(Unit)*8-1; // 63
-static const size_t W = 52;
-static const size_t N = 8; // = ceil(384/52)
-static const size_t M = sizeof(Vec) / sizeof(Unit);
-#include "msm_avx_bls12_381.h"
+/*
+	the constants of the current curve expanded to the SIMD lanes (set by initMsm from g_msmCurveTbl)
+	the A versions (VecA) have vN * M lanes
+*/
+struct RtPara {
+	uint64_t mask[M];
+	uint64_t rp[M];
+	uint64_t ap[N*M];
+	uint64_t zero[N*M];
+	uint64_t R[N*M];
+	uint64_t R2[N*M];
+	uint64_t rawOne[N*M];
+	uint64_t m64to52[N*M];
+	uint64_t m52to64[N*M];
+	uint64_t rw[N*M];
+	uint64_t b3[N*M];
+	uint64_t zeroJacobi[3*N*M]; // (0, 0, 0)
+	uint64_t zeroProj[3*N*M]; // (0, 1, 0)
+	uint64_t zeroA[N*M*vN];
+	uint64_t RA[N*M*vN];
+	uint64_t R2A[N*M*vN];
+	uint64_t rawOneA[N*M*vN];
+	uint64_t m64to52A[N*M*vN];
+	uint64_t m52to64A[N*M*vN];
+	uint64_t rwA[N*M*vN];
+	uint64_t b3A[N*M*vN];
+	uint64_t zeroJacobiA[3*N*M*vN];
+	uint64_t zeroProjA[3*N*M*vN];
+	uint64_t m64to52u[N]; // for FpM::mul(z, x, const uint64_t*) (broadcast)
+	uint64_t m52to64u[N];
+	uint64_t m52to64s[unitN]; // for Fp::mul (the Montgomery form of Fp, or R52^-1 if Fp is not in the Montgomery form)
+	size_t pN; // Fp::getOp().N
+	int curveType;
+	int specialB; // ec::local::Plus1 / Plus4 / GenericB by the b of the curve (EcMT::specialB_)
+};
+static CYBOZU_ALIGN(64) RtPara g_rt;
+
+struct G {
+	static const Vec& mask() { return *(const Vec*)g_rt.mask; }
+	static const Vec& rp() { return *(const Vec*)g_rt.rp; }
+	static const Vec* ap() { return (const Vec*)g_rt.ap; }
+};
 
 inline Unit getMask(int w)
 {
@@ -84,6 +113,13 @@ inline uint8_t cvtToInt(const Vmask& v)
 {
 	uint8_t r;
 	memcpy(&r, &v, sizeof(r));
+	return r;
+}
+
+inline uint16_t cvtToInt(const VmaskA& v)
+{
+	uint16_t r = 0;
+	for (size_t i = 0; i < vN; i++) r |= uint16_t(cvtToInt(v.v[i])) << (8 * i);
 	return r;
 }
 
@@ -244,20 +280,6 @@ inline void vadd(V *z, const V *x, const V *y)
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
-#ifdef USE_ASM
-template<>
-inline void vadd(Vec *z, const Vec *x, const Vec *y)
-{
-	mcl_c5_vadd(z, x, y);
-}
-#endif
-#ifdef USE_ASM
-template<>
-inline void vadd<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	mcl_c5_vaddA(z, x, y);
-}
-#endif
 
 template<class VM=Vmask, class V>
 inline void vsub(V *z, const V *x, const V *y)
@@ -268,20 +290,6 @@ inline void vsub(V *z, const V *x, const V *y)
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
-#ifdef USE_ASM
-template<>
-inline void vsub(Vec *z, const Vec *x, const Vec *y)
-{
-	mcl_c5_vsub(z, x, y);
-}
-#endif
-#ifdef USE_ASM
-template<>
-inline void vsub<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	mcl_c5_vsubA(z, x, y);
-}
-#endif
 
 template<class V>
 inline void vmulUnit(V *z, const V *x, const V& y)
@@ -402,20 +410,6 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-#ifdef USE_ASM
-template<>
-inline void vmul(Vec *z, const Vec *x, const Vec *y)
-{
-	mcl_c5_vmul(z, x, y);
-}
-#endif
-#ifdef USE_ASM
-template<>
-inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
-{
-	mcl_c5_vmulA(z, x, y);
-}
-#endif
 
 template<class VM=Vmask, class V>
 inline void vsqr(V *z, const V *x)
@@ -467,23 +461,6 @@ inline void vsqr(V *z, const V *x)
 	uvselect(z, c, t+N, z);
 }
 
-#if 1
-template<>
-inline void vsqr(Vec *z, const Vec *x)
-{
-	mcl_c5_vsqr(z, x);
-//	mcl_c5_vmul(z, x, x);
-}
-#endif
-
-#if 1
-template<>
-inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
-{
-	mcl_c5_vmulA(z, x, x);
-}
-#endif
-
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 {
@@ -496,147 +473,160 @@ inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 }
 
 /*
+	y[N] (52-bit limbs) = x[unitN] (64-bit limbs)
+	e.g. unitN = 6, N = 8 :
 	 |64   |64   |64   |64   |64    |64   |
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
-    y|52|52   |52   |52   |52  |52|52  |20|
+	y|52|52   |52   |52   |52  |52|52  |20|
+	the loops are unrolled with constant shifts (N and unitN are constants)
 */
 template<class V>
-inline void split52bit(V y[8], const V x[6])
+inline void split52bit(V y[N], const V x[unitN])
 {
 	assert(&y != &x);
-#if 1
-	const Vec m = vpbroadcastq(getMask(52));
-	// and(or(A, B), C) = andCorAB = 0xa8
-	const uint8_t imm = 0xA8;
-	y[0] = vpandq(x[0], m);
-	y[1] = vpternlogq<imm>(vpsrlq(x[0], 52), vpsllq(x[1], 12), m);
-	y[2] = vpternlogq<imm>(vpsrlq(x[1], 40), vpsllq(x[2], 24), m);
-	y[3] = vpternlogq<imm>(vpsrlq(x[2], 28), vpsllq(x[3], 36), m);
-	y[4] = vpternlogq<imm>(vpsrlq(x[3], 16), vpsllq(x[4], 48), m);
-	y[5] = vpandq(vpsrlq(x[4], 4), m);
-	y[6] = vpternlogq<imm>(vpsrlq(x[4], 56), vpsllq(x[5], 8), m);
-	y[7] = vpsrlq(x[5], 44);
-#else
-	y[0] = vpandq(x[0], G::mask());
-	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
-	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
-	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
-	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
-	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
-	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
-	y[7] = vpsrlq(x[5], 44);
-#endif
+	const Vec m = vpbroadcastq(g_mask);
+	for (size_t i = 0; i < N; i++) {
+		const size_t bit = W * i;
+		const size_t w = bit / 64;
+		const size_t s = bit % 64;
+		V t = (s == 0) ? x[w] : vpsrlq(x[w], s);
+		if (s + W > 64 && w + 1 < unitN) {
+			// and(or(A, B), C) = 0xA8
+			y[i] = vpternlogq<0xA8>(t, vpsllq(x[w+1], 64 - s), m);
+		} else if (i < N - 1) {
+			y[i] = vpandq(t, m);
+		} else {
+			y[i] = t; // the top limb has at most 52 bits
+		}
+	}
 }
 
 /*
+	y[unitN] (64-bit limbs) = x[N] (52-bit limbs)
+	e.g. unitN = 6, N = 8 :
 	 |52|52   |52   |52   |52  |52|52  |20|
 	x|52|12:40|24:28|36:16|48:4|52|8:44|20|
-    y|64   |64   |64   |64   |64    |64
+	y|64   |64   |64   |64   |64    |64
 */
 template<class V>
-inline void concat52bit(V y[6], const V x[8])
+inline void concat52bit(V y[unitN], const V x[N])
 {
 	assert(&y != &x);
-	y[0] = vporq(x[0], vpsllq(x[1], 52));
-	y[1] = vporq(vpsrlq(x[1], 12), vpsllq(x[2], 40));
-	y[2] = vporq(vpsrlq(x[2], 24), vpsllq(x[3], 28));
-	y[3] = vporq(vpsrlq(x[3], 36), vpsllq(x[4], 16));
-#if 1
-	// or(A, B, C) = orABC = 0xFE
-	y[4] = vpternlogq<0xFE>(vpsrlq(x[4], 48), vpsllq(x[5], 4), vpsllq(x[6], 56));
-#else
-	y[4] = vporq(vporq(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
-#endif
-	y[5] = vporq(vpsrlq(x[6], 8), vpsllq(x[7], 44));
+	for (size_t w = 0; w < unitN; w++) {
+		V t = vzero<V>();
+		bool first = true;
+		for (size_t i = 0; i < N; i++) {
+			const size_t lo = W * i; // the limb i has the bits [lo, lo + W)
+			if (lo + W <= 64 * w || lo >= 64 * (w + 1)) continue;
+			V u = (lo >= 64 * w) ? vpsllq(x[i], lo - 64 * w) : vpsrlq(x[i], 64 * w - lo);
+			if (lo == 64 * w) u = x[i];
+			t = first ? u : vporq(t, u);
+			first = false;
+		}
+		y[w] = t;
+	}
+}
+
+// the scalar version of concat52bit for one point
+inline void concat52bitScalar(Unit y[unitN], const Unit x[N])
+{
+	for (size_t w = 0; w < unitN; w++) {
+		Unit t = 0;
+		for (size_t i = 0; i < N; i++) {
+			const size_t lo = W * i;
+			if (lo + W <= 64 * w || lo >= 64 * (w + 1)) continue;
+			t |= (lo >= 64 * w) ? x[i] << (lo - 64 * w) : x[i] >> (64 * w - lo);
+		}
+		y[w] = t;
+	}
 }
 
 /*
-	384bit = 6U (U=64)
-	G1(=6U x 3(x, y, z)) x 8 => 8Ux8x3
+	G1 (= unitN U x 3 (x, y, z)) x 8 => N U x 8 x 3
+	the index table of vpgatherqq : the i-th lane picks up the i-th G1 (or Fp)
 */
-static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[] = {
-	18*0, 18*1, 18*2, 18*3, 18*4, 18*5, 18*6, 18*7,
-//	18*8, 18*9, 18*10, 18*11, 18*12, 18*13, 18*14, 18*15,
+template<size_t stride>
+struct PickUp {
+	static const Vec& get()
+	{
+		static const CYBOZU_ALIGN(64) uint64_t tbl[M] = {
+			stride*0, stride*1, stride*2, stride*3, stride*4, stride*5, stride*6, stride*7,
+		};
+		return *(const Vec*)tbl;
+	}
 };
-static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
-//static const VecA& v_pickUpEcA = *(const VecA*)g_pickUpEc;
+inline const Vec& pickUpEc() { return PickUp<unitN*3>::get(); }
+inline const Vec& pickUpFp() { return PickUp<unitN>::get(); }
+
+/*
+	gather the i-th 64-bit limb of the 8 elements (stride Units each) from x into t[i] for i < unitN
+	the limbs of Fp beyond Fp::getOp().N may be garbage (Fp does not clear them), so they are set to zero
+*/
+inline void gatherFpx8(Vec t[unitN], const Unit *x, const Vec& idx)
+{
+	for (size_t i = 0; i < unitN; i++) {
+		t[i] = (i < g_rt.pN) ? vpgatherqq(idx, x+i) : vzero();
+	}
+}
 
 // convert G1.x (, y or z) to Vec
 inline void cvtFromG1Ax(Vec *y, const Unit *x)
 {
-#if 1
-	Vec t[6];
-	for (int i = 0; i < 6; i++) {
-		t[i] = vpgatherqq(v_pickUpEc, x+i);
-	}
-#else // faster
-	Vec s[8], t[8]; // need 8 size work area
-	Vmask v = getMask(6);
-	for (int i = 0; i < 8; i++) {
-		s[i] = vmovdqu64(v, x+i*6*3);
-	}
-	trans8x8<false>(t, s);
-#endif
+	Vec t[unitN];
+	gatherFpx8(t, x, pickUpEc());
 	split52bit(y, t);
 }
 
 // convert G1.x (, y or z) to VecA
 inline void cvtFromG1Ax(VecA *y, const Unit *x)
 {
-	VecA t[6];
-	for (int i = 0; i < 6; i++) {
-#if 1
-		assert(vN == 2);
-		t[i].v[0] = vpgatherqq(v_pickUpEc, x+i);
-		t[i].v[1] = vpgatherqq(v_pickUpEc, x+i+18*8);
-#else
-		t[i] = vpgatherqq(v_pickUpEcA, x+i);
-#endif
+	VecA t[unitN];
+	assert(vN == 2);
+	Vec t0[unitN], t1[unitN];
+	gatherFpx8(t0, x, pickUpEc());
+	gatherFpx8(t1, x+unitN*3*M, pickUpEc());
+	for (size_t i = 0; i < unitN; i++) {
+		t[i].v[0] = t0[i];
+		t[i].v[1] = t1[i];
 	}
 	split52bit(y, t);
 }
 
-// EcM(=8Ux8x3) => G1(=6U x 3) x 8
+// EcM(=N U x 8 x 3) => G1(= unitN U x 3) x 8
 // convert Vec to G1.x
 inline void cvtToG1Ax(Unit *y, const Vec *x)
 {
-	Vec t[6];
+	Vec t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpEc, t[i]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpEc(), t[i]);
 	}
 }
 
 inline void cvtToG1Ax(Unit *y, const VecA *x)
 {
-	VecA t[6];
+	VecA t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpEc, t[i].v[0]);
-		vpscatterqq(y+i+18*8, v_pickUpEc, t[i].v[1]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpEc(), t[i].v[0]);
+		vpscatterqq(y+i+unitN*3*M, pickUpEc(), t[i].v[1]);
 	}
 }
 
-static const CYBOZU_ALIGN(64) uint64_t g_pickUpFp[8] = {
-	6*0, 6*1, 6*2, 6*3, 6*4, 6*5, 6*6, 6*7,
-};
-static const Vec& v_pickUpFp = *(const Vec*)g_pickUpFp;
-// FpM(8Ux8) => Fp(=6U) x 8
-inline void cvt8Ux8to6Ux8(Unit y[6*8], const Vec x[8])
+// FpM(N U x 8) => Fp(= unitN U) x 8
+inline void cvtFpMToFpAx(Unit y[unitN*M], const Vec x[N])
 {
-	Vec t[6];
+	Vec t[unitN];
 	concat52bit(t, x);
-	for (size_t i = 0; i < 6; i++) {
-		vpscatterqq(y+i, v_pickUpFp, t[i]);
+	for (size_t i = 0; i < unitN; i++) {
+		vpscatterqq(y+i, pickUpFp(), t[i]);
 	}
 }
-// Fp(=6U)x8 => FpM(8Ux8)
-inline void cvt6Ux8to8Ux8Fp(Vec y[8], const Unit x[6*8])
+// Fp(= unitN U) x 8 => FpM(N U x 8)
+inline void cvtFpAxToFpM(Vec y[N], const Unit x[unitN*M])
 {
-	Vec t[6];
-	for (int i = 0; i < 6; i++) {
-		t[i] = vpgatherqq(v_pickUpFp, x+i);
-	}
+	Vec t[unitN];
+	gatherFpx8(t, x, pickUpFp());
 	split52bit(y, t);
 }
 
@@ -700,7 +690,7 @@ struct FpMT {
 	VM isEqualAll(const T& rhs) const
 	{
 		V t = vpxorq(v[0], rhs.v[0]);
-		for (size_t i = 1; i < M; i++) {
+		for (size_t i = 1; i < N; i++) {
 			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
 		return vpcmpeqq(t, vzero());
@@ -708,10 +698,20 @@ struct FpMT {
 	VM isZero() const
 	{
 		V t = v[0];
-		for (size_t i = 1; i < M; i++) {
+		for (size_t i = 1; i < N; i++) {
 			t = vporq(t, v[i]);
 		}
 		return vpcmpeqq(t, vzero());
+	}
+	VM isOne() const
+	{
+		return isEqualAll(T::one());
+	}
+	T& operator*=(const T& rhs)
+	{
+		T& self = static_cast<T&>(*this);
+		mul(self, self, rhs);
+		return self;
 	}
 	static void pow(T& z, const T& x, const V *y, size_t yn)
 	{
@@ -733,8 +733,7 @@ struct FpMT {
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) T::sqr(z, z);
 				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), mask4);
-				idx = vpsllq(idx, 6); // 512 B = 64 Unit = 2^6
-				idx = vpaddq(idx, T::offset());
+				idx = vmulL(idx, vpbroadcastq(sizeof(T) / 8), T::offset()); // the stride of tbl[] in Unit
 				T t;
 				for (size_t k = 0; k < N; k++) {
 					t.v[k] = vpgatherqq(idx, &tbl[0].v[k]);
@@ -772,25 +771,23 @@ struct FpMT {
 
 struct FpM : FpMT<FpM, Vmask, Vec> {
 	static const Vec& offset() { return *(const Vec*)g_offset_; }
-	static const FpM& zero() { return *(const FpM*)g_zero_; }
-	static const FpM& one() { return *(const FpM*)g_R_; }
-	static const FpM& R2() { return *(const FpM*)g_R2_; }
-	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
-	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
-	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
-	static const FpM& rw() { return *(const FpM*)g_rw_; }
+	static const FpM& zero() { return *(const FpM*)g_rt.zero; }
+	static const FpM& one() { return *(const FpM*)g_rt.R; }
+	static const FpM& R2() { return *(const FpM*)g_rt.R2; }
+	static const FpM& rawOne() { return *(const FpM*)g_rt.rawOne; }
+	static const FpM& m64to52() { return *(const FpM*)g_rt.m64to52; }
+	static const FpM& m52to64() { return *(const FpM*)g_rt.m52to64; }
+	static const FpM& rw() { return *(const FpM*)g_rt.rw; }
 	void setFpA(const FpA v[M])
 	{
-		cvt6Ux8to8Ux8Fp(this->v, v[0].v);
-//		FpM::mul(*this, *this, FpM::m64to52());
-		FpM::mul(*this, *this, g_m64to52u_);
+		cvtFpAxToFpM(this->v, v[0].v);
+		FpM::mul(*this, *this, g_rt.m64to52u);
 	}
 	void getFpA(FpA v[M]) const
 	{
 		FpM t;
-//		FpM::mul(t, *this, FpM::m52to64());
-		FpM::mul(t, *this, g_m52to64u_);
-		cvt8Ux8to6Ux8((Unit*)v, t.v);
+		FpM::mul(t, *this, g_rt.m52to64u);
+		cvtFpMToFpAx((Unit*)v, t.v);
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
@@ -807,6 +804,275 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	mpz_class get(size_t i) const;
 #endif
 };
+
+/*
+	the SIMD kernel of the batch affine addition of G1::mulVec (ec::MsmKernel, see mulVecUpdateTableBatch in src/glv.hpp)
+	AffM : a point in the layout of the kernel. x and y are N limbs of W bits in the Montgomery form of FpM (R = 2^(W N)).
+	The zero point is represented by y = 0 (the group has a prime order, so no point has y = 0).
+	addPairs processes 8 pairs at once : the points of the 8 lanes are loaded as 8 Vec (one point per Vec),
+	transposed to FpM (one limb per Vec) by trans8x8, the formula is computed by FpM with the masks of the lanes
+	(zero, doubling, A = -B) and the result is transposed back. The denominators of lambda of all the pairs
+	are inverted at once by the Montgomery trick over FpM (one FpM::inv per MCL_MSM_KERNEL_SUB groups).
+	cost : 5M + 2S + 1 inv/(8 MCL_MSM_KERNEL_SUB) per 8 pairs (+ the transposes)
+*/
+struct AffM {
+	Unit x[N];
+	Unit y[N];
+};
+
+#ifndef MCL_MSM_KERNEL_SUB
+	// the number of groups (8 pairs each) sharing one FpM::inv
+	#define MCL_MSM_KERNEL_SUB 256
+#endif
+
+// the work area of addPairsAffM
+struct AffMWork {
+	static const size_t SUB = MCL_MSM_KERNEL_SUB;
+	FpM d[SUB]; // the denominator of lambda, then its inverse
+	FpM num[SUB]; // the numerator of lambda
+	FpM ax[SUB]; // A.x (the x of the output if the lane is skipped)
+	FpM ay[SUB]; // A.y (the y of the output if the lane is skipped, 0 if the output is zero)
+	FpM bx[SUB]; // B.x
+	FpM prod[SUB]; // the work of the Montgomery trick
+	uint8_t skip[SUB]; // the lanes whose output is (ax, ay)
+};
+
+static CYBOZU_ALIGN(64) const AffM g_zeroAffM = { { 0 }, { 0 } };
+
+// return the point of the index i (the zero point if i == msmNone)
+inline const AffM* getAffM(const AffM *base, uint32_t i)
+{
+	return i == mcl::ec::local::msmNone ? &g_zeroAffM : base + (i & mcl::ec::local::msmIdxMask);
+}
+
+// load the N limbs of a coordinate of AffM (64-byte aligned if N == 8)
+inline Vec loadLimbs(const Unit *p)
+{
+	if (N == 8) return vmovdqa64(p);
+	return vmovdqu64(Vmask((1 << N) - 1), p);
+}
+inline void storeLimbs(Unit *p, const Vec& v)
+{
+	if (N == 8) {
+		vmovdqa64(p, v);
+	} else {
+		vmovdqu64(p, Vmask((1 << N) - 1), v);
+	}
+}
+
+// (x, y) = the 8 points base[idx[j]] transposed to FpM (the limbs i >= N of s[] are ignored)
+inline void loadAffM(FpM& x, FpM& y, const AffM *base, const uint32_t idx[8])
+{
+	const AffM *P[8];
+	Vec s[8];
+	for (size_t j = 0; j < 8; j++) P[j] = getAffM(base, idx[j]);
+	for (size_t j = 0; j < 8; j++) s[j] = loadLimbs(P[j]->x);
+	Vec d[8];
+	trans8x8(d, s);
+	for (size_t i = 0; i < N; i++) x.v[i] = d[i];
+	for (size_t j = 0; j < 8; j++) s[j] = loadLimbs(P[j]->y);
+	trans8x8(d, s);
+	for (size_t i = 0; i < N; i++) y.v[i] = d[i];
+}
+
+// R[j] = (x, y) of the lane j for j in [0, m) (m <= 8)
+inline void storeAffM(AffM *R, const FpM& x, const FpM& y, size_t m)
+{
+	Vec s[8], d[8];
+	for (size_t i = 0; i < N; i++) s[i] = x.v[i];
+	for (size_t i = N; i < 8; i++) s[i] = vzero();
+	trans8x8(d, s);
+	for (size_t j = 0; j < m; j++) storeLimbs(R[j].x, d[j]);
+	for (size_t i = 0; i < N; i++) s[i] = y.v[i];
+	for (size_t i = N; i < 8; i++) s[i] = vzero();
+	trans8x8(d, s);
+	for (size_t j = 0; j < m; j++) storeLimbs(R[j].y, d[j]);
+}
+
+// dst[i] = xVec[i] (affine or zero) for i in [0, n)
+void cvtBaseAffM(void *dst, const void *xVec, size_t n)
+{
+	AffM *d = (AffM*)dst;
+	const G1 *x = (const G1*)xVec;
+	for (size_t i = 0; i < n; i += 8) {
+		const size_t m = (n - i < 8) ? n - i : 8;
+		G1 tmp[8];
+		const G1 *src = x + i;
+		if (m < 8) {
+			for (size_t j = 0; j < 8; j++) {
+				if (j < m) tmp[j] = src[j]; else tmp[j].clear();
+			}
+			src = tmp;
+		}
+		const Unit *p = (const Unit*)src;
+		FpM X, Y;
+		cvtFromG1Ax(X.v, p);
+		cvtFromG1Ax(Y.v, p + unitN);
+		FpM::mul(X, X, g_rt.m64to52u);
+		FpM::mul(Y, Y, g_rt.m64to52u);
+		uint8_t nz = 0; // the lanes of the non-zero points
+		for (size_t j = 0; j < 8; j++) {
+			if (!src[j].z.isZero()) nz |= uint8_t(1 << j);
+		}
+		Y = FpM::select(Vmask(nz), Y, FpM::zero());
+		storeAffM(d + i, X, Y, m);
+	}
+}
+
+/*
+	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m), see addAffineBatch in src/glv.hpp
+	all the inputs of a sub-block of 8 MCL_MSM_KERNEL_SUB pairs are read before its outputs are written
+*/
+void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_t *ib, size_t m, void *_work)
+{
+	using namespace mcl::ec::local;
+	AffM *R = (AffM*)_R;
+	const AffM *base = (const AffM*)_base;
+	AffMWork& wk = *(AffMWork*)_work;
+	const size_t SUB = AffMWork::SUB;
+	const FpM& one = FpM::one();
+	const FpM& zero = FpM::zero();
+	for (size_t j0 = 0; j0 < m; j0 += SUB * 8) {
+		const size_t mm = (m - j0 < SUB * 8) ? m - j0 : SUB * 8; // the number of pairs of this sub-block
+		const size_t gn = (mm + 7) / 8; // the number of groups
+		// pass 1 : classify the lanes and compute d and num
+		for (size_t g = 0; g < gn; g++) {
+			const size_t j = j0 + g * 8;
+			const uint32_t *pa = ia + j;
+			const uint32_t *pb = ib + j;
+			uint32_t ta[8], tb[8];
+			if (j + 8 > m) {
+				// the last group has less than 8 pairs
+				for (size_t k = 0; k < 8; k++) {
+					ta[k] = (j + k < m) ? ia[j + k] : msmNone;
+					tb[k] = (j + k < m) ? ib[j + k] : msmNone;
+				}
+				pa = ta;
+				pb = tb;
+			}
+			FpM Ax, Ay, Bx, By;
+			loadAffM(Ax, Ay, base, pa);
+			loadAffM(Bx, By, base, pb);
+			// negate y of the lanes with the sign bit (-0 = 0 for the zero point)
+			uint8_t sa = 0, sb = 0;
+			for (size_t k = 0; k < 8; k++) {
+				sa |= uint8_t((pa[k] >> 31) << k);
+				sb |= uint8_t((pb[k] >> 31) << k);
+			}
+			Ay = FpM::select(Vmask(sa), Ay.neg(), Ay);
+			By = FpM::select(Vmask(sb), By.neg(), By);
+			const Vmask zA = Ay.isZero();
+			const Vmask zB = By.isZero();
+			const Vmask eqX = Ax.isEqualAll(Bx);
+			const Vmask eqY = Ay.isEqualAll(By);
+			const Vmask nz = knotb(korb(zA, zB));
+			const Vmask dbl = kandb(kandb(eqX, eqY), nz); // A = B
+			const Vmask out0 = kandb(kandnb(eqY, eqX), nz); // A = -B
+			const Vmask skip = korb(korb(zA, zB), out0);
+			FpM d, num, t;
+			FpM::sub(d, Bx, Ax);
+			FpM::sub(num, By, Ay);
+			if (cvtToInt(dbl)) {
+				// doubling : lambda = 3 x^2 / (2 y) (a = 0), rare for random inputs so skip it if no lane needs it
+				FpM t3;
+				FpM::mul2(t, Ay);
+				d = FpM::select(dbl, t, d);
+				FpM::sqr(t, Ax);
+				FpM::mul2(t3, t);
+				FpM::add(t3, t3, t);
+				num = FpM::select(dbl, t3, num);
+			}
+			d = FpM::select(skip, one, d);
+			// the output of the skipped lanes : B if A = 0, A otherwise (y = 0 if A + B = 0)
+			wk.ax[g] = FpM::select(zA, Bx, Ax);
+			t = FpM::select(zA, By, Ay);
+			wk.ay[g] = FpM::select(out0, zero, t);
+			wk.bx[g] = Bx;
+			wk.d[g] = d;
+			wk.num[g] = num;
+			wk.skip[g] = cvtToInt(skip);
+		}
+		// d[g] = 1/d[g] (d[g] != 0)
+		mcl::local::invVecWork<false>(wk.d, wk.d, gn, wk.prod);
+		// pass 2 : R = A + B
+		for (size_t g = 0; g < gn; g++) {
+			const size_t j = j0 + g * 8;
+			const FpM& Ax = wk.ax[g];
+			const FpM& Ay = wk.ay[g];
+			FpM lambda, x3, y3;
+			FpM::mul(lambda, wk.num[g], wk.d[g]);
+			FpM::sqr(x3, lambda);
+			FpM::sub(x3, x3, Ax);
+			FpM::sub(x3, x3, wk.bx[g]); // = lambda^2 - 2 A.x if doubling
+			FpM::sub(y3, Ax, x3);
+			FpM::mul(y3, y3, lambda);
+			FpM::sub(y3, y3, Ay); // y3 = lambda (x1 - x3) - y1
+			const Vmask skip = Vmask(wk.skip[g]);
+			x3 = FpM::select(skip, Ax, x3);
+			y3 = FpM::select(skip, Ay, y3);
+			storeAffM(R + j, x3, y3, (m - j < 8) ? m - j : 8);
+		}
+	}
+}
+
+/*
+	convert a coordinate of AffM (the Montgomery form of FpM, a R52 mod p < p) to Fp (a R64 mod p)
+	by Fp::mul with R64 / R52 (whose Montgomery form is g_rt.m52to64s)
+*/
+inline void cvtAffMtoFp(Fp& y, const Unit x[N])
+{
+	Unit t[unitN];
+	concat52bitScalar(t, x);
+	const mcl::fp::Op& op = Fp::getOp();
+	op.fp_mul((Unit*)&y, t, g_rt.m52to64s, op.p);
+}
+
+/*
+	the window size for n (split) scalars of mulVec with the kernel (see glvGetBucketSize in src/glv.hpp)
+	measured on Xeon w9-3495X with BLS12-381 G1 (N = 8) and BN254 G1 (N = 5) by sweeping b for 2^7 to 2^20 points :
+	the pair addition is cheaper than the generic one, so the bucket reduction is relatively more expensive
+	and b is smaller for 2^9 <= n < 2^17. the two tables differ by at most one (the differences are a few %)
+*/
+size_t getBucketSizeAffM(size_t n)
+{
+	if (n <= 2) return 2;
+	const size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 8;
+	if (log2n < tblMin) return 3;
+	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
+	static const size_t tbl8[] = {
+		5, 6, 6, 8, 8, 8, 10, 11, 11, 13, 13, 13, 15, 15, 16
+	};
+	static const size_t tbl5[] = {
+		6, 6, 6, 7, 8, 8, 9, 10, 11, 13, 13, 14, 14, 15, 16
+	};
+	const size_t *tbl = (N == 5) ? tbl5 : tbl8;
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl8) + tblMin) return 16;
+	return tbl[log2n - tblMin];
+}
+
+// tbl (+)= P(i), see msmAddToBucket in src/glv.hpp
+void addToBucketAffM(void *_tbl, const void *_base, uint32_t i)
+{
+	using namespace mcl::ec::local;
+	G1& tbl = *(G1*)_tbl;
+	const AffM& P = ((const AffM*)_base)[i & msmIdxMask];
+	Unit y = 0;
+	for (size_t k = 0; k < N; k++) y |= P.y[k];
+	if (y == 0) return; // the zero point
+	G1 Q;
+	cvtAffMtoFp(Q.x, P.x);
+	cvtAffMtoFp(Q.y, P.y);
+	Q.z = 1;
+	if (tbl.isZero()) {
+		tbl = Q;
+		if (i & msmSign) G1::neg(tbl, tbl);
+	} else if (i & msmSign) {
+		tbl -= Q;
+	} else {
+		tbl += Q;
+	}
+}
 
 // set y = 1 if isProj
 template<class E>
@@ -855,10 +1121,9 @@ inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 }
 
 // 8M+3S+7A
-// assume P.x != Q.x, P != Q
-// asseume all Q are normalized
+// assume all Q are normalized; return the lanes requiring doubling
 template<class E>
-inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
+inline typename E::VM addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
 	F r, U1, S1, H, H3;
@@ -882,12 +1147,13 @@ inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
+	return kandb(H.isZero(), r.isZero());
 }
 
 // 12M+4S+7A
-// P == Q or P == -Q then R = 0, so assume P != Q.
+// return the lanes requiring doubling
 template<class E>
-inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
+inline typename E::VM addJacobiNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
 	F r, U1, S1, H, H3;
@@ -914,6 +1180,7 @@ inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
+	return kandb(H.isZero(), r.isZero());
 }
 
 // assume a = 0
@@ -951,13 +1218,7 @@ struct EcMT {
 	typedef typename F::VM VM;
 	F x, y, z;
 	static const int a_ = 0;
-#ifdef MCL_MSM_BLS12_377
-	static const int b_ = 1;
-	static const int specialB_ = mcl::ec::local::Plus1;
-#else
-	static const int b_ = 4;
-	static const int specialB_ = mcl::ec::local::Plus4;
-#endif
+	static const int& specialB_; // = g_rt.specialB (set by initMsm). ec::addCTProj / dblCTProj use b3_ if GenericB
 	static T select(const VM& c, const T& a, const T& b)
 	{
 		T d;
@@ -979,10 +1240,17 @@ struct EcMT {
 			}
 		} else {
 			T t;
+			VM same;
 			if (mixed) {
-				addJacobiMixedNoCheck(t, x, y);
+				same = addJacobiMixedNoCheck(t, x, y);
 			} else {
-				addJacobiNoCheck(t, x, y);
+				same = addJacobiNoCheck(t, x, y);
+			}
+			same = kandnb(korb(x.isZero(), y.isZero()), same);
+			if (cvtToInt(same)) {
+				T doubled;
+				dblJacobiNoCheck(doubled, x);
+				t = select(same, doubled, t);
 			}
 			t = select(x.isZero(), y, t);
 			z = select(y.isZero(), x, t);
@@ -1032,7 +1300,7 @@ struct EcMT {
 	}
 	void gather(const T *tbl, V idx)
 	{
-		const Vec factor = vpbroadcastq(3 * sizeof(V));
+		const Vec factor = vpbroadcastq(sizeof(T) / 8); // the stride of tbl[] in Unit
 		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
@@ -1042,7 +1310,7 @@ struct EcMT {
 	}
 	void scatter(T *tbl, V idx) const
 	{
-		const Vec factor = vpbroadcastq(3 * sizeof(V));
+		const Vec factor = vpbroadcastq(sizeof(T) / 8); // the stride of tbl[] in Unit
 		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
@@ -1145,17 +1413,18 @@ struct EcMT {
 			V a[2], b[2];
 			Unit *pa = (Unit*)a;
 			Unit *pb = (Unit*)b;
+			V negA, negB; // 1 if a (b) of the lane is negative
+			Unit *pna = (Unit*)&negA;
+			Unit *pnb = (Unit*)&negB;
 			for (size_t i = 0; i < m; i++) {
 				Unit buf[4];
 				fr.fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
-#ifdef MCL_MSM_BLS12_377
-				mcl::ec::optimizedSplitForBLS12_377(aa, bb, buf);
-#else
-				mcl::ec::optimizedSplitForBLS12_381(aa, bb, buf);
-#endif
+				const uint32_t neg = g_splitRaw(aa, bb, buf); // y = a + b lambda, |a|, |b| < 2^128
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
+				pna[i] = neg & 1;
+				pnb[i] = (neg >> 1) & 1;
 			}
 			const size_t bitLen = 128;
 			const size_t nw = (bitLen + w-1)/w;
@@ -1163,6 +1432,13 @@ struct EcMT {
 			VM aNegTbl[nw], bNegTbl[nw];
 			makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
 			makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
+			// negate all the digits of the lanes whose a (b) is negative
+			const VM laneNegA = vpcmpneqq(negA, vzero<V>());
+			const VM laneNegB = vpcmpneqq(negB, vzero<V>());
+			for (size_t i = 0; i < nw; i++) {
+				aNegTbl[i] = kxorb(aNegTbl[i], laneNegA);
+				bNegTbl[i] = kxorb(bNegTbl[i], laneNegB);
+			}
 
 			for (size_t i = 0; i < nw; i++) {
 				if (i > 0) for (size_t j = 0; j < w; j++) T::template dbl<isProj>(Q[k], Q[k]);
@@ -1186,6 +1462,8 @@ struct EcMT {
 	}
 };
 
+template<class T, class F> const int& EcMT<T, F>::specialB_ = g_rt.specialB;
+
 struct EcM : EcMT<EcM, FpM> {
 	static const FpM &b3_;
 	static const EcM &zeroProj_;
@@ -1193,13 +1471,13 @@ struct EcM : EcMT<EcM, FpM> {
 	template<bool isNormalized = false>
 	void setG1A(const G1A v[M], bool JacobiToProj = true)
 	{
-		cvtFromG1Ax(x.v, v[0].v+0*6);
-		cvtFromG1Ax(y.v, v[0].v+1*6);
-		cvtFromG1Ax(z.v, v[0].v+2*6);
+		cvtFromG1Ax(x.v, v[0].v+0*unitN);
+		cvtFromG1Ax(y.v, v[0].v+1*unitN);
+		cvtFromG1Ax(z.v, v[0].v+2*unitN);
 
-		FpM::mul(x, x, g_m64to52u_);
-		FpM::mul(y, y, g_m64to52u_);
-		FpM::mul(z, z, g_m64to52u_);
+		FpM::mul(x, x, g_rt.m64to52u);
+		FpM::mul(y, y, g_rt.m64to52u);
+		FpM::mul(z, z, g_rt.m64to52u);
 
 		if (JacobiToProj) {
 			if (!isNormalized) mcl::ec::JacobiToProj(*this, *this);
@@ -1211,76 +1489,19 @@ struct EcM : EcMT<EcM, FpM> {
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
 
-		FpM::mul(T.x, T.x, g_m52to64u_);
-		FpM::mul(T.y, T.y, g_m52to64u_);
-		FpM::mul(T.z, T.z, g_m52to64u_);
+		FpM::mul(T.x, T.x, g_rt.m52to64u);
+		FpM::mul(T.y, T.y, g_rt.m52to64u);
+		FpM::mul(T.z, T.z, g_rt.m52to64u);
 
-		cvtToG1Ax(v[0].v+0*6, T.x.v);
-		cvtToG1Ax(v[0].v+1*6, T.y.v);
-		cvtToG1Ax(v[0].v+2*6, T.z.v);
+		cvtToG1Ax(v[0].v+0*unitN, T.x.v);
+		cvtToG1Ax(v[0].v+1*unitN, T.y.v);
+		cvtToG1Ax(v[0].v+2*unitN, T.z.v);
 	}
-#if 0
-	// Treat idx as an unsigned integer
-	// 33.6M clk
-	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
-	{
-		const size_t w = 4;
-		const size_t tblN = 1<<w;
-		// QQQ (n=1024) isProj=T : 36.8, isProj=F&&mixed=F : 36.0, isProj=F&&mixed=T : 34.6
-		Vec a[2], b[2];
-		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<isProj, mixed>(tbl1, tblN, P);
-		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
-		for (size_t i = 0; i < tblN; i++) {
-			mulLambda(tbl2[i], tbl1[i]);
-		}
-		const Unit *src = (const Unit*)y;
-		Unit *pa = (Unit*)a;
-		Unit *pb = (Unit*)b;
-		for (size_t i = 0; i < M; i++) {
-			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
-			Unit aa[2], bb[2];
-			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
-			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
-			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
-		}
-		const size_t bitLen = 128;
-		Vec mask = vpbroadcastq((1<<w)-1);
-		bool first = true;
-		size_t pos = bitLen;
-		for (size_t i = 0; i < (bitLen + w-1)/w; i++) {
-			size_t dblN = w;
-			if (pos < w) {
-				mask = vpbroadcastq((1<<pos)-1);
-				dblN = pos;
-				pos = 0;
-			} else {
-				pos -= w;
-			}
-			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
-			EcM T;
-			Vec idx;
-			idx = vpandq(getUnitAt(b, 2, pos), mask);
-			if (first) {
-				Q.gather(tbl2, idx);
-				first = false;
-			} else {
-				T.gather(tbl2, idx);
-				add<isProj, mixed>(Q, Q, T);
-			}
-			idx = vpandq(getUnitAt(a, 2, pos), mask);
-			T.gather(tbl1, idx);
-			add<isProj, mixed>(Q, Q, T);
-		}
-	}
-#else
-#endif
 };
 
-const FpM& EcM::b3_ = *(const FpM*)g_b3_;
-const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
-const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
+const FpM& EcM::b3_ = *(const FpM*)g_rt.b3;
+const EcM& EcM::zeroProj_ = *(const EcM*)g_rt.zeroProj;
+const EcM& EcM::zeroJacobi_ = *(const EcM*)g_rt.zeroJacobi;
 
 template<class G>
 inline void reduceSum(G1A& Q, const G& P)
@@ -1362,13 +1583,13 @@ inline void mulVecAVX512_inner(G1A& P, const G *xVec, const V *yVec, size_t n, s
 
 struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	static const VecA& offset() { return *(const VecA*)g_offset_; }
-	static const FpMA& zero() { return *(const FpMA*)g_zeroA_; }
-	static const FpMA& one() { return *(const FpMA*)g_RA_; }
-	static const FpMA& R2() { return *(const FpMA*)g_R2A_; }
-	static const FpMA& rawOne() { return *(const FpMA*)g_rawOneA_; }
-	static const FpMA& m64to52() { return *(const FpMA*)g_m64to52A_; }
-	static const FpMA& m52to64() { return *(const FpMA*)g_m52to64A_; }
-	static const FpMA& rw() { return *(const FpMA*)g_rwA_; }
+	static const FpMA& zero() { return *(const FpMA*)g_rt.zeroA; }
+	static const FpMA& one() { return *(const FpMA*)g_rt.RA; }
+	static const FpMA& R2() { return *(const FpMA*)g_rt.R2A; }
+	static const FpMA& rawOne() { return *(const FpMA*)g_rt.rawOneA; }
+	static const FpMA& m64to52() { return *(const FpMA*)g_rt.m64to52A; }
+	static const FpMA& m52to64() { return *(const FpMA*)g_rt.m52to64A; }
+	static const FpMA& rw() { return *(const FpMA*)g_rt.rwA; }
 	void setFpA(const FpA v[M*vN])
 	{
 		FpM t[vN];
@@ -1452,13 +1673,13 @@ struct EcMA : EcMT<EcMA, FpMA> {
 #if 1
 		assert(vN == 2);
 
-		cvtFromG1Ax(x.v, v[0].v+0*6);
-		cvtFromG1Ax(y.v, v[0].v+1*6);
-		cvtFromG1Ax(z.v, v[0].v+2*6);
+		cvtFromG1Ax(x.v, v[0].v+0*unitN);
+		cvtFromG1Ax(y.v, v[0].v+1*unitN);
+		cvtFromG1Ax(z.v, v[0].v+2*unitN);
 
-		FpMA::mul(x, x, g_m64to52u_);
-		FpMA::mul(y, y, g_m64to52u_);
-		FpMA::mul(z, z, g_m64to52u_);
+		FpMA::mul(x, x, g_rt.m64to52u);
+		FpMA::mul(y, y, g_rt.m64to52u);
+		FpMA::mul(z, z, g_rt.m64to52u);
 
 		if (JacobiToProj) {
 			// Jacobi = Proj if normalized
@@ -1479,13 +1700,13 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		EcMA T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
 
-		FpMA::mul(T.x, T.x, g_m52to64u_);
-		FpMA::mul(T.y, T.y, g_m52to64u_);
-		FpMA::mul(T.z, T.z, g_m52to64u_);
+		FpMA::mul(T.x, T.x, g_rt.m52to64u);
+		FpMA::mul(T.y, T.y, g_rt.m52to64u);
+		FpMA::mul(T.z, T.z, g_rt.m52to64u);
 
-		cvtToG1Ax(v[0].v+0*6, T.x.v);
-		cvtToG1Ax(v[0].v+1*6, T.y.v);
-		cvtToG1Ax(v[0].v+2*6, T.z.v);
+		cvtToG1Ax(v[0].v+0*unitN, T.x.v);
+		cvtToG1Ax(v[0].v+1*unitN, T.y.v);
+		cvtToG1Ax(v[0].v+2*unitN, T.z.v);
 #else
 		EcM P[vN];
 		getEcM(P);
@@ -1496,11 +1717,14 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 };
 
-const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
-const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_zeroProjA_;
-const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
+const FpMA& EcMA::b3_ = *(const FpMA*)g_rt.b3A;
+const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_rt.zeroProjA;
+const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_rt.zeroJacobiA;
 
-#define USE_GLV
+#ifdef MCL_MSM_TEST
+/*
+	the old MSM where each SIMD lane has its own buckets (replaced by the kernel of the batch affine addition), without GLV
+*/
 
 template<class G=EcM, class V=Vec>
 void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
@@ -1510,11 +1734,7 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 	const FrA *y = (const FrA*)_y;
 	const size_t m = sizeof(V)/8;
 	const size_t d = n/m;
-#ifdef USE_GLV
-	const size_t e = 2;
-#else
 	const size_t e = 1;
-#endif
 	const bool mixed = true;
 	if (mixed) {
 // 		ec::normalizeVec<G1>(x, x, n);
@@ -1527,30 +1747,6 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 		xVec[i].template setG1A<mixed>(x+i*m);
 	}
 	normalizeJacobiVec(xVec, d, true);
-#ifdef USE_GLV
-	for (size_t i = 0; i < d; i++) {
-		G::mulLambda(xVec[d+i], xVec[i]);
-	}
-
-	Unit *const py = (Unit*)yVec;
-	Unit *const py2 = py + d*m*2;
-	for (size_t i = 0; i < d; i++) {
-		for (size_t j = 0; j < m; j++) {
-			Unit ya[4];
-			mcl::Fr::getOp().fromMont(ya, y[i*m+j].v);
-			Unit a[2], b[2];
-#ifdef MCL_MSM_BLS12_377
-			mcl::ec::optimizedSplitForBLS12_377(a, b, ya);
-#else
-			mcl::ec::optimizedSplitForBLS12_381(a, b, ya);
-#endif
-			py[i*m*2+j+0] = a[0];
-			py[i*m*2+j+m] = a[1];
-			py2[i*m*2+j+0] = b[0];
-			py2[i*m*2+j+m] = b[1];
-		}
-	}
-#else
 	const mcl::fp::Op& fr = mcl::Fr::getOp();
 	Unit *const py = (Unit*)yVec;
 	for (size_t i = 0; i < d; i++) {
@@ -1562,7 +1758,6 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 			}
 		}
 	}
-#endif
 	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, bucket);
 
 	Xbyak::AlignedFree(yVec);
@@ -1574,16 +1769,25 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 		mcl::G1::add((mcl::G1&)P, (const mcl::G1&)P, (const mcl::G1&)Q);
 	}
 }
+#endif // MCL_MSM_TEST
 
 } // namespace
 
 namespace mcl { namespace msm {
 
+const ec::MsmKernel* getMsmKernelAVX512()
+{
+	static const ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM };
+	return &kn;
+}
+
+#ifdef MCL_MSM_TEST
 void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b = 0)
 {
 	mulVecAVX512T<EcM, Vec>(P, x, y, n, b);
 //	mulVecAVX512T<EcMA, VecA>(P, x, y, n, b); // slower
 }
+#endif
 
 void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 {
@@ -1625,30 +1829,109 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 	}
 }
 
-// AVX-512 IFMA is required
-bool initMsm(const mcl::CurveParam& cp)
+/*
+	set the constants of the current curve (Fp::getOp().p) from g_msmCurveTbl and register
+	the kernel of the batch affine addition (G1::setMsmKernel) and mulEachAVX512 (Jacobian, a = 0)
+	return false if the curve is not supported (AVX-512 IFMA is required)
+*/
+bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
 {
-	assert(EcM::a_ == 0);
-#ifdef MCL_MSM_BLS12_377
-	assert(EcM::b_ == 1);
-#else
-	assert(EcM::b_ == 4);
-#endif
 	(void)EcM::a_; // disable unused warning
-	(void)EcM::b_;
 	(void)EcM::zeroProj_;
 	(void)EcM::zeroJacobi_;
 	(void)EcMA::a_;
-	(void)EcMA::b_;
 	(void)EcMA::b3_;
 	(void)EcMA::zeroProj_;
 	(void)EcMA::zeroJacobi_;
-
-#ifdef MCL_MSM_BLS12_377
-	if (cp != mcl::BLS12_377) return false;
-#else
-	if (cp != mcl::BLS12_381) return false;
-#endif
+	if (splitRaw == 0) return false;
+	const mcl::fp::Op& op = Fp::getOp();
+	if (op.N > unitN) return false;
+	const MsmCurvePara *para = 0;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_msmCurveTbl); i++) {
+		const MsmCurvePara& t = g_msmCurveTbl[i];
+		if (t.curveType != curveType || t.pN != op.N) continue;
+		bool eq = true;
+		for (size_t j = 0; j < op.N; j++) {
+			if (t.p[j] != op.p[j]) eq = false;
+		}
+		if (eq) {
+			para = &t;
+			break;
+		}
+	}
+	if (para == 0) return false;
+	/*
+		Fp of secp256k1 is not in the Montgomery form (PM_SECP256K1 of fp.cpp), then
+		x -> x R52 by FpM::mul(x, R52^2), x R52 -> x by FpM::mul(x, 1) and Fp::mul(x, R52^-1)
+	*/
+	const uint64_t *m64to52 = op.isMont ? para->m64to52 : para->R2;
+	const uint64_t *m52to64 = op.isMont ? para->m52to64 : para->rawOne;
+	const uint64_t *m52to64s = op.isMont ? para->m52to64s : para->invR52;
+	// expand the constants to the lanes
+	for (size_t j = 0; j < M; j++) {
+		g_rt.mask[j] = g_mask;
+		g_rt.rp[j] = para->rp;
+	}
+	struct Local {
+		static void expand(uint64_t *dst, const uint64_t *src, size_t lanes)
+		{
+			for (size_t i = 0; i < N; i++) {
+				for (size_t j = 0; j < lanes; j++) {
+					dst[i * lanes + j] = src[i];
+				}
+			}
+		}
+	};
+	const uint64_t zero[8] = {};
+	Local::expand(g_rt.ap, para->ap, M);
+	Local::expand(g_rt.zero, zero, M);
+	Local::expand(g_rt.R, para->R, M);
+	Local::expand(g_rt.R2, para->R2, M);
+	Local::expand(g_rt.rawOne, para->rawOne, M);
+	Local::expand(g_rt.m64to52, m64to52, M);
+	Local::expand(g_rt.m52to64, m52to64, M);
+	Local::expand(g_rt.rw, para->rw, M);
+	Local::expand(g_rt.b3, para->b3, M);
+	Local::expand(g_rt.zeroJacobi, zero, M);
+	Local::expand(g_rt.zeroJacobi + N*M, zero, M);
+	Local::expand(g_rt.zeroJacobi + 2*N*M, zero, M);
+	Local::expand(g_rt.zeroProj, zero, M);
+	Local::expand(g_rt.zeroProj + N*M, para->R, M); // (0, 1, 0)
+	Local::expand(g_rt.zeroProj + 2*N*M, zero, M);
+	Local::expand(g_rt.zeroA, zero, M*vN);
+	Local::expand(g_rt.RA, para->R, M*vN);
+	Local::expand(g_rt.R2A, para->R2, M*vN);
+	Local::expand(g_rt.rawOneA, para->rawOne, M*vN);
+	Local::expand(g_rt.m64to52A, m64to52, M*vN);
+	Local::expand(g_rt.m52to64A, m52to64, M*vN);
+	Local::expand(g_rt.rwA, para->rw, M*vN);
+	Local::expand(g_rt.b3A, para->b3, M*vN);
+	Local::expand(g_rt.zeroJacobiA, zero, M*vN);
+	Local::expand(g_rt.zeroJacobiA + N*M*vN, zero, M*vN);
+	Local::expand(g_rt.zeroJacobiA + 2*N*M*vN, zero, M*vN);
+	Local::expand(g_rt.zeroProjA, zero, M*vN);
+	Local::expand(g_rt.zeroProjA + N*M*vN, para->R, M*vN);
+	Local::expand(g_rt.zeroProjA + 2*N*M*vN, zero, M*vN);
+	for (size_t i = 0; i < N; i++) {
+		g_rt.m64to52u[i] = m64to52[i];
+		g_rt.m52to64u[i] = m52to64[i];
+	}
+	for (size_t i = 0; i < unitN; i++) {
+		g_rt.m52to64s[i] = m52to64s[i];
+	}
+	g_rt.pN = op.N;
+	g_rt.curveType = curveType;
+	switch (para->b) {
+	case 1: g_rt.specialB = mcl::ec::local::Plus1; break;
+	case 4: g_rt.specialB = mcl::ec::local::Plus4; break;
+	default: g_rt.specialB = mcl::ec::local::GenericB; break;
+	}
+	g_splitRaw = splitRaw;
+	G1::setMsmKernel(getMsmKernelAVX512());
+	// mulEachAVX512 returns Jacobian coordinates and assumes a = 0.
+	if (G1::a_.isZero() && G1::getMode() == ec::Jacobi) {
+		G1::setMulEachOpti(mulEachAVX512);
+	}
 	return true;
 }
 
@@ -1873,7 +2156,7 @@ CYBOZU_TEST_AUTO(sqr)
 	for (size_t i = 0; i < n; i++) dump(v[i], "v");
 
 	vsqr(z1, v);
-	mcl_c5_vsqr(z2, v);
+	vmul(z2, v, v);
 	for (size_t i = 0; i < n*2; i++) {
 		printf("i=%zd eq=%s\n", i, memcmp(&z1[i], &z2[i], sizeof(Vec)) == 0 ? "o" : "x");
 		dump(z1[i], "z1");
@@ -1882,11 +2165,23 @@ CYBOZU_TEST_AUTO(sqr)
 }
 #endif
 
+// random points in the Jacobi coordinates (z != 1) and random scalars
 void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
 {
 	for (size_t i = 0; i < n; i++) {
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
+		if (P[i].z.isOne()) {
+			// (x, y, 1) = (x z^2, y z^3, z) for a random z != 0, 1 (hashAndMapToG1 of BN254 returns normalized points)
+			Fp z, z2;
+			do {
+				z.setByCSPRNG(rg);
+			} while (z.isZero() || z.isOne());
+			Fp::sqr(z2, z);
+			P[i].x *= z2;
+			P[i].y *= z2 * z;
+			P[i].z = z;
+		}
 		if (x) x[i].setByCSPRNG(rg);
 	}
 }
@@ -1972,7 +2267,8 @@ void forcedRead(const T& x)
 	(void)dummy;
 }
 
-void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
+// FpM::add/sub/mul/sqr (intrinsics) vs mcl::Fp
+void fpmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
 	CYBOZU_ALIGN(64) mcl::Fp z[8];
 	FpM xm, ym, zm, wm;
@@ -1982,21 +2278,21 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::add(z[i], x[i], y[i]);
 	}
-	mcl_c5_vadd(zm.v, xm.v, ym.v);
+	FpM::add(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// sub
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::sub(z[i], x[i], y[i]);
 	}
-	mcl_c5_vsub(zm.v, xm.v, ym.v);
+	FpM::sub(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// mul
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::mul(z[i], x[i], y[i]);
 	}
-	mcl_c5_vmul(zm.v, xm.v, ym.v);
+	FpM::mul(zm, xm, ym);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
@@ -2010,7 +2306,7 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::sqr(z[i], x[i]);
 	}
-	mcl_c5_vsqr(zm.v, xm.v);
+	FpM::sqr(zm, xm);
 	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
@@ -2022,8 +2318,7 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 	}
 }
 
-#ifdef USE_ASM
-CYBOZU_TEST_AUTO(asm)
+CYBOZU_TEST_AUTO(fpm)
 {
 	cybozu::XorShift rg;
 	mcl::Fp x[8], y[8];
@@ -2036,10 +2331,9 @@ CYBOZU_TEST_AUTO(asm)
 				y[k] = j*8+k;
 			}
 		}
-		asmTest(x, y);
+		fpmTest(x, y);
 	}
 }
-#endif
 
 CYBOZU_TEST_AUTO(vaddPre)
 {
@@ -2052,16 +2346,11 @@ CYBOZU_TEST_AUTO(vaddPre)
 			setRand(x[j], rg);
 			setRand(y[j], rg);
 			vaddPre(z[j].v, x[j].v, y[j].v);
-			Vec t[N];
-			mcl_c5_vaddPre(t, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(t[k], z[j].v[k]));
-			}
 			vsubPre(w[j].v, z[j].v, x[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], y[j].v[k]));
 			}
-			mcl_c5_vsubPre(w[j].v, z[j].v, y[j].v);
+			vsubPre(w[j].v, z[j].v, y[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], x[j].v[k]));
 			}
@@ -2073,8 +2362,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
-		mcl_c5_vaddPreA(wa.v, xa.v, ya.v);
-		CYBOZU_TEST_ASSERT(za == wa);
 		vsubPre<VmaskA>(za.v, za.v, ya.v);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
@@ -2083,12 +2370,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 		// vadd, vsub
 		for (size_t j = 0; j < vN; j++) {
 			vadd(z[j].v, x[j].v, y[j].v);
-			Vec u[8];
-			mcl_c5_vadd(u, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], u[k]));
-			}
-			mcl_c5_vsub(u, u, y[j].v);
+			Vec u[N];
+			vsub(u, z[j].v, y[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(x[j].v[k], u[k]));
 			}
@@ -2108,23 +2391,9 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
-		{ // vsubA
-			VecA u[8];
-			vsub<VmaskA>(u, xa.v, ya.v);
-			VecA w[8];
-			mcl_c5_vsubA(w, xa.v, ya.v);
-			for (size_t i = 0; i < 8; i++) {
-				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
-			}
-		}
 		// vmul
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
-			Vec w[8];
-			mcl_c5_vmul(w, x[j].v, y[j].v);
-			for (size_t k = 0; k < N; k++) {
-				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], w[k]));
-			}
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
@@ -2132,15 +2401,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
-		}
-		{ // vmulA
-			VecA u[8];
-			vmul<VmaskA>(u, xa.v, ya.v);
-			VecA w[8];
-			mcl_c5_vmulA(w, xa.v, ya.v);
-			for (size_t i = 0; i < 8; i++) {
-				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
-			}
 		}
 		// inv
 		for (size_t j = 0; j < vN; j++) {
@@ -2159,18 +2419,6 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vsubPre::VecA", C, vsubPre<VmaskA>, za.v, za.v, xa.v);
-#if 1
-	CYBOZU_BENCH_C("asm vaddPre", C, mcl_c5_vaddPre, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vsubPre", C, mcl_c5_vsubPre, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vsub", C, mcl_c5_vsub, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vmul", C, mcl_c5_vmul, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vsubA", C, mcl_c5_vsubA, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("asm vmulA", C, mcl_c5_vmulA, za.v, za.v, xa.v);
-#endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vadd::VecA", C, vadd<VmaskA>, za.v, za.v, xa.v);
@@ -2195,6 +2443,50 @@ template<class T>
 void lpN(void f(T&, const T&, const T&), T *z, const T *x, const T *y, size_t n)
 {
 	for (size_t i = 0; i < n; i++) f(z[i], x[i], y[i]);
+}
+
+template<class E, bool mixed>
+void testJacobiAdd()
+{
+	const size_t n = sizeof(E) / (sizeof(FpM) * 3) * M;
+	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n], actual[n];
+	Fr x[n];
+	cybozu::XorShift rg;
+	setParam(P, x, n, rg);
+	setParam(Q, x, n, rg);
+	for (size_t i = 0; i < n; i++) {
+		switch (i % 6) {
+		case 0: Q[i] = P[i]; break;
+		case 1: G1::neg(Q[i], P[i]); break;
+		case 2: P[i].clear(); break;
+		case 3: Q[i].clear(); break;
+		case 4: P[i].clear(); Q[i].clear(); break;
+		}
+		if (mixed) Q[i].normalize();
+		G1::add(R[i], P[i], Q[i]);
+	}
+	E p, q, out;
+	p.setG1A((G1A*)P, false);
+	q.setG1A((G1A*)Q, false);
+	E::template add<false, mixed>(out, p, q);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+	out = p;
+	E::template add<false, mixed>(out, out, q);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+	out = q;
+	E::template add<false, mixed>(out, p, out);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+}
+
+CYBOZU_TEST_AUTO(jacobiAdd)
+{
+	testJacobiAdd<EcM, false>();
+	testJacobiAdd<EcM, true>();
+	testJacobiAdd<EcMA, false>();
+	testJacobiAdd<EcMA, true>();
 }
 
 CYBOZU_TEST_AUTO(op)
@@ -2291,7 +2583,7 @@ CYBOZU_TEST_AUTO(op)
 		CYBOZU_BENCH_C("FpM::add", C, FpM::add, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("FpM::mul", C, FpM::mul, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("FpM::sqr", C, FpM::sqr, a[0], a[0]);
-		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_m64to52u_);
+		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_rt.m64to52u);
 		CYBOZU_BENCH_C("addn", C, lpN, FpM::add, a, a, b, n);
 		CYBOZU_BENCH_C("muln", C, lpN, FpM::mul, a, a, b, n);
 	}
@@ -2300,7 +2592,7 @@ CYBOZU_TEST_AUTO(op)
 
 CYBOZU_TEST_AUTO(opA)
 {
-	const size_t n = N*vN;
+	const size_t n = M*vN;
 	G1 P[n];
 	G1 Q[n];
 	G1 R[n];
@@ -2417,41 +2709,46 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 
 CYBOZU_TEST_AUTO(mulEach_special)
 {
-	const size_t n = 8;
+	const size_t n = 32;
 	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
 	Fr x[n];
-	mpz_class L;
-	for (size_t i = 0; i < n; i++) P[i].clear();
+	for (size_t i = 0; i < n; i++) {
+		P[i].clear();
+		R[i].clear();
+		x[i] = 0;
+	}
 	mcl::hashAndMapToG1(P[0], "abc");
 	x[0].setHashOf("abc", 3);
-#ifdef MCL_MSM_BLS12_377
-	mcl::gmp::setStr(L, "0x452217cc900000010a11800000000000");
-#else
-	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
-#endif
 	for (size_t i = 0; i < n; i++) Q[i] = P[i];
 	G1::mul(R[0], P[0], x[0]);
-	G1::mulEach(Q, x, 8);
-	CYBOZU_TEST_EQUAL(R[0], Q[0]);
-	mpz_class tbl[] = {
+	G1::mulEach(Q, x, n);
+	CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
+	// the edge cases of the GLV split : x = a + b lambda
+	const mpz_class& r = Fr::getOp().mp;
+	const mpz_class L = mpz_class(1) << 128; // |a|, |b| < L
+	const mpz_class tbl[] = {
 		0,
 		1,
+		2,
+		L - 1,
 		L,
+		L + 1,
+		(r - 1) / 2,
+		(r + 1) / 2,
+		r - 2,
+		r - 1,
 	};
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const mpz_class& a = tbl[i];
-		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
-			const mpz_class& b = tbl[j];
-			setParam(P, x, n, rg);
-			x[0].setMpz(a * L + b);
-			for (size_t k = 0; k < 8; k++) {
-				Q[k] = P[k];
-				G1::mul(R[k], P[k], x[k]);
-			}
-			G1::mulEach(Q, x, n);
-			CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
+		setParam(P, x, n, rg);
+		x[0].setMpz(tbl[i]);
+		x[1].setMpz(r - tbl[i]);
+		for (size_t k = 0; k < n; k++) {
+			Q[k] = P[k];
+			G1::mul(R[k], P[k], x[k]);
 		}
+		G1::mulEach(Q, x, n);
+		CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
 	}
 }
 
@@ -2536,6 +2833,136 @@ CYBOZU_TEST_AUTO(mulVec)
 #endif
 }
 
+
+void naiveMulVec(G1& Q, const G1 *P, const Fr *x, size_t n)
+{
+	Q.clear();
+	for (size_t i = 0; i < n; i++) {
+		G1 T;
+		G1::mul(T, P[i], x[i]);
+		Q += T;
+	}
+}
+
+// G1::mulVec with the kernel of the batch affine addition (getMsmKernelAVX512)
+CYBOZU_TEST_AUTO(kernel)
+{
+	CYBOZU_TEST_EQUAL(G1::msmKernel, getMsmKernelAVX512());
+	const size_t N = 8203; // > MCL_MSM_BATCH_MIN_N / 2, not a multiple of 8
+	std::vector<G1> P(N), P2(N);
+	std::vector<Fr> x(N);
+	cybozu::XorShift rg;
+	setParam(P.data(), x.data(), N, rg);
+	G1 Q, R;
+	const size_t nTbl[] = { 128, 129, 255, 256, 257, 1000, 4096, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		mcl::bint::copyN(P2.data(), P.data(), n);
+		if (n > 32) P2[32].clear(); // zero points
+		P2[n/2].clear();
+		naiveMulVec(Q, P2.data(), x.data(), n);
+		G1::mulVec(R, P2.data(), x.data(), n);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// all scalars are equal
+	{
+		for (size_t i = 0; i < N; i++) x[i] = x[0];
+		mcl::bint::copyN(P2.data(), P.data(), N);
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// scalars in {0, 1}
+	{
+		for (size_t i = 0; i < N; i++) x[i] = rg.get32() & 1;
+		mcl::bint::copyN(P2.data(), P.data(), N);
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// small scalars (many equal digits), zero points and equal points
+	{
+		for (size_t i = 0; i < N; i++) {
+			x[i] = rg.get32() % 7;
+			P2[i] = P[i];
+			if (i % 5 == 1) P2[i].clear();
+			if (i % 5 == 2) P2[i] = P2[i - 1];
+			if (i % 5 == 3) P2[i] = P2[0];
+		}
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// P + P (doubling) and P + (-P) (zero) in a bucket
+	{
+		for (size_t i = 0; i < N; i++) {
+			G1::mul(P2[i], P[0], i / 3 + 3);
+			x[i].setByCSPRNG();
+		}
+		for (size_t i = 0; i + 2 < N; i += 3) {
+			x[i + 1] = x[i]; // P2[i] + P2[i+1] = 2 P2[i]
+			Fr::neg(x[i + 2], x[i]); // P2[i] - P2[i+2] = 0
+		}
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+}
+
+// the cost of addPairsAffM per pair
+CYBOZU_TEST_AUTO(kernelBench)
+{
+#ifdef NDEBUG
+	const size_t n = 8192;
+	std::vector<G1> P(n);
+	cybozu::XorShift rg;
+	hashAndMapToG1(P[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) {
+		G1::add(P[i], P[i-1], P[0]);
+	}
+	G1::normalizeVec(P.data(), P.data(), n);
+	const size_t m = n / 2;
+	std::vector<uint32_t> ia(m), ib(m);
+	for (size_t j = 0; j < m; j++) {
+		ia[j] = uint32_t(2 * j);
+		ib[j] = uint32_t(2 * j + 1) | ((rg.get32() & 1) ? mcl::ec::local::msmSign : 0);
+	}
+	const ec::MsmKernel& kn = *getMsmKernelAVX512();
+	void *base = Xbyak::AlignedMalloc(kn.pointSize * n, 64);
+	void *R = Xbyak::AlignedMalloc(kn.pointSize * m, 64);
+	void *work = Xbyak::AlignedMalloc(kn.workSize, 64);
+	// the cost of FpM::mul
+	{
+		FpM a, b;
+		a = FpM::one();
+		b = FpM::R2();
+		CYBOZU_BENCH_C("FpM::mul", 1000, FpM::mul, a, a, b);
+		CYBOZU_BENCH_C("FpM::sqr", 1000, FpM::sqr, a, a);
+		CYBOZU_BENCH_C("FpM::add", 1000, FpM::add, a, a, b);
+	}
+	CYBOZU_BENCH_C("cvtBase", 100, kn.cvtBase, base, P.data(), n);
+	CYBOZU_BENCH_C("addPairs(4096)", 100, kn.addPairs, R, base, ia.data(), ib.data(), m, work);
+	CYBOZU_BENCH_C("addPairs(256)", 1000, kn.addPairs, R, base, ia.data(), ib.data(), 256, work);
+	// check the result
+	for (size_t j = 0; j < m; j++) {
+		G1 Q;
+		Q.clear();
+		kn.addToBucket(&Q, R, uint32_t(j));
+		G1 T = P[2 * j];
+		if (ib[j] & mcl::ec::local::msmSign) T -= P[2 * j + 1]; else T += P[2 * j + 1];
+		CYBOZU_TEST_EQUAL(Q, T);
+	}
+	Xbyak::AlignedFree(work);
+	Xbyak::AlignedFree(R);
+	Xbyak::AlignedFree(base);
+#endif
+}
+
+void mulVecKernel(G1& Q, G1 *P, const Fr *x, size_t n, size_t b)
+{
+	G1::mulVec(Q, P, x, n, b);
+}
+
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
 	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
@@ -2551,12 +2978,12 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 	G1 P1;
 	for (size_t d = db; d <= de; d++) {
 		size_t n = size_t(1) << d;
-		size_t b1 = glvGetBucketSizeAVX512(n/4);
-		printf("% 8zd % 2zd", n, b1);
+		size_t b1 = glvGetBucketSizeAVX512(n/8);
+		printf("old % 8zd % 2zd", n, b1);
 		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b1);
-		size_t b2 = b ? b : mcl::ec::glvGetTheoreticBucketSize(n/4);
-		printf("% 8zd % 2zd", n, size_t(b2));
-		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b2);
+		size_t b2 = b ? b : getBucketSizeAffM(n * 2);
+		printf("new % 8zd % 2zd", n, b2);
+		CYBOZU_BENCH_C(" ", C, mulVecKernel, P1, Pvec.data(), xVec.data(), n, b2);
 	}
 }
 
@@ -2571,6 +2998,108 @@ void showParams()
 		size_t b2 = mcl::ec::glvGetTheoreticBucketSize(nn);
 		size_t c2 = mcl::ec::glvCost(nn, b2);
 		printf("%zd|%zd|%zd|%zd|%zd|%.2f\n", d, b1, c1, b2, c2, c1/double(c2));
+	}
+}
+
+// lambda of the GLV method on Fr (lambda^2 + lambda + 1 = 0 and splitRaw(lambda) = (0, 1))
+mpz_class getGLVLambda()
+{
+	Fr s;
+	CYBOZU_TEST_ASSERT(Fr::squareRoot(s, Fr(-3)));
+	Fr lambda = (s - 1) / 2;
+	for (int i = 0; i < 2; i++) {
+		Unit a[2] = {}, b[2] = {}, x[4] = {};
+		Fr::getOp().fromMont(x, lambda.getUnit());
+		const uint32_t neg = g_splitRaw(a, b, x);
+		if (neg == 0 && a[0] == 0 && a[1] == 0 && b[0] == 1 && b[1] == 0) {
+			mpz_class ret;
+			lambda.getMpz(ret);
+			return ret;
+		}
+		lambda = -1 - lambda; // the other root
+	}
+	CYBOZU_TEST_ASSERT(false);
+	return 0;
+}
+
+// G1::mulEach (mulEachAVX512) vs G1::mul on every curve of g_msmCurveTbl
+CYBOZU_TEST_AUTO(mulEachCurves)
+{
+	const struct {
+		int curveType;
+		const char *name;
+	} tbl[] = {
+		{ MCL_BN254, "BN254" },
+		{ MCL_BN_SNARK1, "BN_SNARK1" },
+		{ MCL_SECP256K1, "secp256k1" },
+#if MCL_FP_BIT == 384
+		{ MCL_BLS12_381, "BLS12_381" },
+		{ MCL_BLS12_377, "BLS12_377" },
+#endif
+	};
+	const int orgCurveType = g_rt.curveType;
+	for (size_t ti = 0; ti < CYBOZU_NUM_OF_ARRAY(tbl); ti++) {
+		const int curveType = tbl[ti].curveType;
+		const size_t n = 16 * 20 + 11; // 2n >= MCL_MSM_BATCH_MIN_N to use the kernel in mulVec
+		CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
+		Fr x[n];
+		cybozu::XorShift rg;
+		if (curveType == MCL_SECP256K1) {
+			G1 P0;
+			initCurve<G1>(curveType, &P0); // no hashAndMapToG1 without initPairing
+			for (size_t i = 0; i < n; i++) {
+				x[i].setByCSPRNG(rg);
+				G1::mul(P[i], P0, x[i]);
+				x[i].setByCSPRNG(rg);
+			}
+		} else {
+			initPairing(*getCurveParam(curveType));
+			setParam(P, x, n, rg);
+		}
+		printf("%s mulEachOpti=%d\n", tbl[ti].name, G1::mulEachOpti != 0);
+		CYBOZU_TEST_ASSERT(G1::mulEachOpti != 0);
+		CYBOZU_TEST_EQUAL(g_rt.curveType, curveType);
+		P[5].clear();
+		P[20].clear();
+		const mpz_class& r = Fr::getOp().mp;
+		const mpz_class L = mpz_class(1) << 128;
+		const mpz_class lambda = getGLVLambda();
+		const mpz_class scalarTbl[] = {
+			0, 1, 2, L - 1, L, L + 1, (r - 1) / 2, (r + 1) / 2, r - 2, r - 1,
+			2 * lambda - 1, // the GLV split is (lambda - 1, 1) on BLS12 ; P == Q occurs in adding the lambda part on BLS12-377
+		};
+		for (size_t i = 0; i < 32; i++) x[i].setMpz(scalarTbl[i % CYBOZU_NUM_OF_ARRAY(scalarTbl)]);
+		for (size_t i = 0; i < n; i++) {
+			Q[i] = P[i];
+			G1::mul(R[i], P[i], x[i]);
+		}
+		G1::mulEach(Q, x, n);
+		CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
+		// FpM::add/sub/mul/sqr vs mcl::Fp
+		{
+			CYBOZU_ALIGN(64) mcl::Fp a[8], b[8];
+			for (size_t j = 0; j < 10; j++) {
+				for (size_t k = 0; k < 8; k++) {
+					a[k].setByCSPRNG(rg);
+					b[k].setByCSPRNG(rg);
+				}
+				fpmTest(a, b);
+			}
+		}
+		// mulVec (the kernel of the batch affine addition) vs naive
+		{
+			G1 S1, S2;
+			S1.clear();
+			for (size_t i = 0; i < n; i++) S1 += R[i];
+			G1::mulVec(S2, P, x, n);
+			CYBOZU_TEST_EQUAL(S1, S2);
+		}
+	}
+	// restore the curve for the following benchmarks
+	if (orgCurveType == MCL_SECP256K1) {
+		initCurve<G1>(orgCurveType);
+	} else {
+		initPairing(*getCurveParam(orgCurveType));
 	}
 }
 
@@ -2603,13 +3132,22 @@ int main(int argc, char *argv[])
 	if (de == 0) {
 		de = d;
 	}
-#ifdef MCL_MSM_BLS12_377
-	puts("BLS12_377");
-	initPairing(mcl::BLS12_377);
+#if MCL_FP_BIT == 256
+	puts("BN254");
+	initPairing(mcl::BN254);
 #else
 	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
 #endif
+	if (G1::msmKernel == 0) {
+		if (!(mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA)) {
+			puts("skip : the CPU does not support AVX-512 IFMA");
+			puts("ctest:name=msm_test, module=0, total=0, ok=0, ng=0, exception=0, skipped=1");
+			return 0;
+		}
+		puts("ERR the AVX-512 MSM is not available");
+		return 1;
+	}
 	g_mont.init(mcl::Fp::getOp().mp);
 	if (msm) {
 		msmBench(C, db, de, b);

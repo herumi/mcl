@@ -268,10 +268,11 @@ struct MapTo_WB19 {
 		initArray(g1ynum, ynumStr, CYBOZU_NUM_OF_ARRAY(ynumStr));
 		initArray(g1yden, ydenStr, CYBOZU_NUM_OF_ARRAY(ydenStr));
 	}
+	// y = sum_i cof[i] x^i zz^(N-1-i) where zpows[i] = zz^(i+1)
 	template<class F, size_t N>
 	void evalPoly(F& y, const F& x, const F *zpows, const F (&cof)[N]) const
 	{
-		y = cof[N - 1]; // always zpows[0] = 1
+		y = cof[N - 1];
 		for (size_t i = 1; i < N; i++) {
 			y *= x;
 			F t;
@@ -303,34 +304,42 @@ struct MapTo_WB19 {
 		Fp2::mul(Q.y, mapvals[2], mapvals[1]);
 		Q.y *= t;
 	}
-	template<class X, class C, size_t N>
-	X evalPoly2(const X& x, const C (&c)[N]) const
+	/*
+		refer (g1xnum, g1xden, g1ynum, g1yden)
+		evaluate the isogeny on Jacobian coordinates without inversion.
+		P = [X:Y:Z], x = X/Z^2, y = Y/Z^3, ZZ = Z^2
+		xn' = sum_i k_i X^i ZZ^(11-i) = ZZ^11 xn, xd' = ZZ^10 xd (deg 10),
+		yn' = ZZ^15 yn, yd' = ZZ^15 yd (deg 15), so
+		x' = xn/xd = xn' / (xd' ZZ), y' = y yn/yd = Y yn' / (yd' Z^3)
+	*/
+	void iso11(G1& Q, const E1& P) const
 	{
-		X ret = c[N - 1];
-		for (size_t i = 1; i < N; i++) {
-			ret *= x;
-			ret += c[N - 1 - i];
+		Fp zpows[15]; // zpows[i] = ZZ^(i+1)
+		Fp::sqr(zpows[0], P.z);
+		for (size_t i = 1; i < 15; i++) {
+			if (i & 1) {
+				Fp::sqr(zpows[i], zpows[i / 2]);
+			} else {
+				Fp::mul(zpows[i], zpows[i / 2], zpows[i / 2 - 1]);
+			}
 		}
-		return ret;
-	}
-	// refer (g1xnum, g1xden, g1ynum, g1yden)
-	void iso11(G1& Q, E1& P) const
-	{
-		ec::normalizeJacobi(P);
 		Fp xn, xd, yn, yd;
-		xn = evalPoly2(P.x, g1xnum);
-		xd = evalPoly2(P.x, g1xden);
-		yn = evalPoly2(P.x, g1ynum);
-		yd = evalPoly2(P.x, g1yden);
+		evalPoly(xn, P.x, zpows, g1xnum);
+		evalPoly(xd, P.x, zpows, g1xden);
+		evalPoly(yn, P.x, zpows, g1ynum);
+		evalPoly(yd, P.x, zpows, g1yden);
+		xd *= zpows[0]; // xd' ZZ
+		yn *= P.y; // Y yn'
+		yd *= zpows[0];
+		yd *= P.z; // yd' Z^3
 		/*
-			[xn/xd:y * yn/yd:1] = [xn xd yd^2:y yn xd^3 yd^2:xd yd]
-			=[xn yd z:y yn xd z^2:z] where z = xd yd
+			[xn/xd:yn/yd:1] = [xn xd yd^2:yn xd^3 yd^2:xd yd]
+			=[xn yd z:yn xd z^2:z] where z = xd yd
 		*/
 		Fp::mul(Q.z, xd, yd);
 		Fp::mul(Q.x, xn, yd);
 		Q.x *= Q.z;
-		Fp::mul(Q.y, P.y, yn);
-		Q.y *= xd;
+		Fp::mul(Q.y, yn, xd);
 		Fp::sqr(xd, Q.z);
 		Q.y *= xd;
 	}

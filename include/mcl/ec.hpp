@@ -998,6 +998,30 @@ bool mulSmallInt(G& z, const G& x, Unit y, bool isNegative)
 	pointers to the static data members of EcT<Fp> in the library
 	(for MCL_DLL_IMPORT_STATIC, see config.hpp)
 */
+/*
+	a SIMD kernel of the batch affine addition of mulVec (see mulVecUpdateTableBatch in src/glv.hpp)
+	the points are converted to the layout of the kernel (pointSize bytes per point) once by cvtBase
+	and the additions of pairs of them are done by addPairs
+*/
+namespace local {
+// the index of a point of the batch affine addition of mulVec (see src/glv.hpp)
+const uint32_t msmSign = uint32_t(1) << 31; // the sign bit of a digit or an index
+const uint32_t msmIdxMask = msmSign - 1;
+const uint32_t msmNone = uint32_t(-1); // d = 0 (no bucket) or no point
+} // local
+struct MsmKernel {
+	size_t pointSize; // the byte size of a point in the layout of the kernel
+	size_t workSize; // the byte size of the work area of addPairs
+	// dst[i] = xVec[i] (EcT, affine or zero) for i in [0, n)
+	void (*cvtBase)(void *dst, const void *xVec, size_t n);
+	// R[j] = P(ia[j]) + P(ib[j]) for j in [0, m), see addAffineBatch in src/glv.hpp (R and base are in the layout of the kernel)
+	void (*addPairs)(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work);
+	// tbl (+)= P(i), see msmAddToBucket in src/glv.hpp (tbl is EcT, base is in the layout of the kernel)
+	void (*addToBucket)(void *tbl, const void *base, uint32_t i);
+	// the window size for n (split) scalars (0 : glvGetBucketSize in src/glv.hpp)
+	size_t (*getBucketSize)(size_t n);
+};
+
 struct StaticMember {
 	void *mode;
 	void *a;
@@ -1011,6 +1035,7 @@ struct StaticMember {
 	void *mulVecGLV;
 	void *mulVecOpti;
 	void *mulEachOpti;
+	void *msmKernel;
 	void *isValidOrderFast;
 };
 enum StaticIdType {
@@ -1039,6 +1064,7 @@ public:
 	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
 	typedef void (*MulEachOptiFunc)(EcT *xVec, const Fr *yVec, size_t n);
 	typedef bool (*IsValidOrderFastFunc)(const EcT& x);
+	typedef const ec::MsmKernel* MsmKernelPtr;
 	MCL_DLL_STATIC(int) mode_;
 	MCL_DLL_STATIC(Fp) a_;
 	MCL_DLL_STATIC(Fp) b_;
@@ -1055,6 +1081,7 @@ public:
 	MCL_DLL_STATIC(MulVecGLVFunc) mulVecGLV;
 	MCL_DLL_STATIC(MulVecOptiFunc) mulVecOpti;
 	MCL_DLL_STATIC(MulEachOptiFunc) mulEachOpti;
+	MCL_DLL_STATIC(MsmKernelPtr) msmKernel; // the SIMD kernel of the batch affine addition of mulVec (0 if none)
 	MCL_DLL_STATIC(IsValidOrderFastFunc) isValidOrderFast;
 	// set the pointers to the static data members (used by getStaticMember in the library)
 	static void setStaticMember(ec::StaticMember& sm)
@@ -1071,6 +1098,7 @@ public:
 		sm.mulVecGLV = &mulVecGLV;
 		sm.mulVecOpti = &mulVecOpti;
 		sm.mulEachOpti = &mulEachOpti;
+		sm.msmKernel = &msmKernel;
 		sm.isValidOrderFast = &isValidOrderFast;
 	}
 	/* default constructor is undefined value */
@@ -1143,6 +1171,7 @@ public:
 		mulVecGLV = 0;
 		mulVecOpti = 0;
 		mulEachOpti = 0;
+		msmKernel = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
 	}
@@ -1176,6 +1205,11 @@ public:
 	static void setMulEachOpti(void f(EcT *xVec, const Fr *yVec, size_t yn))
 	{
 		mulEachOpti = f;
+	}
+	// kn must be alive while it is used (0 : use the generic batch affine addition)
+	static void setMsmKernel(const ec::MsmKernel *kn)
+	{
+		msmKernel = kn;
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -1850,7 +1884,7 @@ public:
 	/*
 		z = sum_{i<n} xVec[i] yVec[i]
 		xVec is not modified (mulVec may normalize xVec in place by mulVecOpti)
-		mulVecOpti (AVX-512 MSM) is not used, so mulVec is faster for large n
+		mulVecOpti is not used, so mulVec is faster for large n if mulVecOpti is set
 	*/
 	static inline void mulVecConstRef(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
@@ -1988,6 +2022,7 @@ MCL_EC_STATIC_REF(typename EcT<Fp>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
 MCL_EC_STATIC_REF(typename EcT<Fp>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
 MCL_EC_STATIC_REF(int, mode_, mode)
 MCL_EC_STATIC_REF(typename EcT<Fp>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp>::MsmKernelPtr, msmKernel, msmKernel)
 #undef MCL_EC_STATIC_REF
 #elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
 /*
@@ -2011,6 +2046,7 @@ template<class Fp> typename EcT<Fp>::MulVecOptiFunc EcT<Fp>::mulVecOpti;
 template<class Fp> typename EcT<Fp>::IsValidOrderFastFunc EcT<Fp>::isValidOrderFast;
 template<class Fp> int EcT<Fp>::mode_;
 template<class Fp> typename EcT<Fp>::MulEachOptiFunc EcT<Fp>::mulEachOpti;
+template<class Fp> typename EcT<Fp>::MsmKernelPtr EcT<Fp>::msmKernel;
 #endif
 
 MCL_CXX_API void initForSecp256k1(); // implemented in fp.cpp
