@@ -209,8 +209,15 @@ ifeq ($(MCL_MSM),1)
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
+  MSM_CFLAGS=-mavx512f -mavx512ifma -std=c++11
+  ifneq ($(SANITIZE_OPT),)
+    # AddressSanitizer of GCC poisons the stack shadow with the widest vector store (zmm with -mavx512f),
+    # so the code of msm_test.exe before the CPU check (main, option parsing) raises SIGILL on a CPU without AVX-512.
+    # Limit the width of such stores to xmm (the intrinsics of the kernels are not affected).
+    MSM_CFLAGS+=-mprefer-vector-width=128
+  endif
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
 src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py src/gen_glv.py
 	python3 src/gen_msm_para.py > $@
@@ -459,7 +466,7 @@ test_static:
 	bin/pairing_static.exe
 
 $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -DMCL_MSM_TEST
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -DMCL_MSM_TEST
 MSM_TEST_OBJ=$(OBJ_DIR)/$(MSM)_test.o $(filter-out $(OBJ_DIR)/msm_avx.o,$(LIB_OBJ))
 $(EXE_DIR)/msm_test.exe: $(MSM_TEST_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(MSM_TEST_OBJ) $(LDFLAGS)
