@@ -172,6 +172,17 @@ void testMulVec(const G& P, const char *name)
 		CYBOZU_BENCH_C("mulVec", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 #endif
 	}
+	// a small n with a large b of the argument : the bucket table 2^b * sizeof(G) does not fit in the stack (malloc is used)
+	{
+		const size_t n = 100;
+		const size_t bTbl[] = { 9, 12, 16 };
+		G Q1, Q2;
+		naiveMulVec(Q1, xVec.data(), yVec.data(), n);
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(bTbl); i++) {
+			G::mulVec(Q2, xVec.data(), yVec.data(), n, bTbl[i]);
+			CYBOZU_TEST_EQUAL(Q1, Q2);
+		}
+	}
 }
 
 /*

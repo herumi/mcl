@@ -116,10 +116,16 @@ inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm =
 #ifndef MCL_GLV_ONLY_FUNC
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
-	// use (1 << b) * sizeof(G) bytes stack + alpha
-	// b = glvGetBucketSizeByCost(n, ...) <= 8 for n <= 1024 : about 36KiB (G1) or 72KiB (G2)
+	// use (1 << b) * sizeof(G) bytes stack + alpha if n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC (otherwise malloc)
+	// b = glvGetBucketSizeByCost(n, ...) <= 9 for n <= 1024 : at most 72KiB (G1) or 144KiB (G2)
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
+#endif
+#ifndef MCL_MSM_MAX_STACK_TBL_BYTES
+	// the max byte size of the bucket table (1 << b) * sizeof(G) on the stack
+	// b of the cost model is at most 9 for n <= 1024 but b of the argument of mulVec may be large (b = 16 : 9.4MiB for G1),
+	// then malloc is tried first and b is reduced if it fails
+	#define MCL_MSM_MAX_STACK_TBL_BYTES (size_t(256) << 10)
 #endif
 
 /*
@@ -202,6 +208,11 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 	// use the bucket method (mulVecGLVlarge) if the number of the split scalars (n * splitN) >= MCL_MSM_MIN_SPLIT_N, otherwise the NAF method (EcT::mulVecN)
 	// the bucket method (b = 5) is faster than the NAF method from about 64 to 80 split scalars (x64, BLS12-381 / BN254 G1)
 	#define MCL_MSM_MIN_SPLIT_N 80
+#endif
+#ifndef MCL_MSM_MIN_SPLIT_N_NO_BATCH
+	// the same threshold for the group without the batch affine addition (GT = GroupMtoA<Fp12> : the bucket addition and the reduction are the same Fp12 mul),
+	// the bucket method is faster than the NAF method from about 56 to 64 elements (224 to 256 split scalars with splitN = 4) on x64 (BLS12-381 / BN254 GT)
+	#define MCL_MSM_MIN_SPLIT_N_NO_BATCH 256
 #endif
 #ifndef MCL_MSM_BATCH_MIN_N
 	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N (the generic kernel ; a SIMD kernel may have its own MsmKernel::batchMinN)
@@ -622,11 +633,13 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		}
 	}
 
+	tblN = size_t(1) << b;
+	// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
+	const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
-	// if n is large then try to use malloc
-	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
-		tblN = size_t(1) << b;
+	// if n or the table is large then try to use malloc
+	if (!useStack) {
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
 			tbl = tbl_;
@@ -640,6 +653,8 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		// recompute b for the reduced n (the generic model : the batch affine addition is not used for this n if batchMinN > n)
 		if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), (local::MsmBatch<G>::enabled && n >= batchMinN) ? msmCostParamBatch() : msmCostParamGeneric());
 	}
+	// reduce b (of the argument) so that the table fits in the stack
+	while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTES) b--;
 	tblN = size_t(1) << b;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
@@ -705,7 +720,7 @@ SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
 
 } // mcl::ec::local
 
-// the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N
+// the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N (MCL_MSM_MIN_SPLIT_N_NO_BATCH for GT)
 template<class GLV, class G>
 bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket)
 {
@@ -933,7 +948,8 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime 
 		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n);
 		return true;
 	}
-	if (n * GLV::splitN >= MCL_MSM_MIN_SPLIT_N) {
+	const size_t minSplitN = local::MsmBatch<G>::enabled ? MCL_MSM_MIN_SPLIT_N : MCL_MSM_MIN_SPLIT_N_NO_BATCH;
+	if (n * GLV::splitN >= minSplitN) {
 		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, b);
 	}
 	return false;
