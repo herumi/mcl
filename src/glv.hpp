@@ -41,9 +41,10 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 }
 
 #ifndef MCL_MSM_MAX_TBL_BYTES
-	// the max byte size of the bucket table 2^(b-1) * sizeof(G) of mulVecCore (the random access to tbl[k] misses the cache
-	// beyond L2) : it bounds the window size b for large n instead of a cache term of the cost model (see glvGetBucketSizeByCost)
-	#define MCL_MSM_MAX_TBL_BYTES (size_t(2) << 20)
+	// the max byte size of the bucket table 2^(b-1) * sizeof(G) of mulVecCore (the generic path) : b <= 16 for G1 (144 bytes)
+	// the cost model (not the cache) selects b <= 13 for n <= 2^18 split scalars and b = 16 for n >= 2^19 on Xeon w9-3495X, i9-13900H and Apple M4 Pro,
+	// so the bound is loose for the generic path. The AVX-512 kernel passes its own bound (see getBucketSizeAffM in src/msm_avx.cpp).
+	#define MCL_MSM_MAX_TBL_BYTES (size_t(8) << 20)
 #endif
 
 /*
@@ -83,13 +84,13 @@ inline uint64_t glvCostModel(size_t n, size_t b, size_t maxBitSize, const MsmCos
 	return winN * uint64_t(cost);
 }
 /*
-	argmin_b glvCostModel for b in [2, bMax] where 2^(bMax-1) * pointSize <= MCL_MSM_MAX_TBL_BYTES (bMax <= 16)
+	argmin_b glvCostModel for b in [2, bMax] where 2^(bMax-1) * pointSize <= maxTblBytes (bMax <= 16)
 	pointSize : sizeof(G) of the bucket table
 */
-inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSize, const MsmCostParam& prm)
+inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSize, const MsmCostParam& prm, size_t maxTblBytes = MCL_MSM_MAX_TBL_BYTES)
 {
 	size_t bMax = 2;
-	while (bMax < 16 && (size_t(1) << bMax) * pointSize <= MCL_MSM_MAX_TBL_BYTES) bMax++;
+	while (bMax < 16 && (size_t(1) << bMax) * pointSize <= maxTblBytes) bMax++;
 	size_t best = 2;
 	uint64_t bestCost = uint64_t(-1);
 	for (size_t b = 2; b <= bMax; b++) {
@@ -102,13 +103,15 @@ inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSi
 	return best;
 }
 /*
-	the weights fitted on Xeon w9-3495X (BLS12-381 and BN254 G1 together, n <= 2^16 split scalars)
-	the model is within 6% of the measured best for n in [2^7, 2^18] (test/glv_test.cpp)
+	the weights fitted on Xeon w9-3495X (BLS12-381 and BN254 G1 together, n <= 2^19 split scalars, misc/fit_msm.py)
+	and checked on i9-13900H and Apple M4 Pro : the model is within 6% of the measured best for n in [2^7, 2^18] (test/glv_test.cpp).
+	r = 3.5 puts the crossing of b = 13 and b = 16 (cost(13) - cost(16) = 2n - 221184 (r - 1) for 128-bit scalars) between 2^18 and 2^19
+	as measured on the three machines (b = 16 is 5-20% faster for n >= 2^19 and 7-8% slower at 2^18).
 */
-// the generic Jacobian mixed addition : r = 2.22, c0 = -12.2
-inline const MsmCostParam& msmCostParamGeneric() { static const MsmCostParam prm = { 142, -778 }; return prm; }
-// the batch affine addition : r = 2.88, c0 = 28.3 (the cheaper bucket addition makes the reduction relatively expensive)
-inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm = { 184, 1813 }; return prm; }
+// the generic Jacobian mixed addition : r = 3.5, c0 = -12.4
+inline const MsmCostParam& msmCostParamGeneric() { static const MsmCostParam prm = { 224, -791 }; return prm; }
+// the batch affine addition : r = 3.5, c0 = 64 (the cheaper bucket addition makes the reduction and the fixed cost of a window relatively expensive)
+inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm = { 224, 4096 }; return prm; }
 
 #ifndef MCL_GLV_ONLY_FUNC
 

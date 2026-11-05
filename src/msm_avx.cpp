@@ -1038,7 +1038,10 @@ size_t getBucketSizeAffM(size_t n, size_t maxBitSize, size_t pointSize)
 {
 	static const mcl::ec::MsmCostParam prm8 = { 498, 9558 }; // r = 7.78, c0 = 149
 	static const mcl::ec::MsmCostParam prm5 = { 291, 5181 }; // r = 4.55, c0 = 81
-	return mcl::ec::glvGetBucketSizeByCost(n, maxBitSize, pointSize, (N == 5) ? prm5 : prm8);
+	// the bucket table is bounded by 2 MiB (L2 of x64) : the addition of the kernel is fast, so the cache misses of tbl[k] beyond L2 are
+	// relatively expensive (b = 16 is 6-19% slower than b = 13 at 2^19 split scalars on Xeon w9-3495X, while the generic path prefers b = 16 there)
+	const size_t maxTblBytes = size_t(2) << 20;
+	return mcl::ec::glvGetBucketSizeByCost(n, maxBitSize, pointSize, (N == 5) ? prm5 : prm8, maxTblBytes);
 }
 
 // tbl (+)= P(i), see msmAddToBucket in src/glv.hpp

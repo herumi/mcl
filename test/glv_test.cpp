@@ -361,8 +361,7 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 11, 13, 13, 13, 15 } },
 		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 6, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 12, 13, 13, 14, 15 } },
 	};
-	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTES (b <= 14),
-	// so sizeof(G1) of the MCL_FP_BIT = 256 build (96 bytes, b <= 15) gives b = 15 for n >= 2^17, which is out of the measured range
+	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTES
 	const size_t pointSize = 144;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		for (size_t j = 0; j < N; j++) {
@@ -373,9 +372,15 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 			if (!ok) printf("%s n=%zd model b=%zd measured [%zd, %zd]\n", tbl[i].name, n, b, tbl[i].lo[j], tbl[i].hi[j]);
 		}
 	}
-	// the window size is bounded by MCL_MSM_MAX_TBL_BYTES (2 MiB) : 2^(b-1) * sizeof(G1) <= 2 MiB
+	// the window size is bounded by MCL_MSM_MAX_TBL_BYTES : 2^(b-1) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES
 	for (size_t n = 1 << 19; n <= (size_t(1) << 24); n *= 4) {
 		const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), mcl::ec::msmCostParamBatch());
 		CYBOZU_TEST_ASSERT((size_t(1) << (b - 1)) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES);
+	}
+	// b = 16 (8 windows of 128-bit scalars) is 5-20% faster than b = 13 for n >= 2^19 and 7-8% slower at n = 2^18 (Xeon w9-3495X, i9-13900H, Apple M4 Pro)
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 18, 128, pointSize, *tbl[i].prm), 13u);
+		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 19, 128, pointSize, *tbl[i].prm), 16u);
+		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 21, 128, pointSize, *tbl[i].prm), 16u);
 	}
 }
