@@ -636,6 +636,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	tblN = size_t(1) << b;
 	// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
 	const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
+	(void)useStack;
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n or the table is large then try to use malloc
