@@ -809,6 +809,8 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	the SIMD kernel of the batch affine addition of G1::mulVec (ec::MsmKernel, see mulVecUpdateTableBatch in src/glv.hpp)
 	AffM : a point in the layout of the kernel. x and y are N limbs of W bits in the Montgomery form of FpM (R = 2^(W N)).
 	The zero point is represented by y = 0 (the group has a prime order, so no point has y = 0).
+	A point of order 2 (y = 0) outside G1 such as (-1, 0) of BLS12-377 (the cofactor of E(Fp) is even ; it can be passed only if verifyOrderG1(false))
+	is treated as the zero point by this kernel (the generic path of src/glv.hpp handles it correctly).
 	addPairs processes 8 pairs at once : the points of the 8 lanes are loaded as 8 Vec (one point per Vec),
 	transposed to FpM (one limb per Vec) by trans8x8, the formula is computed by FpM with the masks of the lanes
 	(zero, doubling, A = -B) and the result is transposed back. The denominators of lambda of all the pairs
