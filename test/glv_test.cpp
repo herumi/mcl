@@ -157,7 +157,7 @@ void testMulVec(const G& P, const char *name)
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 19, 20, 32, 39, 40, 48, 63, 64, 128, 256, 512, 1024, 2048, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		G Q1, Q2;
@@ -264,7 +264,7 @@ void testPowVec(const GT& e)
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 19, 20, 32, 39, 40, 48, 63, 64, 128, 256, 512, 1024, 2048, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		GT Q1, Q2;

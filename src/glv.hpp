@@ -195,9 +195,16 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 /*
 	batch affine addition for the bucket method (see mulVecUpdateTableBatch)
 */
+#ifndef MCL_MSM_MIN_SPLIT_N
+	// use the bucket method (mulVecGLVlarge) if the number of the split scalars (n * splitN) >= MCL_MSM_MIN_SPLIT_N, otherwise the NAF method (EcT::mulVecN)
+	// the bucket method (b = 5) is faster than the NAF method from about 64 to 80 split scalars (x64, BLS12-381 / BN254 G1)
+	#define MCL_MSM_MIN_SPLIT_N 80
+#endif
 #ifndef MCL_MSM_BATCH_MIN_N
 	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N
-	#define MCL_MSM_BATCH_MIN_N 256
+	// the batch affine addition is faster than the Jacobi mixed addition from about 90 (BLS12-381) to 170 (BN254) split scalars on x64 (the fixed cost of the inversions),
+	// and from about 64 on wasm (the inversion is cheap)
+	#define MCL_MSM_BATCH_MIN_N 128
 #endif
 #ifndef MCL_MSM_BATCH_CHUNK
 	// the number of entries folded at once (the work array S has this number of points)
@@ -365,13 +372,14 @@ template<class G>
 struct MsmBatchWork {
 	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
 	ec::MsmKernel kn; // the kernel of the batch affine addition
+	size_t chunk; // min(CHUNK, n) : the max number of the entries of idx processed at once (the fixed cost of the buffers is small for small n)
 	uint32_t *D; // [n] (bucket | sign) of each scalar
 	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
 	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
-	uint32_t *ia; // [CHUNK] the pairs of the current level
-	uint32_t *ib; // [CHUNK]
-	MsmPart *part[2]; // [CHUNK + 1] the parts (a bucket in the chunk) of the current and next level
-	void *S; // [CHUNK * kn.pointSize] the work array of the points (64-byte aligned)
+	uint32_t *ia; // [chunk] the pairs of the current level
+	uint32_t *ib; // [chunk]
+	MsmPart *part[2]; // [chunk + 1] the parts (a bucket in the chunk) of the current and next level
+	void *S; // [chunk * kn.pointSize] the work array of the points (64-byte aligned)
 	void *work; // [kn.workSize] the work area of kn.addPairs (64-byte aligned)
 	void *base; // [n * kn.pointSize] xVec converted by kn.cvtBase (0 if kn.cvtBase == 0)
 	void *buf_;
@@ -386,12 +394,13 @@ struct MsmBatchWork {
 		} else {
 			MsmGenericKernel<G>::set(kn);
 		}
+		chunk = (n < CHUNK) ? n : CHUNK;
 		const size_t align = 64;
-		const size_t sSize = (kn.pointSize * CHUNK + align - 1) / align * align;
+		const size_t sSize = (kn.pointSize * chunk + align - 1) / align * align;
 		const size_t wSize = (kn.workSize + align - 1) / align * align;
 		const size_t bSize = kn.cvtBase ? (kn.pointSize * n + align - 1) / align * align : 0;
 		size_t size = align + sSize + wSize + bSize;
-		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * CHUNK) + sizeof(MsmPart) * 2 * (CHUNK + 1);
+		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * chunk) + sizeof(MsmPart) * 2 * (chunk + 1);
 		buf_ = malloc(size);
 		if (buf_ == 0) return false;
 		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
@@ -401,9 +410,9 @@ struct MsmBatchWork {
 		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
 		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
 		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
-		ia = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
-		ib = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
-		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (CHUNK + 1);
+		ia = (uint32_t*)p; p += sizeof(uint32_t) * chunk;
+		ib = (uint32_t*)p; p += sizeof(uint32_t) * chunk;
+		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (chunk + 1);
 		part[1] = (MsmPart*)p;
 		return true;
 	}
@@ -434,7 +443,7 @@ struct MsmBatch<EcT<Fp> > {
 	xVec[i] must be affine (z = 1) or zero
 	1. D[i] = (bucket, sign) of the digit of yVec[i], off[k] = the offset of the bucket k (counting sort)
 	2. idx[off[k] ...] = the indexes of the scalars whose bucket is k (with the sign bit)
-	3. for each chunk of CHUNK entries of idx : fold the points of each bucket by a binary tree
+	3. for each chunk of wk.chunk (= min(MCL_MSM_BATCH_CHUNK, n)) entries of idx : fold the points of each bucket by a binary tree
 	   level 0 : pairs of xVec[idx[]] -> S, level >= 1 : pairs of S -> S (in place),
 	   a bucket with one point is added to tbl[k] (a bucket may be split by the chunk boundary)
 	   all the additions of a level are done by addAffineBatch (sharing one inversion per MCL_MSM_BATCH_SUB pairs)
@@ -447,7 +456,7 @@ template<class G>
 void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
 {
 	using namespace local;
-	const size_t CHUNK = MsmBatchWork<G>::CHUNK;
+	const size_t CHUNK = wk.chunk;
 	const ec::MsmKernel& kn = wk.kn;
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
@@ -577,7 +586,7 @@ struct mulVecUpdateTableBatchT<EcT<Fp> > {
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
 	return numbers of done, which may be smaller than n if malloc fails
 	@note xVec may be normlized
-	fast for n >= 256
+	fast for n >= MCL_MSM_MIN_SPLIT_N
 	maxBitSize : the max bit size of yVec[i] (yUnitSize * UnitBitSize if 0)
 */
 template<class G>
@@ -691,7 +700,7 @@ SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
 
 } // mcl::ec::local
 
-// for n >= 128
+// the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N
 template<class GLV, class G>
 bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket)
 {
@@ -919,7 +928,7 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime 
 		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n);
 		return true;
 	}
-	if (n >= 128) {
+	if (n * GLV::splitN >= MCL_MSM_MIN_SPLIT_N) {
 		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, b);
 	}
 	return false;
