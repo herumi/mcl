@@ -1010,7 +1010,7 @@ const uint32_t msmIdxMask = msmSign - 1;
 const uint32_t msmNone = uint32_t(-1); // d = 0 (no bucket) or no point
 } // local
 struct MsmKernel {
-	size_t pointSize; // the byte size of a point in the layout of the kernel
+	size_t pointSize; // the byte size of a point in the layout of the kernel (the all-zero bytes must be the zero point : the bucket table is cleared by memset)
 	size_t workSize; // the byte size of the work area of addPairs
 	// dst[i] = xVec[i] (EcT, affine or zero) for i in [0, n)
 	// a SIMD kernel may represent the zero point by y = 0, then a point of order 2 (y = 0) outside the prime-order group is not supported

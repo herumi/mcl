@@ -1,4 +1,5 @@
 #pragma once
+#include <string.h>
 
 namespace mcl {
 
@@ -46,6 +47,31 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	// so the bound is loose for the generic path. The AVX-512 kernel passes its own bound (see getBucketSizeAffM in src/msm_avx.cpp).
 	#define MCL_MSM_MAX_TBL_BYTES (size_t(8) << 20)
 #endif
+#ifndef MCL_MSM_REDUCE_MIN_B
+	// use the batched bucket reduction (mulVecReduceTableBatch) if the number of the buckets of a window >= MCL_MSM_REDUCE_MIN_B
+	// (the chains of the batch affine addition share one inversion per 2 M pairs, so the batch is slower for a small table :
+	// 1.1-1.7x faster than the Jacobi running sums at B = 128, 1.2-2.2x at 256, 1.4-2.8x at 512 on Xeon w9-3495X, see memo 2026-11-05)
+	#define MCL_MSM_REDUCE_MIN_B 128
+#endif
+#ifndef MCL_MSM_REDUCE_MAX_M
+	// the max number of the chains of the batched bucket reduction (see msmReduceChainN)
+	#define MCL_MSM_REDUCE_MAX_M 256
+#endif
+
+/*
+	the number of the chains of the batched bucket reduction (mulVecReduceTableBatch) for B buckets (a power of 2) :
+	a larger M makes the Jacobi combination of the chains (about 2000 clk per chain) expensive
+	and a smaller M makes the inversion shared by 2 M pairs expensive.
+	the best M measured on Xeon w9-3495X (BLS12-381 / BN254, the AVX-512 kernel and the generic one, see memo 2026-11-05) :
+	16 for B <= 256, 32 for B = 512, B / 32 (in [32, MCL_MSM_REDUCE_MAX_M]) for B >= 1024, and the neighbors are within 5-15%
+*/
+inline size_t msmReduceChainN(size_t B)
+{
+	size_t M = B / 32;
+	if (M < 32) M = (B >= 512) ? 32 : 16;
+	if (M > MCL_MSM_REDUCE_MAX_M) M = MCL_MSM_REDUCE_MAX_M;
+	return M;
+}
 
 /*
 	cost model of the bucket method (mulVecCore) for n (split) scalars of maxBitSize bits with the window size b :
@@ -55,16 +81,25 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	The weights are in units of 1/64 of a bucket addition and depend on the mode (the generic Jacobian addition,
 	the batch affine addition, the SIMD kernel), not on the curve (the ratios of the field operations are the same).
 	The expected number of nonempty buckets is B (1 - (1 - 1/B)^n).
-	The weights are fitted by misc/fit_msm.py on the sweep of b by misc/msm_sweep.cpp (see memo 2026-11-04).
+	The batch affine addition reduces the buckets by the chains of the kernel (mulVecReduceTableBatch) if B >= MCL_MSM_REDUCE_MIN_B,
+	which is cheaper than the Jacobi running sums : its cost is B r2 + M m2 (M = msmReduceChainN(B) chains, m2 = the fixed cost of a chain :
+	the conversions to Jacobi and the Jacobi additions of the combination) instead of B r.
+	The weights are fitted by misc/fit_msm.py (r, c0) and misc/fit_msm_reduce.py (r2, m2, c0 with r fixed)
+	on the sweep of b by misc/msm_sweep.cpp (see memo 2026-11-04 and 2026-11-05).
 */
 struct MsmCostParam {
 	int32_t r;
 	int32_t c0;
+	int32_t r2; // the reduction of a bucket by the batched reduction (B >= MCL_MSM_REDUCE_MIN_B), r if 0
+	int32_t m2; // the fixed cost of a chain of the batched reduction
 };
 inline uint64_t glvCostModel(size_t n, size_t b, size_t maxBitSize, const MsmCostParam& prm)
 {
 	const uint64_t winN = (maxBitSize + b - 1) / b;
 	const uint64_t B = uint64_t(1) << (b - 1);
+	const bool batchReduce = B >= MCL_MSM_REDUCE_MIN_B && prm.r2;
+	const int32_t r = batchReduce ? prm.r2 : prm.r;
+	const int64_t chainCost = batchReduce ? int64_t(msmReduceChainN(B)) * prm.m2 : 0;
 	uint64_t adds;
 	if (n >= 16 * B) {
 		adds = n - B; // (1 - 1/B)^n < e^-16
@@ -79,7 +114,7 @@ inline uint64_t glvCostModel(size_t n, size_t b, size_t maxBitSize, const MsmCos
 		const uint64_t nonempty = B - ((B * p) >> 32);
 		adds = n - nonempty;
 	}
-	int64_t cost = int64_t(adds) * 64 + int64_t(B) * prm.r + prm.c0;
+	int64_t cost = int64_t(adds) * 64 + int64_t(B) * r + chainCost + prm.c0;
 	if (cost < 0) cost = 0;
 	return winN * uint64_t(cost);
 }
@@ -108,10 +143,13 @@ inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSi
 	r = 3.5 puts the crossing of b = 13 and b = 16 (cost(13) - cost(16) = 2n - 221184 (r - 1) for 128-bit scalars) between 2^18 and 2^19
 	as measured on the three machines (b = 16 is 5-20% faster for n >= 2^19 and 7-8% slower at 2^18).
 */
-// the generic Jacobian mixed addition : r = 3.5, c0 = -12.4
-inline const MsmCostParam& msmCostParamGeneric() { static const MsmCostParam prm = { 224, -791 }; return prm; }
-// the batch affine addition : r = 3.5, c0 = 64 (the cheaper bucket addition makes the reduction and the fixed cost of a window relatively expensive)
-inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm = { 224, 4096 }; return prm; }
+// the generic Jacobian mixed addition : r = 3.5, c0 = -12.4 (no batched reduction)
+inline const MsmCostParam& msmCostParamGeneric() { static const MsmCostParam prm = { 224, -791, 0, 0 }; return prm; }
+/*
+	the batch affine addition : r = 3.5, c0 = 12.2, r2 = 2.2, m2 = 5.7 (refitted on 2026-11-05 with the batched reduction, Xeon w9-3495X :
+	the model is within 0.8% (BLS12-381) / 3.6% (BN254) of the measured best for n in [2^7, 2^19] split scalars, and selects b = 16 from 2^18)
+*/
+inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm = { 224, 781, 141, 367 }; return prm; }
 
 #ifndef MCL_GLV_ONLY_FUNC
 
@@ -388,15 +426,28 @@ struct MsmBatchWork {
 	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
 	ec::MsmKernel kn; // the kernel of the batch affine addition
 	size_t chunk; // min(CHUNK, n) : the max number of the entries of idx processed at once (the fixed cost of the buffers is small for small n)
+	size_t tblN; // the max number of the buckets of a window (2^b)
+	size_t chainN; // the max number of the chains of the batched reduction (msmReduceChainN(tblN))
 	uint32_t *D; // [n] (bucket | sign) of each scalar
 	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
 	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
-	uint32_t *ia; // [chunk] the pairs of the current level
-	uint32_t *ib; // [chunk]
+	uint32_t *ia; // [max(chunk, 2 chainN)] the pairs of the current level (or of a step of the reduction)
+	uint32_t *ib; // [max(chunk, 2 chainN)]
 	MsmPart *part[2]; // [chunk + 1] the parts (a bucket in the chunk) of the current and next level
 	void *S; // [chunk * kn.pointSize] the work array of the points (64-byte aligned)
 	void *work; // [kn.workSize] the work area of kn.addPairs (64-byte aligned)
 	void *base; // [n * kn.pointSize] xVec converted by kn.cvtBase (0 if kn.cvtBase == 0)
+	/*
+		[(tblN + 4 chainN) * kn.pointSize] the bucket table of a window in the layout of the kernel (64-byte aligned),
+		followed by the two state buffers (2 chainN points each) of the batched reduction
+		(the base of addPairs is one array, so the table and the states are in the same array)
+	*/
+	void *tbl;
+	uint8_t *filled; // [tblN] 1 if tbl[k] has a point
+	uint32_t *pendK; // [pendMax] the buckets of the pending additions (a bucket split by a chunk boundary gets two or more points)
+	G *pendQ; // [pendMax] the sums of the pending additions (Jacobi)
+	size_t pendN;
+	size_t pendMax; // the number of the chunk boundaries + 1
 	void *buf_;
 	MsmBatchWork() : buf_(0) {}
 	~MsmBatchWork() { if (buf_) free(buf_); }
@@ -409,27 +460,89 @@ struct MsmBatchWork {
 		} else {
 			MsmGenericKernel<G>::set(kn);
 		}
+		this->tblN = tblN;
+		chainN = msmReduceChainN(tblN);
 		chunk = (n < CHUNK) ? n : CHUNK;
+		pendMax = n / chunk + 2;
+		pendN = 0;
+		const size_t pairN = (chunk > 2 * chainN) ? chunk : 2 * chainN; // the size of ia and ib
 		const size_t align = 64;
 		const size_t sSize = (kn.pointSize * chunk + align - 1) / align * align;
 		const size_t wSize = (kn.workSize + align - 1) / align * align;
 		const size_t bSize = kn.cvtBase ? (kn.pointSize * n + align - 1) / align * align : 0;
-		size_t size = align + sSize + wSize + bSize;
-		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * chunk) + sizeof(MsmPart) * 2 * (chunk + 1);
+		const size_t tSize = (kn.pointSize * (tblN + 4 * chainN) + align - 1) / align * align;
+		const size_t qSize = (sizeof(G) * pendMax + align - 1) / align * align;
+		size_t size = align + sSize + wSize + bSize + tSize + qSize;
+		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * pairN + pendMax) + sizeof(MsmPart) * 2 * (chunk + 1) + tblN;
 		buf_ = malloc(size);
 		if (buf_ == 0) return false;
 		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
 		S = p; p += sSize;
 		work = p; p += wSize;
 		base = kn.cvtBase ? p : 0; p += bSize;
+		tbl = p; p += tSize;
+		pendQ = (G*)p; p += qSize;
 		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
 		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
 		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
-		ia = (uint32_t*)p; p += sizeof(uint32_t) * chunk;
-		ib = (uint32_t*)p; p += sizeof(uint32_t) * chunk;
+		ia = (uint32_t*)p; p += sizeof(uint32_t) * pairN;
+		ib = (uint32_t*)p; p += sizeof(uint32_t) * pairN;
+		pendK = (uint32_t*)p; p += sizeof(uint32_t) * pendMax;
 		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (chunk + 1);
-		part[1] = (MsmPart*)p;
+		part[1] = (MsmPart*)p; p += sizeof(MsmPart) * (chunk + 1);
+		filled = (uint8_t*)p;
 		return true;
+	}
+	// the i-th point of tbl
+	char *pt(size_t i) const { return (char*)tbl + i * kn.pointSize; }
+	// clear the table of B buckets (the zero point is all-zero bytes in the layout of the kernel)
+	void clearTbl(size_t B)
+	{
+		assert(B <= tblN);
+		memset(tbl, 0, kn.pointSize * B);
+		memset(filled, 0, B);
+		pendN = 0;
+	}
+	/*
+		tbl[k] (+)= src (a point in the layout of the kernel)
+		the first point of a bucket is copied, the others (a bucket split by chunk boundaries) are added by the Jacobi addition
+		and converted back by flushPending
+	*/
+	void setBucket(size_t k, const void *src)
+	{
+		char *dst = pt(k);
+		if (!filled[k]) {
+			memcpy(dst, src, kn.pointSize);
+			filled[k] = 1;
+			return;
+		}
+		G *Q;
+		if (pendN > 0 && pendK[pendN - 1] == k) {
+			// the bucket spans three or more chunks
+			Q = &pendQ[pendN - 1];
+		} else {
+			assert(pendN < pendMax);
+			pendK[pendN] = uint32_t(k);
+			Q = &pendQ[pendN++];
+			Q->clear();
+			kn.addToBucket(Q, dst, 0);
+		}
+		kn.addToBucket(Q, src, 0);
+	}
+	// tbl[pendK[j]] = pendQ[j] (normalized at once)
+	void flushPending()
+	{
+		if (pendN == 0) return;
+		G::normalizeVec(pendQ, pendQ, pendN);
+		for (size_t j = 0; j < pendN; j++) {
+			char *dst = pt(pendK[j]);
+			if (kn.cvtBase) {
+				kn.cvtBase(dst, &pendQ[j], 1);
+			} else {
+				memcpy(dst, &pendQ[j], kn.pointSize);
+			}
+		}
+		pendN = 0;
 	}
 };
 
@@ -454,28 +567,105 @@ struct MsmBatch<EcT<Fp> > {
 } // mcl::ec::local
 
 /*
+	the batched bucket reduction : win (+)= tbl[0] + 2 tbl[1] + ... + B tbl[B-1] (tbl = wk.tbl in the layout of the kernel, B = a power of 2)
+	by M = msmReduceChainN(B) chains of the batch affine addition (2 additions of kn.addPairs per bucket instead of J+A and J+J of mulVecReduceTable).
+	the buckets are split into M segments of L = B / M buckets. for the segment j = [jL, (j+1)L),
+	  S_j = the running sum of the segment from the top (tbl[(j+1)L-1], then += tbl[(j+1)L-2], ...), W_j = the sum of the running sums,
+	  U_j = S_j at the end (= the sum of the segment).
+	then sum_k (k+1) tbl[k] = sum_j W_j + L sum_j j U_j (the running sum of the bucket k of the segment j is S_j + sum_{j' > j} U_j').
+	each step advances all the chains by one call of kn.addPairs of 2 M pairs (W_j += S_j (old), S_j += tbl[i]) :
+	all the pairs read the states before the step, so the states are double-buffered (wk.tbl[B' + 2 M (0 or 1) + j], B' = wk.tblN).
+	the zero point, the doubling and A = -B are handled by the kernel.
+	the combination (M conversions to Jacobi, 2 M Jacobi additions and log2(L) doublings) is cheap for M <= 256.
+	about 3.7x (BLS12-381, the AVX-512 kernel), 2.3x (BN254, AVX-512), 1.6x (the generic kernel) faster than mulVecReduceTable for B = 4096.
+*/
+template<class G>
+void mulVecReduceTableBatch(G& win, local::MsmBatchWork<G>& wk, size_t B, bool first)
+{
+	using namespace local;
+	const ec::MsmKernel& kn = wk.kn;
+	const size_t M = msmReduceChainN(B);
+	assert(M <= wk.chainN && B >= 2 * M && (B & (B - 1)) == 0);
+	const size_t L = B / M;
+	const uint32_t st[2] = { uint32_t(wk.tblN), uint32_t(wk.tblN + 2 * M) }; // the state buffers : S_j = st + j, W_j = st + M + j
+	uint32_t *ia = wk.ia;
+	uint32_t *ib = wk.ib;
+	int cur = 0;
+	// init : S_j = tbl[(j+1)L - 1], W_j = 0
+	for (size_t j = 0; j < M; j++) {
+		ia[j] = uint32_t((j + 1) * L - 1);
+		ib[j] = msmNone;
+		ia[M + j] = msmNone;
+		ib[M + j] = msmNone;
+	}
+	kn.addPairs(wk.pt(st[cur]), wk.tbl, ia, ib, 2 * M, wk.work);
+	// steps : W_j += S_j (old), S_j += tbl[(j+1)L - 1 - t]
+	for (size_t t = 1; t < L; t++) {
+		const uint32_t s = st[cur];
+		for (size_t j = 0; j < M; j++) {
+			ia[j] = s + uint32_t(j);
+			ib[j] = uint32_t((j + 1) * L - 1 - t);
+			ia[M + j] = s + uint32_t(M + j);
+			ib[M + j] = s + uint32_t(j);
+		}
+		kn.addPairs(wk.pt(st[1 - cur]), wk.tbl, ia, ib, 2 * M, wk.work);
+		cur = 1 - cur;
+	}
+	// final : F_j = W_j + S_j -> the other buffer, U_j = S_j
+	const uint32_t s = st[cur];
+	for (size_t j = 0; j < M; j++) {
+		ia[j] = s + uint32_t(M + j);
+		ib[j] = s + uint32_t(j);
+	}
+	kn.addPairs(wk.pt(st[1 - cur]), wk.tbl, ia, ib, M, wk.work);
+	const uint32_t f = st[1 - cur];
+	// R = sum_{j >= 1} j U_j by the running sum from the top (V = U_{M-1}, R = V, V += U_j, R += V, ...)
+	G V, R, T;
+	V.clear();
+	kn.addToBucket(&V, wk.tbl, s + uint32_t(M - 1));
+	R = V;
+	for (size_t j = M - 2; j >= 1; j--) {
+		kn.addToBucket(&V, wk.tbl, s + uint32_t(j));
+		R += V;
+	}
+	// T = sum_j F_j + L R
+	T.clear();
+	for (size_t j = 0; j < M; j++) {
+		kn.addToBucket(&T, wk.tbl, f + uint32_t(j));
+	}
+	for (size_t i = 1; i < L; i *= 2) G::dbl(R, R);
+	T += R;
+	if (first) {
+		win = T;
+	} else {
+		win += T;
+	}
+}
+
+/*
 	the batch affine version of mulVecUpdateTable
 	xVec[i] must be affine (z = 1) or zero
 	1. D[i] = (bucket, sign) of the digit of yVec[i], off[k] = the offset of the bucket k (counting sort)
 	2. idx[off[k] ...] = the indexes of the scalars whose bucket is k (with the sign bit)
 	3. for each chunk of wk.chunk (= min(MCL_MSM_BATCH_CHUNK, n)) entries of idx : fold the points of each bucket by a binary tree
-	   level 0 : pairs of xVec[idx[]] -> S, level >= 1 : pairs of S -> S (in place),
-	   a bucket with one point is added to tbl[k] (a bucket may be split by the chunk boundary)
+	   level 0 : pairs of xVec[idx[]] -> S (a bucket with one point is the pair (idx, msmNone)), level >= 1 : pairs of S -> S (in place),
+	   the folded point of a bucket is copied to wk.tbl[k] (in the layout of the kernel) by wk.setBucket
+	   (a bucket split by the chunk boundary gets two or more points : they are added by the Jacobi addition and converted back by wk.flushPending)
 	   all the additions of a level are done by addAffineBatch (sharing one inversion per MCL_MSM_BATCH_SUB pairs)
-	4. win (+)= tbl[0] + 2 tbl[1] + ... (tbl[k] is affine or zero, so addJacobi uses the Q.z = 1 formula)
+	4. win (+)= tbl[0] + 2 tbl[1] + ... by mulVecReduceTableBatch if tblN >= MCL_MSM_REDUCE_MIN_B,
+	   otherwise by the running sums of the Jacobi addition (tbl[k] is affine or zero, so addJacobi uses the Q.z = 1 formula)
 	The number of additions is the same as mulVecUpdateTable (n - the number of non-empty buckets)
 	and the batches do not degenerate even if all scalars are equal.
 	base : xVec in the layout of the kernel wk.kn (xVec itself for the generic kernel)
 */
 template<class G>
-void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
+void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
 {
 	using namespace local;
 	const size_t CHUNK = wk.chunk;
 	const ec::MsmKernel& kn = wk.kn;
-	for (size_t i = 0; i < tblN; i++) {
-		tbl[i].clear();
-	}
+	const size_t ps = kn.pointSize;
+	wk.clearTbl(tblN);
 	uint32_t *off = wk.off;
 	for (size_t k = 0; k <= tblN; k++) off[k] = 0;
 	// off[k + 1] = the number of the scalars in the bucket k
@@ -513,25 +703,22 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *b
 			const size_t end = off[k + 1] < e1 ? off[k + 1] : e1;
 			if (end > start) {
 				const size_t cnt = end - start;
-				if (cnt == 1) {
-					kn.addToBucket(&tbl[k], base, wk.idx[start]);
-				} else {
-					for (size_t j = 0; j + 1 < cnt; j += 2) {
-						wk.ia[m] = wk.idx[start + j];
-						wk.ib[m] = wk.idx[start + j + 1];
-						m++;
-					}
-					if (cnt & 1) {
-						wk.ia[m] = wk.idx[end - 1];
-						wk.ib[m] = msmNone;
-						m++;
-					}
-					cur[partN].k = uint32_t(k);
-					cur[partN].start = uint32_t(outPos);
-					cur[partN].cnt = uint32_t((cnt + 1) / 2);
-					partN++;
-					outPos += (cnt + 1) / 2;
+				for (size_t j = 0; j + 1 < cnt; j += 2) {
+					wk.ia[m] = wk.idx[start + j];
+					wk.ib[m] = wk.idx[start + j + 1];
+					m++;
 				}
+				if (cnt & 1) {
+					// a single point (cnt == 1) is copied (with its sign) to S by the kernel
+					wk.ia[m] = wk.idx[end - 1];
+					wk.ib[m] = msmNone;
+					m++;
+				}
+				cur[partN].k = uint32_t(k);
+				cur[partN].start = uint32_t(outPos);
+				cur[partN].cnt = uint32_t((cnt + 1) / 2);
+				partN++;
+				outPos += (cnt + 1) / 2;
 			}
 			if (off[k + 1] <= e1) {
 				k++;
@@ -551,7 +738,7 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *b
 				const size_t cnt = cur[p].cnt;
 				const size_t start = cur[p].start;
 				if (cnt == 1) {
-					kn.addToBucket(&tbl[cur[p].k], wk.S, uint32_t(start));
+					wk.setBucket(cur[p].k, (const char*)wk.S + ps * start);
 					continue;
 				}
 				for (size_t j = 0; j + 1 < cnt; j += 2) {
@@ -575,7 +762,22 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *b
 			partN = nxtN;
 		}
 	}
-	local::mulVecReduceTable(win, tbl, tblN, first);
+	wk.flushPending();
+	if (tblN >= MCL_MSM_REDUCE_MIN_B) {
+		mulVecReduceTableBatch(win, wk, tblN, first);
+		return;
+	}
+	// the running sums of the Jacobi addition for a small table (see mulVecReduceTable ; tbl[k] is read by kn.addToBucket)
+	G sum;
+	sum.clear();
+	for (size_t i = 0; i < tblN; i++) {
+		kn.addToBucket(&sum, wk.tbl, uint32_t(tblN - 1 - i));
+		if (i == 0 && first) {
+			win = sum;
+		} else {
+			win += sum;
+		}
+	}
 }
 
 namespace local {
@@ -583,14 +785,14 @@ namespace local {
 template<class G>
 struct mulVecUpdateTableBatchT {
 	template<class W>
-	static void call(G&, G *, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
+	static void call(G&, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
 };
 template<class Fp>
 struct mulVecUpdateTableBatchT<EcT<Fp> > {
 	typedef EcT<Fp> G;
-	static void call(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
+	static void call(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
 	{
-		mulVecUpdateTableBatch(win, tbl, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
+		mulVecUpdateTableBatch(win, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
 	}
 };
 
@@ -634,34 +836,36 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	}
 
 	tblN = size_t(1) << b;
-	// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
-	const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
-	(void)useStack;
+	// the batch affine addition has its own bucket table (wk.tbl in the layout of the kernel), so tbl is allocated only for the generic path
+	typename local::MsmBatch<G>::Work wk;
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel);
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
-	// if n or the table is large then try to use malloc
-	if (!useStack) {
-		tbl_ = (G*)malloc(sizeof(G) * tblN);
-		if (tbl_) {
+#endif
+	if (!useBatch) {
+		// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
+		const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
+		(void)useStack;
+#ifndef MCL_DONT_USE_MALLOC
+		// if n or the table is large then try to use malloc
+		if (!useStack) {
+			tbl_ = (G*)malloc(sizeof(G) * tblN);
 			tbl = tbl_;
-			goto main;
+		}
+#endif
+		if (tbl == 0) {
+			// n is small or malloc fails so use stack
+			if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+				n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
+				// recompute b for the reduced n (the generic model : the batch affine addition is not used)
+				if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), msmCostParamGeneric());
+			}
+			// reduce b (of the argument) so that the table fits in the stack
+			while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTES) b--;
+			tblN = size_t(1) << b;
+			tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 		}
 	}
-#endif
-	// n is small or malloc fails so use stack
-	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
-		n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-		// recompute b for the reduced n (the generic model : the batch affine addition is not used for this n if batchMinN > n)
-		if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), (local::MsmBatch<G>::enabled && n >= batchMinN) ? msmCostParamBatch() : msmCostParamGeneric());
-	}
-	// reduce b (of the argument) so that the table fits in the stack
-	while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTES) b--;
-	tblN = size_t(1) << b;
-	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
-	// keep tbl_ = 0
-#ifndef MCL_DONT_USE_MALLOC
-main:
-#endif
 	const size_t winN = (maxBitSize + b-1) / b;
 	const size_t rem = maxBitSize - b * (winN-1); // the bit size of the top window in [1, b]
 
@@ -669,15 +873,13 @@ main:
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
 	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
-	typename local::MsmBatch<G>::Work wk;
-	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel);
 	const void *base = xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
 	if (useBatch && wk.base) {
 		wk.kn.cvtBase(wk.base, xVec, n);
 		base = wk.base;
 	}
 	if (useBatch) {
-		local::mulVecUpdateTableBatchT<G>::call(z, tbl, size_t(1) << rem, b, base, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
+		local::mulVecUpdateTableBatchT<G>::call(z, size_t(1) << rem, b, base, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
 	} else {
 		mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
 	}
@@ -686,7 +888,7 @@ main:
 			G::dbl(z, z);
 		}
 		if (useBatch) {
-			local::mulVecUpdateTableBatchT<G>::call(z, tbl, tblN / 2, b, base, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
+			local::mulVecUpdateTableBatchT<G>::call(z, tblN / 2, b, base, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
 		} else {
 			mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
 		}

@@ -353,8 +353,8 @@ CYBOZU_TEST_AUTO(glv)
 
 /*
 	the cost model of the window size b (glvGetBucketSizeByCost) vs the measured one
-	measured on Xeon w9-3495X by sweeping b (misc/msm_sweep.cpp, 2026-11-04) : n (split) scalars of 128 bits of G1,
-	[lo, hi] is the range of b whose time is within 6% of the best (the valley is shallow)
+	measured on Xeon w9-3495X by sweeping b (misc/msm_sweep.cpp, 2026-11-04, the batch rows on 2026-11-05 with the batched reduction) :
+	n (split) scalars of 128 bits of G1, [lo, hi] is the range of b whose time is within 6% of the best (the valley is shallow)
 	n >= 2^19 is bounded by MCL_MSM_MAX_TBL_BYTES, so it is not tested here
 */
 CYBOZU_TEST_AUTO(bucketSizeModel)
@@ -369,8 +369,8 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 	} tbl[] = {
 		{ "generic BLS12-381", &mcl::ec::msmCostParamGeneric(), { 5, 6, 7, 8, 8, 9, 10, 10, 12, 12, 12, 13 }, { 6, 7, 8, 8, 10, 11, 12, 13, 13, 13, 13, 15 } },
 		{ "generic BN254", &mcl::ec::msmCostParamGeneric(), { 5, 6, 6, 7, 8, 9, 10, 10, 11, 12, 12, 13 }, { 6, 7, 8, 9, 10, 11, 12, 13, 13, 13, 14, 14 } },
-		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 11, 13, 13, 13, 15 } },
-		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 6, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 12, 13, 13, 14, 15 } },
+		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 9, 10, 10, 11, 12, 12, 15 }, { 6, 6, 8, 9, 10, 11, 11, 13, 13, 14, 15, 16 } },
+		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 5, 6, 6, 7, 7, 9, 9, 10, 12, 12, 13, 14 }, { 6, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 16 } },
 	};
 	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTES
 	const size_t pointSize = 144;
@@ -388,9 +388,11 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 		const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), mcl::ec::msmCostParamBatch());
 		CYBOZU_TEST_ASSERT((size_t(1) << (b - 1)) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES);
 	}
-	// b = 16 (8 windows of 128-bit scalars) is 5-20% faster than b = 13 for n >= 2^19 and 7-8% slower at n = 2^18 (Xeon w9-3495X, i9-13900H, Apple M4 Pro)
+	// the generic path : b = 16 (8 windows of 128-bit scalars) is 5-20% faster than b = 13 for n >= 2^19 and 7-8% slower at n = 2^18 (Xeon w9-3495X, i9-13900H, Apple M4 Pro)
+	// the batch affine addition with the batched reduction : b = 16 from n = 2^18 (BLS12-381 : the best, BN254 : 1.1% slower than b = 14 on Xeon w9-3495X)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 18, 128, pointSize, *tbl[i].prm), 13u);
+		const bool batch = tbl[i].prm == &mcl::ec::msmCostParamBatch();
+		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 18, 128, pointSize, *tbl[i].prm), batch ? 16u : 13u);
 		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 19, 128, pointSize, *tbl[i].prm), 16u);
 		CYBOZU_TEST_EQUAL(mcl::ec::glvGetBucketSizeByCost(1 << 21, 128, pointSize, *tbl[i].prm), 16u);
 	}

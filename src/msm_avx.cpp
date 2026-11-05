@@ -1034,12 +1034,13 @@ inline void cvtAffMtoFp(Fp& y, const Unit x[N])
 	the weights of the cost model fitted on Xeon w9-3495X with BLS12-381 G1 (N = 8) and BN254 G1 (N = 5) :
 	the pair addition is much cheaper than the generic one, so the bucket reduction (r) and the fixed cost of a window
 	(cvtBase, the sort and the inversions, c0) are relatively expensive and b is smaller than the generic one.
-	the model is within 8% of the measured best for n in [2^7, 2^18] (the valley is shallow, see CYBOZU_TEST_AUTO(bucketSize))
+	the batched reduction (B >= MCL_MSM_REDUCE_MIN_B, r2 and m2 refitted on 2026-11-05 with r fixed) makes b larger by 1 or 2 for n >= 2^11.
+	the model is within 6.4% (N = 8) / 4.1% (N = 5) of the measured best for n in [2^7, 2^19] split scalars (the valley is shallow, see CYBOZU_TEST_AUTO(bucketSize))
 */
 size_t getBucketSizeAffM(size_t n, size_t maxBitSize, size_t pointSize)
 {
-	static const mcl::ec::MsmCostParam prm8 = { 498, 9558 }; // r = 7.78, c0 = 149
-	static const mcl::ec::MsmCostParam prm5 = { 291, 5181 }; // r = 4.55, c0 = 81
+	static const mcl::ec::MsmCostParam prm8 = { 498, 8410, 141, 1342 }; // r = 7.78, c0 = 131, r2 = 2.2, m2 = 21
+	static const mcl::ec::MsmCostParam prm5 = { 291, 4601, 143, 694 }; // r = 4.55, c0 = 72, r2 = 2.2, m2 = 10.8
 	// the bucket table is bounded by 2 MiB (L2 of x64) : the addition of the kernel is fast, so the cache misses of tbl[k] beyond L2 are
 	// relatively expensive (b = 16 is 6-19% slower than b = 13 at 2^19 split scalars on Xeon w9-3495X, while the generic path prefers b = 16 there)
 	const size_t maxTblBytes = size_t(2) << 20;
@@ -3120,11 +3121,12 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 */
 CYBOZU_TEST_AUTO(bucketSize)
 {
-	const size_t nTbl[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144 };
-	const size_t lo8[] = { 5, 5, 5, 5, 6, 7, 8, 8, 9, 10, 10, 11 }; // BLS12-381 (N = 8)
-	const size_t hi8[] = { 6, 6, 6, 7, 8, 8, 9, 10, 11, 11, 13, 13 };
-	const size_t lo5[] = { 5, 5, 6, 6, 6, 8, 8, 9, 9, 10, 11, 12 }; // BN254 (N = 5)
-	const size_t hi5[] = { 6, 6, 7, 8, 8, 9, 10, 11, 12, 13, 14, 14 };
+	// [lo, hi] : the range of b within 8% of the measured best (misc/msm_sweep.cpp on Xeon w9-3495X, 2026-11-05, with the batched reduction)
+	const size_t nTbl[] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288 };
+	const size_t lo8[] = { 5, 5, 5, 6, 8, 8, 8, 9, 10, 11, 12, 12, 13 }; // BLS12-381 (N = 8)
+	const size_t hi8[] = { 6, 6, 8, 8, 9, 11, 11, 13, 13, 13, 15, 16, 16 };
+	const size_t lo5[] = { 5, 5, 6, 6, 7, 8, 8, 9, 10, 11, 12, 14, 13 }; // BN254 (N = 5)
+	const size_t hi5[] = { 6, 6, 8, 9, 10, 11, 12, 13, 13, 14, 16, 16, 16 };
 	const size_t *lo = (N == 5) ? lo5 : lo8;
 	const size_t *hi = (N == 5) ? hi5 : hi8;
 	for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(nTbl); j++) {
