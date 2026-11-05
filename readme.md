@@ -10,8 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- Improve the performance of G1::mulVec (MSM) by 1.6-1.9x for 2^10 to 2^20 points on CPUs with AVX-512 IFMA by a SIMD batch affine addition kernel. It supports BN254, BN_SNARK1 (also with MCL_FP_BIT=256) and secp256k1 in addition to BLS12-381 and BLS12-377, and G1::mulEach uses AVX-512 IFMA on these curves too.
-- Improve the performance of MSM({G1,G2}::mulVec) by 20-30% (measured on G1 of BN254 and BLS12-381 for 2^7 to 2^20 points).
+- Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 by a signed-digit bucket method, batch affine addition and a cost model for the window size: about 1.5-2.1x on CPUs with AVX-512 IFMA (a SIMD batch affine addition kernel), 1.2-1.6x on x64 without AVX-512 and 1.2-1.8x on Apple M4 (G1 of BLS12-381 and BN254, 2^7 to 2^20 points). The AVX-512 IFMA kernel supports BN254, BN_SNARK1 (also with MCL_FP_BIT=256) and secp256k1 in addition to BLS12-381 and BLS12-377, and G1::mulEach uses AVX-512 IFMA on these curves too.
 - Improve the performance of hashAndMapTo{G1,G2} (hash-to-curve) by using SHA-NI for SHA-256 if the CPU supports it.
 - Improve the performance of finalExp by about 12% and pairing by about 8%.
 - Improve the performance of pairing on Apple M4 (aarch64) by about 14%.
