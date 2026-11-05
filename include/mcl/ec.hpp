@@ -1021,6 +1021,8 @@ struct MsmKernel {
 	// the window size for n (split) scalars of maxBitSize bits with the bucket table of pointSize bytes per point
 	// (0 : glvGetBucketSizeByCost in src/glv.hpp)
 	size_t (*getBucketSize)(size_t n, size_t maxBitSize, size_t pointSize);
+	// use the batch affine addition if the number of the (split) scalars >= batchMinN (0 : MCL_MSM_BATCH_MIN_N in src/glv.hpp)
+	size_t batchMinN;
 };
 
 struct StaticMember {

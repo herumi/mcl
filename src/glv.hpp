@@ -201,8 +201,8 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 	#define MCL_MSM_MIN_SPLIT_N 80
 #endif
 #ifndef MCL_MSM_BATCH_MIN_N
-	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N
-	// the batch affine addition is faster than the Jacobi mixed addition from about 90 (BLS12-381) to 170 (BN254) split scalars on x64 (the fixed cost of the inversions),
+	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N (the generic kernel ; a SIMD kernel may have its own MsmKernel::batchMinN)
+	// the batch affine addition is faster than the Jacobi mixed addition from about 115 (BLS12-381) to 190 (BN254, but the loss is 1% at 128) split scalars on x64 (the fixed cost of the inversions),
 	// and from about 64 on wasm (the inversion is cheap)
 	#define MCL_MSM_BATCH_MIN_N 128
 #endif
@@ -364,6 +364,7 @@ struct MsmGenericKernel {
 		kn.addPairs = addPairs;
 		kn.addToBucket = addToBucket;
 		kn.getBucketSize = 0;
+		kn.batchMinN = 0;
 	}
 };
 
@@ -606,8 +607,9 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	G *tbl = 0;
 	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own cost model of the window size
 	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
-	// the batch affine addition is used if wk.init succeeds (see below)
-	const bool tryBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N;
+	// the batch affine addition is used for n >= batchMinN if wk.init succeeds (see below)
+	const size_t batchMinN = (kernel && kernel->batchMinN) ? kernel->batchMinN : MCL_MSM_BATCH_MIN_N;
+	const bool tryBatch = local::MsmBatch<G>::enabled && n >= batchMinN;
 	const size_t bArg = b;
 	if (b == 0) {
 		if (tryBatch && kernel && kernel->getBucketSize) {
@@ -632,8 +634,8 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 		n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-		// recompute b for the reduced n (the generic model : the batch affine addition is not used for this n if MCL_MSM_BATCH_MIN_N > n)
-		if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), (local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N) ? msmCostParamBatch() : msmCostParamGeneric());
+		// recompute b for the reduced n (the generic model : the batch affine addition is not used for this n if batchMinN > n)
+		if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), (local::MsmBatch<G>::enabled && n >= batchMinN) ? msmCostParamBatch() : msmCostParamGeneric());
 	}
 	tblN = size_t(1) << b;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
@@ -649,7 +651,7 @@ main:
 
 	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
 	typename local::MsmBatch<G>::Work wk;
-	const bool useBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N && wk.init(n, tblN, kernel);
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel);
 	const void *base = xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
 	if (useBatch && wk.base) {
 		wk.kn.cvtBase(wk.base, xVec, n);

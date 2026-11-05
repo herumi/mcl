@@ -361,10 +361,13 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 11, 13, 13, 13, 15 } },
 		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 6, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13 }, { 6, 7, 8, 8, 9, 10, 10, 12, 13, 13, 14, 15 } },
 	};
+	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTES (b <= 14),
+	// so sizeof(G1) of the MCL_FP_BIT = 256 build (96 bytes, b <= 15) gives b = 15 for n >= 2^17, which is out of the measured range
+	const size_t pointSize = 144;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		for (size_t j = 0; j < N; j++) {
 			const size_t n = nTbl[j];
-			const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), *tbl[i].prm);
+			const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, pointSize, *tbl[i].prm);
 			const bool ok = tbl[i].lo[j] <= b && b <= tbl[i].hi[j];
 			CYBOZU_TEST_ASSERT(ok);
 			if (!ok) printf("%s n=%zd model b=%zd measured [%zd, %zd]\n", tbl[i].name, n, b, tbl[i].lo[j], tbl[i].hi[j]);

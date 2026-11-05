@@ -1765,9 +1765,21 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 
 namespace mcl { namespace msm {
 
+/*
+	the threshold of the batch affine addition (the number of the split scalars) of this kernel.
+	measured on Xeon w9-3495X (the batch affine addition by the kernel vs the Jacobi mixed addition by Fp, the best window size for each) :
+	the batch wins from about 90 (BLS12-381, N = 8), 80 (BN254, N = 5) and 170 (BN254 with the N = 8 kernel of the MCL_FP_BIT = 384 build,
+	where the Jacobi mixed addition of the 4-limb Fp is cheap but an addition of the kernel costs the same as for BLS12-381) split scalars.
+*/
+size_t getBatchMinNAffM()
+{
+	return (N == 8 && g_rt.pN <= 4) ? 192 : 96;
+}
+
 const ec::MsmKernel* getMsmKernelAVX512()
 {
-	static const ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM };
+	static ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM, 0 };
+	kn.batchMinN = getBatchMinNAffM(); // depends on the current curve (g_rt.pN)
 	return &kn;
 }
 
@@ -2844,7 +2856,9 @@ CYBOZU_TEST_AUTO(kernel)
 	cybozu::XorShift rg;
 	setParam(P.data(), x.data(), N, rg);
 	G1 Q, R;
-	const size_t nTbl[] = { 128, 129, 255, 256, 257, 1000, 4096, N };
+	CYBOZU_TEST_ASSERT(G1::msmKernel->batchMinN > 0);
+	// 40 : the gate of the bucket method (MCL_MSM_MIN_SPLIT_N = 80 split scalars), 47 .. 97 : around batchMinN (96 or 192 split scalars)
+	const size_t nTbl[] = { 40, 47, 48, 49, 95, 96, 97, 128, 129, 255, 256, 257, 1000, 4096, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		mcl::bint::copyN(P2.data(), P.data(), n);
