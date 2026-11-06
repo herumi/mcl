@@ -848,9 +848,11 @@ inline const AffM* getAffM(const AffM *base, uint32_t i)
 }
 
 #ifndef MCL_MSM_PREFETCH_DIST
-	// the distance (in groups of 8 pairs) of the software prefetch of addPairsAffM (0 : no prefetch)
-	#define MCL_MSM_PREFETCH_DIST 4
+	// the distance (in pairs) of the software prefetch of addPairsAffM (0 : no prefetch ; the same name as in src/glv.hpp for the generic kernel, which is not visible here)
+	#define MCL_MSM_PREFETCH_DIST 32
 #endif
+// the distance in groups of 8 pairs
+#define MSM_PREFETCH_GROUPS ((MCL_MSM_PREFETCH_DIST + 7) / 8)
 // prefetch the point (sizeof(AffM) = 2 N * 8 bytes : one or two cache lines)
 inline void prefetchAffM(const AffM *p)
 {
@@ -988,12 +990,12 @@ void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_
 			const uint32_t *pa = ia + j;
 			const uint32_t *pb = ib + j;
 			/*
-				software prefetch of the points of the group g + MCL_MSM_PREFETCH_DIST
+				software prefetch of the points of the group g + MSM_PREFETCH_GROUPS
 				(the reads of base at the level 0 are random and the base of 2^19 points or more exceeds the L3 cache)
 			*/
-			if (j + 8 * (MCL_MSM_PREFETCH_DIST + 1) <= m) {
-				const uint32_t *qa = pa + 8 * MCL_MSM_PREFETCH_DIST;
-				const uint32_t *qb = pb + 8 * MCL_MSM_PREFETCH_DIST;
+			if (MSM_PREFETCH_GROUPS > 0 && j + 8 * (MSM_PREFETCH_GROUPS + 1) <= m) {
+				const uint32_t *qa = pa + 8 * MSM_PREFETCH_GROUPS;
+				const uint32_t *qb = pb + 8 * MSM_PREFETCH_GROUPS;
 				for (size_t k = 0; k < 8; k++) {
 					prefetchAffM(getAffM(base, qa[k]));
 					prefetchAffM(getAffM(base, qb[k]));
