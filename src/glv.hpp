@@ -630,13 +630,13 @@ struct MsmBatch {
 	static const ec::MsmKernel* getKernel() { return 0; }
 	static bool isNormalizedVec(const G *, size_t) { return false; }
 };
-template<class Fp>
-struct MsmBatch<EcT<Fp> > {
+template<class Fp, class Fr>
+struct MsmBatch<EcT<Fp, Fr> > {
 	static const bool enabled = true;
-	typedef MsmBatchWork<EcT<Fp> > Work;
-	static const ec::MsmKernel* getKernel() { return EcT<Fp>::msmKernel; }
+	typedef MsmBatchWork<EcT<Fp, Fr> > Work;
+	static const ec::MsmKernel* getKernel() { return EcT<Fp, Fr>::msmKernel; }
 	// all the points are affine or zero
-	static bool isNormalizedVec(const EcT<Fp> *xVec, size_t n)
+	static bool isNormalizedVec(const EcT<Fp, Fr> *xVec, size_t n)
 	{
 		for (size_t i = 0; i < n; i++) {
 			if (!(xVec[i].z.isOne() || xVec[i].z.isZero())) return false;
@@ -868,9 +868,9 @@ struct mulVecUpdateTableBatchT {
 	template<class W>
 	static void call(G&, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
 };
-template<class Fp>
-struct mulVecUpdateTableBatchT<EcT<Fp> > {
-	typedef EcT<Fp> G;
+template<class Fp, class Fr>
+struct mulVecUpdateTableBatchT<EcT<Fp, Fr> > {
+	typedef EcT<Fp, Fr> G;
 	static void call(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
 	{
 		mulVecUpdateTableBatch(win, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
@@ -1031,7 +1031,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
@@ -1137,9 +1137,9 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
-	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
@@ -1201,7 +1201,7 @@ template<class GLV, class G>
 void mulGLV_CT(G& Q, const G& P, const void *yVec)
 {
 	const size_t w = 4;
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << w;
@@ -1300,6 +1300,7 @@ template<class Ec>
 struct GLV1T {
 	typedef GLV1T<Ec> GLV1;
 	typedef typename Ec::Fp Fp;
+	typedef typename Ec::Fr Fr; // the scalar field (mcl::Fr for G1, mcl::Fp for GG)
 	static const int splitN = 2;
 	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	static size_t rBitSize;
