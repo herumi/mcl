@@ -417,8 +417,15 @@ struct MsmGenericKernel {
 		kn.addToBucket = addToBucket;
 		kn.getBucketSize = 0;
 		kn.batchMinN = 0;
+		kn.cvtBaseGLV = 0;
 	}
 };
+
+// the threshold of the batch affine addition (the number of the (split) scalars) of the kernel (0 : the generic one)
+inline size_t msmBatchMinN(const ec::MsmKernel *kernel)
+{
+	return (kernel && kernel->batchMinN) ? kernel->batchMinN : MCL_MSM_BATCH_MIN_N;
+}
 
 // work buffers for mulVecUpdateTableBatch
 template<class G>
@@ -451,8 +458,8 @@ struct MsmBatchWork {
 	void *buf_;
 	MsmBatchWork() : buf_(0) {}
 	~MsmBatchWork() { if (buf_) free(buf_); }
-	// kernel : the SIMD kernel (0 : the generic one)
-	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel)
+	// kernel : the SIMD kernel (0 : the generic one), hasBase : the caller gives the points in the layout of the kernel (base is not allocated)
+	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel, bool hasBase = false)
 	{
 		if (n >= msmIdxMask) return false;
 		if (kernel) {
@@ -469,7 +476,8 @@ struct MsmBatchWork {
 		const size_t align = 64;
 		const size_t sSize = (kn.pointSize * chunk + align - 1) / align * align;
 		const size_t wSize = (kn.workSize + align - 1) / align * align;
-		const size_t bSize = kn.cvtBase ? (kn.pointSize * n + align - 1) / align * align : 0;
+		const bool allocBase = kn.cvtBase && !hasBase;
+		const size_t bSize = allocBase ? (kn.pointSize * n + align - 1) / align * align : 0;
 		const size_t tSize = (kn.pointSize * (tblN + 4 * chainN) + align - 1) / align * align;
 		const size_t qSize = (sizeof(G) * pendMax + align - 1) / align * align;
 		size_t size = align + sSize + wSize + bSize + tSize + qSize;
@@ -479,7 +487,7 @@ struct MsmBatchWork {
 		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
 		S = p; p += sSize;
 		work = p; p += wSize;
-		base = kn.cvtBase ? p : 0; p += bSize;
+		base = allocBase ? p : 0; p += bSize;
 		tbl = p; p += tSize;
 		pendQ = (G*)p; p += qSize;
 		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
@@ -553,15 +561,24 @@ struct MsmBatch {
 	struct Work {
 		ec::MsmKernel kn;
 		void *base;
-		bool init(size_t, size_t, const ec::MsmKernel *) { return false; }
+		bool init(size_t, size_t, const ec::MsmKernel *, bool = false) { return false; }
 	};
 	static const ec::MsmKernel* getKernel() { return 0; }
+	static bool isNormalizedVec(const G *, size_t) { return false; }
 };
 template<class Fp>
 struct MsmBatch<EcT<Fp> > {
 	static const bool enabled = true;
 	typedef MsmBatchWork<EcT<Fp> > Work;
 	static const ec::MsmKernel* getKernel() { return EcT<Fp>::msmKernel; }
+	// all the points are affine or zero
+	static bool isNormalizedVec(const EcT<Fp> *xVec, size_t n)
+	{
+		for (size_t i = 0; i < n; i++) {
+			if (!(xVec[i].z.isOne() || xVec[i].z.isZero())) return false;
+		}
+		return true;
+	}
 };
 
 } // mcl::ec::local
@@ -805,9 +822,11 @@ struct mulVecUpdateTableBatchT<EcT<Fp> > {
 	@note xVec may be normlized
 	fast for n >= MCL_MSM_MIN_SPLIT_N
 	maxBitSize : the max bit size of yVec[i] (yUnitSize * UnitBitSize if 0)
+	baseArg : xVec converted to the layout of the SIMD kernel by the caller (then xVec is not used, the batch affine addition with the kernel is required
+	and 0 is returned if its work buffer can not be allocated)
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0, const void *baseArg = 0)
 {
 	if (n == 0) {
 		z.clear();
@@ -824,7 +843,8 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own cost model of the window size
 	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
 	// the batch affine addition is used for n >= batchMinN if wk.init succeeds (see below)
-	const size_t batchMinN = (kernel && kernel->batchMinN) ? kernel->batchMinN : MCL_MSM_BATCH_MIN_N;
+	const size_t batchMinN = local::msmBatchMinN(kernel);
+	assert(baseArg == 0 || (kernel && n >= batchMinN));
 	const bool tryBatch = local::MsmBatch<G>::enabled && n >= batchMinN;
 	const size_t bArg = b;
 	if (b == 0) {
@@ -838,7 +858,8 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	tblN = size_t(1) << b;
 	// the batch affine addition has its own bucket table (wk.tbl in the layout of the kernel), so tbl is allocated only for the generic path
 	typename local::MsmBatch<G>::Work wk;
-	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel);
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel, baseArg != 0);
+	if (baseArg && !useBatch) return 0; // the caller gives only the converted points
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 #endif
@@ -873,7 +894,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
 	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
-	const void *base = xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
+	const void *base = baseArg ? baseArg : xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
 	if (useBatch && wk.base) {
 		wk.kn.cvtBase(wk.base, xVec, n);
 		base = wk.base;
@@ -921,6 +942,23 @@ inline SplitRawFunc getSplitRaw(const void *) { return 0; }
 template<class Ec>
 SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
 
+// ya = |a|, yb = |b| of the split y = a + b lambda by splitRaw (zero-padded to next units), updates maxBitSize and returns the sign bits (1 : a < 0, 2 : b < 0)
+inline uint32_t msmSplitRaw(Unit *ya, Unit *yb, const Unit *y, size_t next, SplitRawFunc splitRaw, size_t& maxBitSize)
+{
+	const size_t rawN = 128 / UnitBitSize; // the size of a, b of splitRaw
+	assert(next >= rawN);
+	const uint32_t neg = splitRaw(ya, yb, y);
+	for (size_t k = rawN; k < next; k++) {
+		ya[k] = 0;
+		yb[k] = 0;
+	}
+	size_t bitSize = fp::getBitSize(ya, rawN);
+	if (bitSize > maxBitSize) maxBitSize = bitSize;
+	bitSize = fp::getBitSize(yb, rawN);
+	if (bitSize > maxBitSize) maxBitSize = bitSize;
+	return neg;
+}
+
 } // mcl::ec::local
 
 // the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N (MCL_MSM_MIN_SPLIT_N_NO_BATCH for GT)
@@ -936,8 +974,50 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 	mpz_class u[splitN];
 	Unit y[F::maxSize];
 
-	const size_t tblByteSize = sizeof(G) * splitN * n;
 	const size_t ypByteSize = sizeof(Unit) * next * splitN * n;
+	// the fixed-width split (no mpz) if available
+	const local::SplitRawFunc splitRaw = (splitN == 2) ? local::getSplitRaw((const GLV*)0) : 0;
+	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
+	/*
+		the fused path : the SIMD kernel converts xVec and lambda(xVec) with the signs of the split scalars directly to its layout (cvtBaseGLV),
+		so the copy of 2 n G (normalizeVec, mulLambda and neg) and its conversion (cvtBase in mulVecCore) are not needed
+		(xVec is normalized to a copy of n G if it has a non-affine point)
+	*/
+	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
+	if (splitRaw && kernel && kernel->cvtBaseGLV && n * splitN >= local::msmBatchMinN(kernel)) {
+		const size_t align = 64;
+		const size_t baseByteSize = (kernel->pointSize * splitN * n + align - 1) / align * align;
+		const bool normalized = local::MsmBatch<G>::isNormalizedVec(xVec, n);
+		const size_t tmpByteSize = normalized ? 0 : (sizeof(G) * n + align - 1) / align * align;
+		const size_t negByteSize = (n + align - 1) / align * align;
+		void *buf = malloc(align + baseByteSize + tmpByteSize + negByteSize + ypByteSize);
+		if (buf == 0) return false;
+		char *p = (char*)(((uintptr_t)buf + align - 1) & ~(uintptr_t)(align - 1));
+		void *base = p; p += baseByteSize;
+		G *tmp = (G*)p; p += tmpByteSize;
+		uint8_t *neg = (uint8_t*)p; p += negByteSize;
+		Unit *yp = (Unit*)p;
+		if (!normalized) {
+			G::normalizeVec(tmp, xVec, n);
+			xVec = tmp;
+		}
+		for (size_t i = 0; i < n; i++) {
+			getUnitAt(y, yVec, i);
+			neg[i] = uint8_t(local::msmSplitRaw(&yp[i * next], &yp[(n + i) * next], y, next, splitRaw, maxBitSize));
+		}
+		bool ret = true;
+		if (maxBitSize == 0) {
+			z.clear();
+		} else {
+			kernel->cvtBaseGLV(base, xVec, n, neg);
+			const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
+			ret = mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, maxBitSize, base) == n * splitN;
+		}
+		free(buf);
+		return ret;
+	}
+
+	const size_t tblByteSize = sizeof(G) * splitN * n;
 	G *tbl = (G*)malloc(tblByteSize + ypByteSize);
 	if (tbl == 0) return false;
 
@@ -949,27 +1029,12 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
 		}
 	}
-	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
-	// the fixed-width split (no mpz) if available
-	const local::SplitRawFunc splitRaw = (splitN == 2) ? local::getSplitRaw((const GLV*)0) : 0;
-	const size_t rawN = 128 / UnitBitSize; // the size of a, b of splitRaw
-	assert(next >= rawN);
 	for (size_t i = 0; i < n; i++) {
 		getUnitAt(y, yVec, i);
 		if (splitRaw) {
-			Unit *ya = &yp[i * next];
-			Unit *yb = &yp[(n + i) * next];
-			const uint32_t neg = splitRaw(ya, yb, y);
-			for (size_t k = rawN; k < next; k++) {
-				ya[k] = 0;
-				yb[k] = 0;
-			}
+			const uint32_t neg = local::msmSplitRaw(&yp[i * next], &yp[(n + i) * next], y, next, splitRaw, maxBitSize);
 			if (neg & 1) G::neg(tbl[i], tbl[i]);
 			if (neg & 2) G::neg(tbl[n + i], tbl[n + i]);
-			size_t bitSize = fp::getBitSize(ya, rawN);
-			if (bitSize > maxBitSize) maxBitSize = bitSize;
-			bitSize = fp::getBitSize(yb, rawN);
-			if (bitSize > maxBitSize) maxBitSize = bitSize;
 			continue;
 		}
 		GLV::split(u, y);

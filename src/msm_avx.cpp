@@ -891,6 +891,28 @@ inline void storeAffM(AffM *R, const FpM& x, const FpM& y, size_t m)
 	for (size_t j = 0; j < m; j++) storeLimbs(R[j].y, d[j]);
 }
 
+// (X, Y) = the affine coordinates of src[j] (affine or zero) for j in [0, m) (m <= 8), Y = 0 for the zero point (the other lanes are undefined)
+inline void loadAffx8(FpM& X, FpM& Y, const G1 *src, size_t m)
+{
+	G1 tmp[8];
+	if (m < 8) {
+		for (size_t j = 0; j < 8; j++) {
+			if (j < m) tmp[j] = src[j]; else tmp[j].clear();
+		}
+		src = tmp;
+	}
+	const Unit *p = (const Unit*)src;
+	cvtFromG1Ax(X.v, p);
+	cvtFromG1Ax(Y.v, p + unitN);
+	FpM::mul(X, X, g_rt.m64to52u);
+	FpM::mul(Y, Y, g_rt.m64to52u);
+	uint8_t nz = 0; // the lanes of the non-zero points
+	for (size_t j = 0; j < 8; j++) {
+		if (!src[j].z.isZero()) nz |= uint8_t(1 << j);
+	}
+	Y = FpM::select(Vmask(nz), Y, FpM::zero());
+}
+
 // dst[i] = xVec[i] (affine or zero) for i in [0, n)
 void cvtBaseAffM(void *dst, const void *xVec, size_t n)
 {
@@ -898,26 +920,38 @@ void cvtBaseAffM(void *dst, const void *xVec, size_t n)
 	const G1 *x = (const G1*)xVec;
 	for (size_t i = 0; i < n; i += 8) {
 		const size_t m = (n - i < 8) ? n - i : 8;
-		G1 tmp[8];
-		const G1 *src = x + i;
-		if (m < 8) {
-			for (size_t j = 0; j < 8; j++) {
-				if (j < m) tmp[j] = src[j]; else tmp[j].clear();
-			}
-			src = tmp;
-		}
-		const Unit *p = (const Unit*)src;
 		FpM X, Y;
-		cvtFromG1Ax(X.v, p);
-		cvtFromG1Ax(Y.v, p + unitN);
-		FpM::mul(X, X, g_rt.m64to52u);
-		FpM::mul(Y, Y, g_rt.m64to52u);
-		uint8_t nz = 0; // the lanes of the non-zero points
-		for (size_t j = 0; j < 8; j++) {
-			if (!src[j].z.isZero()) nz |= uint8_t(1 << j);
-		}
-		Y = FpM::select(Vmask(nz), Y, FpM::zero());
+		loadAffx8(X, Y, x + i, m);
 		storeAffM(d + i, X, Y, m);
+	}
+}
+
+/*
+	dst[i] = s(neg[i] & 1) xVec[i], dst[n + i] = s(neg[i] & 2) lambda(xVec[i]) for i in [0, n), see ec::MsmKernel::cvtBaseGLV
+	the copy of xVec (2 n G1), mulLambda and the negations of mulVecGLVlarge are fused into the conversion (one FpM::mul per 8 points for lambda)
+*/
+void cvtBaseGLVAffM(void *dst, const void *xVec, size_t n, const uint8_t *neg)
+{
+	AffM *d = (AffM*)dst;
+	const G1 *x = (const G1*)xVec;
+	const FpM& rw = FpM::rw();
+	for (size_t i = 0; i < n; i += 8) {
+		const size_t m = (n - i < 8) ? n - i : 8;
+		FpM X, Y;
+		loadAffx8(X, Y, x + i, m);
+		uint8_t neg1 = 0, neg2 = 0; // the lanes to negate
+		for (size_t j = 0; j < m; j++) {
+			if (neg[i + j] & 1) neg1 |= uint8_t(1 << j);
+			if (neg[i + j] & 2) neg2 |= uint8_t(1 << j);
+		}
+		FpM negY;
+		FpM::neg(negY, Y); // the zero point (Y = 0) stays zero
+		FpM X2, Y1, Y2;
+		Y1 = FpM::select(Vmask(neg1), negY, Y);
+		Y2 = FpM::select(Vmask(neg2), negY, Y);
+		FpM::mul(X2, X, rw);
+		storeAffM(d + i, X, Y1, m);
+		storeAffM(d + n + i, X2, Y2, m);
 	}
 }
 
@@ -1784,7 +1818,7 @@ size_t getBatchMinNAffM()
 
 const ec::MsmKernel* getMsmKernelAVX512()
 {
-	static ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM, 0 };
+	static ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM, 0, cvtBaseGLVAffM };
 	kn.batchMinN = getBatchMinNAffM(); // depends on the current curve (g_rt.pN)
 	return &kn;
 }
@@ -2916,6 +2950,46 @@ CYBOZU_TEST_AUTO(kernel)
 		naiveMulVec(Q, P2.data(), x.data(), N);
 		G1::mulVec(R, P2.data(), x.data(), N);
 		CYBOZU_TEST_EQUAL(Q, R);
+	}
+}
+
+mpz_class getGLVLambda();
+
+// cvtBaseGLV = cvtBase of (s1 P, s2 lambda(P))
+CYBOZU_TEST_AUTO(cvtBaseGLV)
+{
+	const mpz_class lambda = getGLVLambda();
+	const ec::MsmKernel& kn = *getMsmKernelAVX512();
+	CYBOZU_TEST_ASSERT(kn.cvtBaseGLV != 0);
+	const size_t n = 21; // not a multiple of 8
+	std::vector<G1> P(n), Q(2 * n);
+	std::vector<uint8_t> neg(n);
+	cybozu::XorShift rg;
+	hashAndMapToG1(P[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) G1::add(P[i], P[i - 1], P[0]);
+	G1::normalizeVec(P.data(), P.data(), n);
+	P[3].clear();
+	P[n - 1].clear();
+	for (size_t i = 0; i < n; i++) {
+		neg[i] = uint8_t(rg.get32() & 3);
+		Q[i] = P[i];
+		if (neg[i] & 1) G1::neg(Q[i], Q[i]);
+		G1::mul(Q[n + i], P[i], lambda);
+		if (neg[i] & 2) G1::neg(Q[n + i], Q[n + i]);
+	}
+	G1::normalizeVec(Q.data(), Q.data(), 2 * n);
+	std::vector<uint8_t> base1(kn.pointSize * 2 * n + 64), base2(kn.pointSize * 2 * n + 64);
+	void *b1 = (void*)(((uintptr_t)base1.data() + 63) & ~(uintptr_t)63);
+	void *b2 = (void*)(((uintptr_t)base2.data() + 63) & ~(uintptr_t)63);
+	kn.cvtBase(b1, Q.data(), 2 * n);
+	kn.cvtBaseGLV(b2, P.data(), n, neg.data());
+	CYBOZU_TEST_EQUAL(memcmp(b1, b2, kn.pointSize * 2 * n), 0);
+	// the zero point stays zero even if negated
+	for (size_t i = 0; i < 2 * n; i++) {
+		G1 R;
+		R.clear();
+		kn.addToBucket(&R, b2, uint32_t(i));
+		CYBOZU_TEST_EQUAL(R, Q[i]);
 	}
 }
 

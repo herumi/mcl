@@ -1024,6 +1024,12 @@ struct MsmKernel {
 	size_t (*getBucketSize)(size_t n, size_t maxBitSize, size_t pointSize);
 	// use the batch affine addition if the number of the (split) scalars >= batchMinN (0 : MCL_MSM_BATCH_MIN_N in src/glv.hpp)
 	size_t batchMinN;
+	/*
+		the conversion of the GLV split (0 : not supported, then mulVecGLVlarge in src/glv.hpp copies xVec and uses cvtBase)
+		dst[i] = s(neg[i] & 1) xVec[i], dst[n + i] = s(neg[i] & 2) lambda(xVec[i]) for i in [0, n) where s(c) = c ? -1 : 1 and
+		lambda(x, y) = (rw x, y) is the GLV endomorphism (see GLV1T::mulLambda in src/glv.hpp). xVec (EcT) must be affine or zero
+	*/
+	void (*cvtBaseGLV)(void *dst, const void *xVec, size_t n, const uint8_t *neg);
 };
 
 struct StaticMember {
