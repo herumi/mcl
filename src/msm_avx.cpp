@@ -13,7 +13,23 @@
 #define MCL_DLL_EXPORT
 #include <mcl/bn.hpp>
 #include <stdint.h>
+// the AVX-512 code generation is enabled only for the functions defined in the regions of MCL_MSM_AVX512_BEGIN / END
+// (not for the whole translation unit by -mavx512f) : an inline or template function instantiated in this file (the std and mcl headers)
+// is a COMDAT shared with the other objects, and the linker may pick this file's instance for the whole program,
+// then the program crashes on a CPU without AVX-512 before the CPU check (e.g. std::map of cybozu::Option, FpT::save, mcl::local::invVecWork).
+#if defined(__clang__)
+	#define MCL_MSM_AVX512_BEGIN _Pragma("clang attribute push(__attribute__((target(\"avx512f,avx512ifma,evex512\"))), apply_to = function)")
+	#define MCL_MSM_AVX512_END _Pragma("clang attribute pop")
+#elif defined(__GNUC__)
+	#define MCL_MSM_AVX512_BEGIN _Pragma("GCC push_options") _Pragma("GCC target(\"avx512f,avx512ifma\")")
+	#define MCL_MSM_AVX512_END _Pragma("GCC pop_options")
+#else
+	#define MCL_MSM_AVX512_BEGIN
+	#define MCL_MSM_AVX512_END
+#endif
+MCL_MSM_AVX512_BEGIN
 #include "avx512.hpp"
+MCL_MSM_AVX512_END
 #include "msm.hpp"
 #define MCL_GLV_ONLY_FUNC
 #include "glv.hpp"
@@ -29,6 +45,8 @@
 #pragma GCC diagnostic ignored "-Wignored-attributes" // false positive
 #endif
 #endif
+
+MCL_MSM_AVX512_BEGIN
 
 namespace {
 
@@ -1904,6 +1922,7 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
 {
 	(void)EcM::a_; // disable unused warning
+	(void)EcM::b3_;
 	(void)EcM::zeroProj_;
 	(void)EcM::zeroJacobi_;
 	(void)EcMA::a_;
@@ -2004,6 +2023,8 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 
 } } // mcl::msm
 
+MCL_MSM_AVX512_END
+
 #ifdef MCL_MSM_TEST
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
@@ -2013,6 +2034,8 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 #include <cybozu/option.hpp>
 #define MCL_GLV_ONLY_FUNC
 #include "glv.hpp"
+
+MCL_MSM_AVX512_BEGIN
 
 using namespace mcl::bn;
 using namespace mcl::msm;
@@ -3236,6 +3259,8 @@ CYBOZU_TEST_AUTO(bucketSize)
 		if (!ok) printf("n=%zd model b=%zd measured [%zd, %zd]\n", n, b, lo[j], hi[j]);
 	}
 }
+
+MCL_MSM_AVX512_END // main runs before the CPU check, so it must not use AVX-512
 
 int main(int argc, char *argv[])
 {
