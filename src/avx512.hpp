@@ -30,6 +30,12 @@ struct VmaskA {
 	Vmask v[vN];
 };
 
+// prefetch the cache line of p into all the cache levels
+inline void prefetchT0(const void *p)
+{
+	_mm_prefetch((const char*)p, _MM_HINT_T0);
+}
+
 template<class V=Vec>
 inline V vzero()
 {

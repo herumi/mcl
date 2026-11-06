@@ -847,6 +847,17 @@ inline const AffM* getAffM(const AffM *base, uint32_t i)
 	return i == mcl::ec::local::msmNone ? &g_zeroAffM : base + (i & mcl::ec::local::msmIdxMask);
 }
 
+#ifndef MCL_MSM_PREFETCH_DIST
+	// the distance (in groups of 8 pairs) of the software prefetch of addPairsAffM (0 : no prefetch)
+	#define MCL_MSM_PREFETCH_DIST 4
+#endif
+// prefetch the point (sizeof(AffM) = 2 N * 8 bytes : one or two cache lines)
+inline void prefetchAffM(const AffM *p)
+{
+	prefetchT0(p);
+	if (sizeof(AffM) > 64) prefetchT0((const char*)p + 64);
+}
+
 // load the N limbs of a coordinate of AffM (64-byte aligned if N == 8)
 inline Vec loadLimbs(const Unit *p)
 {
@@ -976,6 +987,18 @@ void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_
 			const size_t j = j0 + g * 8;
 			const uint32_t *pa = ia + j;
 			const uint32_t *pb = ib + j;
+			/*
+				software prefetch of the points of the group g + MCL_MSM_PREFETCH_DIST
+				(the reads of base at the level 0 are random and the base of 2^19 points or more exceeds the L3 cache)
+			*/
+			if (j + 8 * (MCL_MSM_PREFETCH_DIST + 1) <= m) {
+				const uint32_t *qa = pa + 8 * MCL_MSM_PREFETCH_DIST;
+				const uint32_t *qb = pb + 8 * MCL_MSM_PREFETCH_DIST;
+				for (size_t k = 0; k < 8; k++) {
+					prefetchAffM(getAffM(base, qa[k]));
+					prefetchAffM(getAffM(base, qb[k]));
+				}
+			}
 			uint32_t ta[8], tb[8];
 			if (j + 8 > m) {
 				// the last group has less than 8 pairs
