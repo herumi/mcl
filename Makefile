@@ -27,6 +27,7 @@ TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
+TEST_SRC+=grumpkin_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
@@ -209,13 +210,9 @@ ifeq ($(MCL_MSM),1)
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
-  MSM_CFLAGS=-mavx512f -mavx512ifma -std=c++11
-  ifneq ($(SANITIZE_OPT),)
-    # AddressSanitizer of GCC poisons the stack shadow with the widest vector store (zmm with -mavx512f),
-    # so the code of msm_test.exe before the CPU check (main, option parsing) raises SIGILL on a CPU without AVX-512.
-    # Limit the width of such stores to xmm (the intrinsics of the kernels are not affected).
-    MSM_CFLAGS+=-mprefer-vector-width=128
-  endif
+  # -mavx512f is not given : the kernels are compiled with the target attribute (MCL_MSM_AVX512_BEGIN / END in msm_avx.cpp),
+  # otherwise the template instances shared with the other objects (COMDAT) may use AVX-512 and crash on a CPU without it
+  MSM_CFLAGS=-std=c++11
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d

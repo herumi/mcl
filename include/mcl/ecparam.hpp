@@ -80,6 +80,21 @@ const struct mcl::EcParam secp256k1 = {
 	256,
 	MCL_SECP256K1
 };
+/*
+	Grumpkin : y^2 = x^3 - 17 over Fp where p = the r of BN_SNARK1, #E(Fp) = the p of BN_SNARK1 (prime, cofactor 1)
+	the 2-cycle with BN_SNARK1 (alt_bn128) used by Nova / HyperNova. b = p - 17, the generator is (1, sqrt(-16))
+*/
+const struct mcl::EcParam grumpkin = {
+	"grumpkin",
+	"0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
+	"0",
+	"0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593effffff0",
+	"1",
+	"0x2cf135e7506a45d632d270d45f1181294833fc48d823f272c",
+	"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47",
+	254,
+	MCL_GRUMPKIN
+};
 const struct mcl::EcParam secp384r1 = {
 	"secp384r1",
 	"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
@@ -179,6 +194,7 @@ static inline const mcl::EcParam* getEcParam(const std::string& name)
 		&ecparam::NIST_P256,
 		&ecparam::NIST_P384,
 		&ecparam::NIST_P521,
+		&ecparam::grumpkin,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (name == tbl[i]->name) return tbl[i];
@@ -200,6 +216,7 @@ inline const mcl::EcParam* getEcParam(int curve)
 	case MCL_NIST_P256: return &ecparam::NIST_P256;
 	case MCL_SECP160K1: return &ecparam::secp160k1;
 	case MCL_P160_1: return &ecparam::p160_1;
+	case MCL_GRUMPKIN: return &ecparam::grumpkin;
 	default: return 0;
 	}
 }

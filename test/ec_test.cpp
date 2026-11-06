@@ -863,6 +863,7 @@ CYBOZU_TEST_AUTO(all)
 			mcl::ecparam::secp256k1,
 			mcl::ecparam::NIST_P224,
 			mcl::ecparam::NIST_P256,
+			mcl::ecparam::grumpkin, // the GLV method by initG1onlyGLV
 		};
 		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}

@@ -1,5 +1,8 @@
 #pragma once
 #include <string.h>
+#ifdef _MSC_VER
+	#include <intrin.h> // _mm_prefetch, __prefetch
+#endif
 
 namespace mcl {
 
@@ -266,8 +269,58 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 	// the number of pairs sharing one inversion
 	#define MCL_MSM_BATCH_SUB 512
 #endif
+#ifndef MCL_MSM_PREFETCH_DIST
+	// the distance (in pairs) of the software prefetch of the points of addAffineBatch (0 : no prefetch)
+	#if defined(__wasm__)
+		// wasm has no prefetch instruction (__builtin_prefetch is a no-op)
+		#define MCL_MSM_PREFETCH_DIST 0
+	#else
+		#define MCL_MSM_PREFETCH_DIST 16
+	#endif
+#endif
+#ifndef MCL_MSM_PREFETCH_MIN_BYTES
+	/*
+		use the software prefetch if the byte size of the points (n * sizeof(G)) >= this value
+		(the reads of the points at the level 0 are random ; on Apple M4 Pro (L2 16 MiB) the prefetch is neutral
+		if the points are in the L2 and saves 11-15% from 2^17 points (BLS12-381 18 MiB, BN254 12 MiB), 2-5% at 2^16)
+	*/
+	#define MCL_MSM_PREFETCH_MIN_BYTES (6u << 20)
+#endif
+#ifndef MCL_CACHE_LINE_SIZE
+	// the size of a cache line (used by the software prefetch ; Apple silicon has 128-byte lines)
+	#if defined(__APPLE__) && defined(__aarch64__)
+		#define MCL_CACHE_LINE_SIZE 128
+	#else
+		#define MCL_CACHE_LINE_SIZE 64
+	#endif
+#endif
 
 namespace local {
+
+// prefetch the cache line of p for reading (PREFETCHT0 on x64, PRFM PLDL1KEEP on AArch64)
+inline void prefetchRead(const void *p)
+{
+#if defined(__GNUC__) || defined(__clang__)
+	__builtin_prefetch(p, 0, 3);
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+	_mm_prefetch((const char*)p, _MM_HINT_T0);
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+	__prefetch(p);
+#else
+	(void)p;
+#endif
+}
+
+// prefetch the cache lines of the point base[i & msmIdxMask] (sizeof(G) bytes, not aligned to a cache line)
+template<class G>
+inline void prefetchPoint(const G *base, uint32_t i)
+{
+	if (i == msmNone) return;
+	const size_t L = MCL_CACHE_LINE_SIZE;
+	const uintptr_t p = (uintptr_t)&base[i & msmIdxMask];
+	const uintptr_t last = (p + sizeof(G) - 1) & ~(L - 1);
+	for (uintptr_t q = p & ~(L - 1); q <= last; q += L) prefetchRead((const void*)q);
+}
 
 /*
 	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m)
@@ -277,8 +330,9 @@ namespace local {
 	(the inputs of the j-th pair are read before R[j] is written and R[0], R[1], ... are written in this order)
 	work : Fp[3 * MCL_MSM_BATCH_SUB]
 	cost : 5M + 1S + inv/MCL_MSM_BATCH_SUB per pair
+	prefetch : software prefetch of the points MCL_MSM_PREFETCH_DIST pairs ahead (for a large base)
 */
-template<class G>
+template<bool prefetch, class G>
 void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
 {
 	typedef typename G::Fp F;
@@ -292,6 +346,14 @@ void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib,
 		const size_t mm = (m - j0 < SUB) ? m - j0 : SUB;
 		// classify the pairs and compute d and num
 		for (size_t j = 0; j < mm; j++) {
+			/*
+				software prefetch of the points of the pair j0 + j + MCL_MSM_PREFETCH_DIST
+				(the reads of base at the level 0 are random and a large base exceeds the cache)
+			*/
+			if (prefetch && MCL_MSM_PREFETCH_DIST > 0 && j0 + j + MCL_MSM_PREFETCH_DIST < m) {
+				prefetchPoint(base, ia[j0 + j + MCL_MSM_PREFETCH_DIST]);
+				prefetchPoint(base, ib[j0 + j + MCL_MSM_PREFETCH_DIST]);
+			}
 			const uint32_t a = ia[j0 + j];
 			const uint32_t bb = ib[j0 + j];
 			if (bb == msmNone || base[bb & msmIdxMask].z.isZero()) {
@@ -400,20 +462,22 @@ void msmAddToBucket(G& tbl, const G *base, uint32_t i)
 */
 template<class G>
 struct MsmGenericKernel {
+	template<bool prefetch>
 	static void addPairs(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work)
 	{
-		addAffineBatch((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
+		addAffineBatch<prefetch>((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
 	}
 	static void addToBucket(void *tbl, const void *base, uint32_t i)
 	{
 		msmAddToBucket(*(G*)tbl, (const G*)base, i);
 	}
-	static void set(ec::MsmKernel& kn)
+	// n : the number of the points of the base (the software prefetch is used if the base is large)
+	static void set(ec::MsmKernel& kn, size_t n)
 	{
 		kn.pointSize = sizeof(G);
 		kn.workSize = sizeof(typename G::Fp) * 3 * MCL_MSM_BATCH_SUB;
 		kn.cvtBase = 0;
-		kn.addPairs = addPairs;
+		kn.addPairs = (n * sizeof(G) >= MCL_MSM_PREFETCH_MIN_BYTES) ? addPairs<true> : addPairs<false>;
 		kn.addToBucket = addToBucket;
 		kn.getBucketSize = 0;
 		kn.batchMinN = 0;
@@ -465,7 +529,7 @@ struct MsmBatchWork {
 		if (kernel) {
 			kn = *kernel;
 		} else {
-			MsmGenericKernel<G>::set(kn);
+			MsmGenericKernel<G>::set(kn, n);
 		}
 		this->tblN = tblN;
 		chainN = msmReduceChainN(tblN);
@@ -566,13 +630,13 @@ struct MsmBatch {
 	static const ec::MsmKernel* getKernel() { return 0; }
 	static bool isNormalizedVec(const G *, size_t) { return false; }
 };
-template<class Fp>
-struct MsmBatch<EcT<Fp> > {
+template<class Fp, class Fr>
+struct MsmBatch<EcT<Fp, Fr> > {
 	static const bool enabled = true;
-	typedef MsmBatchWork<EcT<Fp> > Work;
-	static const ec::MsmKernel* getKernel() { return EcT<Fp>::msmKernel; }
+	typedef MsmBatchWork<EcT<Fp, Fr> > Work;
+	static const ec::MsmKernel* getKernel() { return EcT<Fp, Fr>::msmKernel; }
 	// all the points are affine or zero
-	static bool isNormalizedVec(const EcT<Fp> *xVec, size_t n)
+	static bool isNormalizedVec(const EcT<Fp, Fr> *xVec, size_t n)
 	{
 		for (size_t i = 0; i < n; i++) {
 			if (!(xVec[i].z.isOne() || xVec[i].z.isZero())) return false;
@@ -804,9 +868,9 @@ struct mulVecUpdateTableBatchT {
 	template<class W>
 	static void call(G&, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
 };
-template<class Fp>
-struct mulVecUpdateTableBatchT<EcT<Fp> > {
-	typedef EcT<Fp> G;
+template<class Fp, class Fr>
+struct mulVecUpdateTableBatchT<EcT<Fp, Fr> > {
+	typedef EcT<Fp, Fr> G;
 	static void call(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
 	{
 		mulVecUpdateTableBatch(win, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
@@ -967,7 +1031,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
@@ -1073,9 +1137,9 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
-	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
@@ -1137,7 +1201,7 @@ template<class GLV, class G>
 void mulGLV_CT(G& Q, const G& P, const void *yVec)
 {
 	const size_t w = 4;
-	typedef Fr F;
+	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << w;
@@ -1236,6 +1300,7 @@ template<class Ec>
 struct GLV1T {
 	typedef GLV1T<Ec> GLV1;
 	typedef typename Ec::Fp Fp;
+	typedef typename Ec::Fr Fr; // the scalar field (mcl::Fr for G1, mcl::Fp for GG)
 	static const int splitN = 2;
 	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	static size_t rBitSize;

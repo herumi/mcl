@@ -111,8 +111,9 @@ uint32_t getCpuType()
 	#pragma warning(disable : 4127)
 #endif
 
-// define Fp, Fr, G1
+// define Fp, Fr, G1, GG
 #include <mcl/g1_def.hpp>
+#include <mcl/gg_def.hpp>
 #include "fp_tower_impl.hpp"
 
 namespace mcl {
@@ -136,6 +137,7 @@ namespace mcl {
 	template Ec::MsmKernelPtr Ec::msmKernel;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
+MCL_EC_STATIC_INST(GG, Fr)
 #undef MCL_EC_STATIC_INST
 #endif
 
@@ -710,18 +712,70 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 
 namespace mcl {
 
-void initForSecp256k1()
+void initG1onlyGLV(int curveType)
 {
 	typedef GLV1T<G1> GLV1;
-	bool b = GLV1::useParamTbl(MCL_SECP256K1);
-	assert(b);
-	(void)b;
+	if (!GLV1::useParamTbl(curveType)) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 #if MCL_MSM == 1
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
-		mcl::msm::initMsm(MCL_SECP256K1, GLV1::splitRaw);
+		mcl::msm::initMsm(curveType, GLV1::splitRaw); // false if the curve is not in src/msm_avx_para.h
 	}
 #endif
+}
+
+namespace {
+
+GG s_ggBasePoint;
+
+/*
+	init F (Fp or Fr) with the modulus mstr if F is not initialized (op.mp == 0) ; return false if F is initialized for another modulus
+*/
+template<class F>
+bool initFieldIfNot(bool *pb, const char *mstr)
+{
+	mpz_class m;
+	gmp::setStr(pb, m, mstr);
+	if (!*pb) return false;
+	const mpz_class& cur = F::getOp().mp;
+	if (cur == 0) {
+		F::init(pb, m);
+		return *pb;
+	}
+	*pb = (cur == m);
+	return *pb;
+}
+
+} // anonymous namespace
+
+void initGrumpkin(bool *pb)
+{
+	const EcParam& para = ecparam::grumpkin;
+	s_ggBasePoint.clear();
+	// the base field of GG is Fr (the r of BN_SNARK1) and the scalar field is Fp (the p of BN_SNARK1)
+	if (!initFieldIfNot<Fr>(pb, para.p)) return;
+	if (!initFieldIfNot<Fp>(pb, para.n)) return;
+	GG::init(pb, para.a, para.b, ec::Jacobi);
+	if (!*pb) return;
+	{
+		Fr x, y;
+		x.setStr(pb, para.gx);
+		if (!*pb) return;
+		y.setStr(pb, para.gy);
+		if (!*pb) return;
+		s_ggBasePoint.set(pb, x, y);
+		if (!*pb) return;
+	}
+	// #E = p is prime (cofactor 1), so every point on the curve is in the group : no setOrder
+	typedef GLV1T<GG> GLVGG;
+	*pb = GLVGG::useParamTbl(MCL_GRUMPKIN);
+	if (!*pb) return;
+	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
+}
+
+const GG& getGGbasePoint()
+{
+	return s_ggBasePoint;
 }
 
 namespace ec {
@@ -731,16 +785,19 @@ const StaticMember* getStaticMember(int id)
 	struct Table {
 		StaticMember g1;
 		StaticMember g2;
+		StaticMember gg;
 		Table()
 		{
 			G1::setStaticMember(g1);
 			G2::setStaticMember(g2);
+			GG::setStaticMember(gg);
 		}
 	};
 	static const Table tbl;
 	switch (id) {
 	case StaticIdG1: return &tbl.g1;
 	case StaticIdG2: return &tbl.g2;
+	case StaticIdGG: return &tbl.gg;
 	default: return 0;
 	}
 }

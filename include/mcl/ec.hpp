@@ -61,8 +61,9 @@ void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
 	member variables of type Fp x, y, z
 	static member a_, b_, specialA_
 */
-// x is negative <=> x < half(:=(p+1)/2) <=> a = 1
-inline bool get_a_flag(const Fp& x)
+// x is negative <=> x < half(:=(p+1)/2) <=> a = 1 (the base field of G1 (Fp) or GG (Fr))
+template<int tag, size_t maxBitSize>
+inline bool get_a_flag(const FpT<tag, maxBitSize>& x)
 {
 	return x.isNegative();
 }
@@ -1050,11 +1051,12 @@ struct StaticMember {
 };
 enum StaticIdType {
 	StaticIdG1 = 0,
-	StaticIdG2 = 1
+	StaticIdG2 = 1,
+	StaticIdGG = 2
 };
-// return the pointers to the static data members of G1 (id = StaticIdG1) or G2 (id = StaticIdG2)
+// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG)
 MCL_CXX_API const StaticMember* getStaticMember(int id);
-// StaticId<Fp>::id is defined in g1_def.hpp (Fp) and g2_def.hpp (Fp2)
+// StaticId<Fp>::id is defined in g1_def.hpp (Fp), g2_def.hpp (Fp2) and gg_def.hpp (Fr)
 template<class Fp> struct StaticId;
 
 } // mcl::ec
@@ -1064,11 +1066,12 @@ template<class Fp> struct StaticId;
 	y^2 = x^3 + ax + b (affine)
 	y^2 = x^3 + az^4 + bz^6 (Jacobi) x = X/Z^2, y = Y/Z^3
 */
-template<class _Fp>
-class EcT : public fp::Serializable<EcT<_Fp> > {
+template<class _Fp, class _Fr = Fr>
+class EcT : public fp::Serializable<EcT<_Fp, _Fr> > {
 public:
 	typedef _Fp Fp; // definition field
 	typedef _Fp BaseFp;
+	typedef _Fr Fr; // the scalar field (the order of the group) : mcl::Fr for G1 / G2, mcl::Fp for GG (Grumpkin)
 	Fp x, y, z;
 	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
 	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
@@ -2018,7 +2021,7 @@ public:
 #ifdef MCL_DLL_IMPORT_STATIC
 // the static data members refer to the instances in mcl.dll
 #define MCL_EC_STATIC_REF(type, name, member) \
-	template<class Fp> type& EcT<Fp>::name = *static_cast<type*>(ec::getStaticMember(ec::StaticId<Fp>::id)->member);
+	template<class Fp, class Fr> type& EcT<Fp, Fr>::name = *static_cast<type*>(ec::getStaticMember(ec::StaticId<Fp>::id)->member);
 MCL_EC_STATIC_REF(Fp, a_, a)
 MCL_EC_STATIC_REF(Fp, b_, b)
 MCL_EC_STATIC_REF(Fp, b3_, b3)
@@ -2027,12 +2030,12 @@ MCL_EC_STATIC_REF(int, specialB_, specialB)
 MCL_EC_STATIC_REF(int, ioMode_, ioMode)
 MCL_EC_STATIC_REF(bool, verifyOrder_, verifyOrder)
 MCL_EC_STATIC_REF(mpz_class, order_, order)
-MCL_EC_STATIC_REF(typename EcT<Fp>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
-MCL_EC_STATIC_REF(typename EcT<Fp>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
+MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
+MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
 MCL_EC_STATIC_REF(int, mode_, mode)
-MCL_EC_STATIC_REF(typename EcT<Fp>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp>::MsmKernelPtr, msmKernel, msmKernel)
+MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MsmKernelPtr, msmKernel, msmKernel)
 #undef MCL_EC_STATIC_REF
 #elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
 /*
@@ -2040,26 +2043,27 @@ MCL_EC_STATIC_REF(typename EcT<Fp>::MsmKernelPtr, msmKernel, msmKernel)
 	under #pragma init_seg(lib) for the same reason as FpT::op_ (see fp.hpp):
 	order_ (mpz_class) has a dynamic initializer, which would run after the static objects
 	of the user that call initPairing() in their constructors and reset order_ to 0.
-	A TU that uses EcT<Fp> other than G1 and G2 must define the static data members itself.
+	A TU that uses EcT<Fp> other than G1, G2 and GG must define the static data members itself.
 */
 #else
-template<class Fp> Fp EcT<Fp>::a_;
-template<class Fp> Fp EcT<Fp>::b_;
-template<class Fp> Fp EcT<Fp>::b3_;
-template<class Fp> int EcT<Fp>::specialA_;
-template<class Fp> int EcT<Fp>::specialB_;
-template<class Fp> int EcT<Fp>::ioMode_;
-template<class Fp> bool EcT<Fp>::verifyOrder_;
-template<class Fp> mpz_class EcT<Fp>::order_ MCL_INIT_PRIORITY(200); // order_ has a dynamic initializer (see FpT::op_ in fp.hpp)
-template<class Fp> typename EcT<Fp>::MulVecGLVFunc EcT<Fp>::mulVecGLV;
-template<class Fp> typename EcT<Fp>::MulVecOptiFunc EcT<Fp>::mulVecOpti;
-template<class Fp> typename EcT<Fp>::IsValidOrderFastFunc EcT<Fp>::isValidOrderFast;
-template<class Fp> int EcT<Fp>::mode_;
-template<class Fp> typename EcT<Fp>::MulEachOptiFunc EcT<Fp>::mulEachOpti;
-template<class Fp> typename EcT<Fp>::MsmKernelPtr EcT<Fp>::msmKernel;
+template<class Fp, class Fr> Fp EcT<Fp, Fr>::a_;
+template<class Fp, class Fr> Fp EcT<Fp, Fr>::b_;
+template<class Fp, class Fr> Fp EcT<Fp, Fr>::b3_;
+template<class Fp, class Fr> int EcT<Fp, Fr>::specialA_;
+template<class Fp, class Fr> int EcT<Fp, Fr>::specialB_;
+template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
+template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
+template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_ MCL_INIT_PRIORITY(200); // order_ has a dynamic initializer (see FpT::op_ in fp.hpp)
+template<class Fp, class Fr> typename EcT<Fp, Fr>::MulVecGLVFunc EcT<Fp, Fr>::mulVecGLV;
+template<class Fp, class Fr> typename EcT<Fp, Fr>::MulVecOptiFunc EcT<Fp, Fr>::mulVecOpti;
+template<class Fp, class Fr> typename EcT<Fp, Fr>::IsValidOrderFastFunc EcT<Fp, Fr>::isValidOrderFast;
+template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
+template<class Fp, class Fr> typename EcT<Fp, Fr>::MulEachOptiFunc EcT<Fp, Fr>::mulEachOpti;
+template<class Fp, class Fr> typename EcT<Fp, Fr>::MsmKernelPtr EcT<Fp, Fr>::msmKernel;
 #endif
 
-MCL_CXX_API void initForSecp256k1(); // implemented in fp.cpp
+// set the GLV method (and the AVX-512 MSM if available) of G1 for the curve of src/glv_param.hpp (secp256k1, Grumpkin) ; implemented in fp.cpp
+MCL_CXX_API void initG1onlyGLV(int curveType);
 /*
 	Ec : elliptic curve
 	Zn : cyclic group of the order |Ec|
@@ -2069,6 +2073,7 @@ template<class Ec>
 void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	typedef typename Ec::Fp Fp;
+	typedef typename Ec::Fr Fr;
 	*pb = false;
 	const EcParam *ecParam = getEcParam(curveType);
 	if (ecParam == 0) return;
@@ -2088,10 +2093,9 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Ja
 		P->set(pb, x, y);
 		if (!*pb) return;
 	}
-	if (curveType == MCL_SECP256K1) {
-		initForSecp256k1();
-	} else {
-		Ec::setMulVecGLV(0);
+	Ec::setMulVecGLV(0);
+	if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN) {
+		initG1onlyGLV(curveType);
 	}
 }
 
@@ -2110,11 +2114,11 @@ void initCurve(int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Jacobi)
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
-template<class Fp>
-size_t hash_value(const mcl::EcT<Fp>& P_)
+template<class Fp, class Fr>
+size_t hash_value(const mcl::EcT<Fp, Fr>& P_)
 {
 	if (P_.isZero()) return 0;
-	mcl::EcT<Fp> P(P_); P.normalize();
+	mcl::EcT<Fp, Fr> P(P_); P.normalize();
 	return mcl::hash_value(P.y, mcl::hash_value(P.x));
 }
 
@@ -2122,12 +2126,12 @@ size_t hash_value(const mcl::EcT<Fp>& P_)
 #else
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 
-template<class Fp>
-struct hash<mcl::EcT<Fp> > {
-	size_t operator()(const mcl::EcT<Fp>& P_) const
+template<class Fp, class Fr>
+struct hash<mcl::EcT<Fp, Fr> > {
+	size_t operator()(const mcl::EcT<Fp, Fr>& P_) const
 	{
 		if (P_.isZero()) return 0;
-		mcl::EcT<Fp> P(P_); P.normalize();
+		mcl::EcT<Fp, Fr> P(P_); P.normalize();
 		return hash<Fp>()(P.y, hash<Fp>()(P.x));
 	}
 };

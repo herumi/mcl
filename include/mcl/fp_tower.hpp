@@ -1474,6 +1474,7 @@ private:
 */
 template<class T>
 struct GroupMtoA : public T {
+	typedef mcl::Fr Fr; // the scalar field (see mulVecGLVT in src/glv.hpp)
 	static T& castT(GroupMtoA& x) { return static_cast<T&>(x); }
 	static const T& castT(const GroupMtoA& x) { return static_cast<const T&>(x); }
 	void clear()

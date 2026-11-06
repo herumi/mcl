@@ -34,7 +34,8 @@ enum {
 	MCL_NIST_P256 = 107, // deprecated
 	MCL_SECP160K1 = 108, // deprecated
 	MCL_P160_1 = 109, // deprecated
-	MCL_EC_END = MCL_P160_1 + 1,
+	MCL_GRUMPKIN = 110, // y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1 (the 2-cycle with BN_SNARK1, class GG)
+	MCL_EC_END = MCL_GRUMPKIN + 1,
 	MCL_NIST_P384 = MCL_SECP384R1,// deprecated
 	MCL_NIST_P521 = MCL_SECP521R1 // deprecated
 };

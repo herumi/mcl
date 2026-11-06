@@ -11,12 +11,14 @@ import random
 from primetbl import curveTbl
 
 # (name, kind, z, b of y^2 = x^3 + b) : the same values as include/mcl/curve_type.hpp
+# kind : 'BN' / 'BLS12' (the basis from z) or 'generic' (a cube root of unity mod r and the basis by the extended Euclidean algorithm)
 glvCurves = [
   ('BN254', 'BN', -0x4080000000000001, 2),
   ('BN-SNARK', 'BN', 4965661367192848881, 3),
   ('BLS12-381', 'BLS12', -0xd201000000010000, 4),
   ('BLS12-377', 'BLS12', 0x8508c00000000001, 1),
-  ('secp256k1', 'secp', None, 7),
+  ('secp256k1', 'generic', None, 7),
+  ('Grumpkin', 'generic', None, -17),
 ]
 
 def sqrtMod(a, p):

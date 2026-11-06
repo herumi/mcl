@@ -35,6 +35,10 @@ curveTbl = {cv.name: cv for cv in [
   Curve('secp256k1', 102,
     p=0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f,
     r=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141, b=7),
+  # the 2-cycle with BN-SNARK : p = the r of BN-SNARK, r = the p of BN-SNARK (y^2 = x^3 - 17, class GG of mcl)
+  Curve('Grumpkin', 110,
+    p=0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001,
+    r=0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47, b=-17),
   Curve('p511', 511,
     p=0x65b48e8f740f89bffc8ab0d15e3e4c4ab42d083aedc88c425afbfcc69322c9cda7aac6c567f35507516730cc1f0b4f25c2721bf457aca8351b81b90533c6c87b),
 ]}

@@ -395,15 +395,16 @@ elseif(${MCL_USE_LLVM})
 endif()
 
 # use src/msm_avx.cpp on x64
-# The object is PRIVATE to mcl/mcl_st: it is compiled with AVX-512 enabled, so the
-# inline functions from the headers in it also contain AVX-512 code. If it were linked
-# into the executables (PUBLIC), those copies would take over the library's ones and
-# run on CPUs without AVX-512 before the CPU check in getCpuType().
+# No -mavx512f / /arch:AVX512 for the whole TU: AVX-512 is enabled only in the regions
+# of MCL_MSM_AVX512_BEGIN / END in msm_avx.cpp (cl can use the intrinsics without /arch),
+# so the inline functions from the headers in this object stay baseline code and cannot
+# run AVX-512 before the CPU check in getCpuType() even if the linker picks their COMDAT
+# copies. The object is still kept PRIVATE to mcl/mcl_st as a second line of defense.
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX /DMCL_FP_BIT=${MCL_FP_BIT} /DMCL_FR_BIT=${MCL_FR_BIT}
+		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX /DMCL_FP_BIT=${MCL_FP_BIT} /DMCL_FR_BIT=${MCL_FR_BIT}
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_msm_avx.obj
@@ -417,7 +418,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.o")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT}
+		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT}
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	# the target name must differ from the output file name for Ninja

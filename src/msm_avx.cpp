@@ -13,7 +13,24 @@
 #define MCL_DLL_EXPORT
 #include <mcl/bn.hpp>
 #include <stdint.h>
+// the AVX-512 code generation is enabled only for the functions defined in the regions of MCL_MSM_AVX512_BEGIN / END
+// (not for the whole translation unit by -mavx512f) : an inline or template function instantiated in this file (the std and mcl headers)
+// is a COMDAT shared with the other objects, and the linker may pick this file's instance for the whole program,
+// then the program crashes on a CPU without AVX-512 before the CPU check (e.g. std::map of cybozu::Option, FpT::save, mcl::local::invVecWork).
+// (evex512 is not written in the target string : clang 18-21 enable it implicitly and clang 22 removed the feature name and ignores the whole attribute with it)
+#if defined(__clang__)
+	#define MCL_MSM_AVX512_BEGIN _Pragma("clang attribute push(__attribute__((target(\"avx512f,avx512ifma\"))), apply_to = function)")
+	#define MCL_MSM_AVX512_END _Pragma("clang attribute pop")
+#elif defined(__GNUC__)
+	#define MCL_MSM_AVX512_BEGIN _Pragma("GCC push_options") _Pragma("GCC target(\"avx512f,avx512ifma\")")
+	#define MCL_MSM_AVX512_END _Pragma("GCC pop_options")
+#else
+	#define MCL_MSM_AVX512_BEGIN
+	#define MCL_MSM_AVX512_END
+#endif
+MCL_MSM_AVX512_BEGIN
 #include "avx512.hpp"
+MCL_MSM_AVX512_END
 #include "msm.hpp"
 #define MCL_GLV_ONLY_FUNC
 #include "glv.hpp"
@@ -29,6 +46,8 @@
 #pragma GCC diagnostic ignored "-Wignored-attributes" // false positive
 #endif
 #endif
+
+MCL_MSM_AVX512_BEGIN
 
 namespace {
 
@@ -847,6 +866,19 @@ inline const AffM* getAffM(const AffM *base, uint32_t i)
 	return i == mcl::ec::local::msmNone ? &g_zeroAffM : base + (i & mcl::ec::local::msmIdxMask);
 }
 
+#ifndef MCL_MSM_PREFETCH_DIST
+	// the distance (in pairs) of the software prefetch of addPairsAffM (0 : no prefetch ; the same name as in src/glv.hpp for the generic kernel, which is not visible here)
+	#define MCL_MSM_PREFETCH_DIST 32
+#endif
+// the distance in groups of 8 pairs
+#define MSM_PREFETCH_GROUPS ((MCL_MSM_PREFETCH_DIST + 7) / 8)
+// prefetch the point (sizeof(AffM) = 2 N * 8 bytes : one or two cache lines)
+inline void prefetchAffM(const AffM *p)
+{
+	prefetchT0(p);
+	if (sizeof(AffM) > 64) prefetchT0((const char*)p + 64);
+}
+
 // load the N limbs of a coordinate of AffM (64-byte aligned if N == 8)
 inline Vec loadLimbs(const Unit *p)
 {
@@ -976,6 +1008,18 @@ void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_
 			const size_t j = j0 + g * 8;
 			const uint32_t *pa = ia + j;
 			const uint32_t *pb = ib + j;
+			/*
+				software prefetch of the points of the group g + MSM_PREFETCH_GROUPS
+				(the reads of base at the level 0 are random and the base of 2^19 points or more exceeds the L3 cache)
+			*/
+			if (MSM_PREFETCH_GROUPS > 0 && j + 8 * (MSM_PREFETCH_GROUPS + 1) <= m) {
+				const uint32_t *qa = pa + 8 * MSM_PREFETCH_GROUPS;
+				const uint32_t *qb = pb + 8 * MSM_PREFETCH_GROUPS;
+				for (size_t k = 0; k < 8; k++) {
+					prefetchAffM(getAffM(base, qa[k]));
+					prefetchAffM(getAffM(base, qb[k]));
+				}
+			}
 			uint32_t ta[8], tb[8];
 			if (j + 8 > m) {
 				// the last group has less than 8 pairs
@@ -1879,6 +1923,7 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
 {
 	(void)EcM::a_; // disable unused warning
+	(void)EcM::b3_;
 	(void)EcM::zeroProj_;
 	(void)EcM::zeroJacobi_;
 	(void)EcMA::a_;
@@ -1979,6 +2024,8 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 
 } } // mcl::msm
 
+MCL_MSM_AVX512_END
+
 #ifdef MCL_MSM_TEST
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
@@ -1988,6 +2035,8 @@ bool initMsm(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x
 #include <cybozu/option.hpp>
 #define MCL_GLV_ONLY_FUNC
 #include "glv.hpp"
+
+MCL_MSM_AVX512_BEGIN
 
 using namespace mcl::bn;
 using namespace mcl::msm;
@@ -3211,6 +3260,8 @@ CYBOZU_TEST_AUTO(bucketSize)
 		if (!ok) printf("n=%zd model b=%zd measured [%zd, %zd]\n", n, b, lo[j], hi[j]);
 	}
 }
+
+MCL_MSM_AVX512_END // main runs before the CPU check, so it must not use AVX-512
 
 int main(int argc, char *argv[])
 {
