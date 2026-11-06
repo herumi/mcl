@@ -35,12 +35,10 @@ if not "%USE_CLANG%"=="0" (
 if "%USE_CLANG%"=="2" (
   set CXX=clang-cl
   set LOCAL_CFLAGS=%CLANG_CFLAGS% %LOCAL_DEF%
-  set MSM_ARCH=-mavx512f -mavx512ifma
   set LOCAL_LDFLAGS=%LDFLAGS% %CLANG_RT_LIB%
 ) else (
   set CXX=cl
   set LOCAL_CFLAGS=%CFLAGS% %LOCAL_DEF%
-  set MSM_ARCH=/arch:AVX512
   set LOCAL_LDFLAGS=%LDFLAGS%
 )
 
@@ -54,7 +52,8 @@ if not "%USE_CLANG%"=="0" (
   clang++ -c -O3 -fomit-frame-pointer -fno-stack-protector -Wno-override-module -o obj\base64.obj src\base64.ll
 )
 %CXX% /c %LOCAL_CFLAGS% src\fp.cpp /Foobj\fp.obj
-%CXX% /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj %MSM_ARCH%
+rem msm_avx.cpp enables AVX-512 only in the regions of MCL_MSM_AVX512_BEGIN / END (cl can use the intrinsics without /arch), so no /arch:AVX512 or -mavx512f here
+%CXX% /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj
 
 del /q lib\mcl.*
 if "%USE_DLL%"=="1" (

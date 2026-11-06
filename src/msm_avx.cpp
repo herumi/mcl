@@ -17,8 +17,9 @@
 // (not for the whole translation unit by -mavx512f) : an inline or template function instantiated in this file (the std and mcl headers)
 // is a COMDAT shared with the other objects, and the linker may pick this file's instance for the whole program,
 // then the program crashes on a CPU without AVX-512 before the CPU check (e.g. std::map of cybozu::Option, FpT::save, mcl::local::invVecWork).
+// (evex512 is not written in the target string : clang 18-21 enable it implicitly and clang 22 removed the feature name and ignores the whole attribute with it)
 #if defined(__clang__)
-	#define MCL_MSM_AVX512_BEGIN _Pragma("clang attribute push(__attribute__((target(\"avx512f,avx512ifma,evex512\"))), apply_to = function)")
+	#define MCL_MSM_AVX512_BEGIN _Pragma("clang attribute push(__attribute__((target(\"avx512f,avx512ifma\"))), apply_to = function)")
 	#define MCL_MSM_AVX512_END _Pragma("clang attribute pop")
 #elif defined(__GNUC__)
 	#define MCL_MSM_AVX512_BEGIN _Pragma("GCC push_options") _Pragma("GCC target(\"avx512f,avx512ifma\")")
