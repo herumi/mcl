@@ -9,15 +9,15 @@
 
 #include <mcl/g1_def.hpp>
 
-#if MCL_FP_BIT != 256
-	#error "GG (Grumpkin) requires MCL_FP_BIT=256 (the 2-cycle with BN_SNARK1 ; build mcl with MCL_FP_BIT=256)"
+#if MCL_USE_GRUMPKIN != 1 || MCL_FP_BIT != 256
+	#error "GG (Grumpkin) requires MCL_USE_GRUMPKIN=1 and MCL_FP_BIT=256"
 #endif
 
 namespace mcl {
 
 /*
 	Grumpkin : y^2 = x^3 - 17 over Fr (the r of BN_SNARK1), the order is the p of BN_SNARK1
-	the 2-cycle with BN_SNARK1 (alt_bn128) : the base field is Fr and the scalar field is Fp (initGrumpkin in bn.hpp)
+	the 2-cycle with BN_SNARK1 (alt_bn128) : (initGrumpkin in bn.hpp)
 */
 typedef EcT<Fr, Fp> GG;
 

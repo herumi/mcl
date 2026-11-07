@@ -69,7 +69,7 @@ namespace {
 #undef MCL_MSM_FP_BIT
 #undef MCL_MSM_FR_BIT
 
-#if MCL_FP_BIT == 256
+#if MCL_USE_GRUMPKIN == 1
 // the kernel of GG (Grumpkin, mcl::msm_gg) : the base field is Fr and the scalar field is Fp
 #define MCL_MSM_FP mcl::Fr
 #define MCL_MSM_FR mcl::Fp
@@ -1228,7 +1228,7 @@ mpz_class getGLVLambda()
 	return 0;
 }
 
-#if MCL_FP_BIT == 256
+#if MCL_USE_GRUMPKIN == 1
 // the kernel of GG (Grumpkin, mcl::msm_gg) registered by initGrumpkin together with the kernel of G1 (BN_SNARK1)
 CYBOZU_TEST_AUTO(kernelGG)
 {

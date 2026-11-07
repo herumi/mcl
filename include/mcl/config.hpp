@@ -57,6 +57,15 @@
 	#define MCL_FR_BIT 256
 #endif
 /*
+	MCL_USE_GRUMPKIN=1 : define the class GG (Grumpkin)
+*/
+#ifndef MCL_USE_GRUMPKIN
+	#define MCL_USE_GRUMPKIN 0
+#endif
+#if MCL_USE_GRUMPKIN == 1 && MCL_FP_BIT != 256
+	#error "MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256"
+#endif
+/*
 	the max bit size of MCL_FP_BIT and MCL_FR_BIT (= the bit size of the generated mul/sqr functions, see MCL_BINT_MUL_N)
 	To enlarge it (up to 576), change MCL_BINT_MAX_BIT and BINT_MUL_N in Makefile, and run `make update_all_asm` and `make header`.
 */

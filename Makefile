@@ -20,6 +20,14 @@ endif
 
 CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
 CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
+# GG (Grumpkin) requires MCL_USE_GRUMPKIN=1 (and MCL_FP_BIT=256)
+MCL_USE_GRUMPKIN?=0
+ifeq ($(MCL_USE_GRUMPKIN),1)
+  ifneq ($(MCL_FP_BIT),256)
+    $(error MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256)
+  endif
+endif
+CFLAGS+=-DMCL_USE_GRUMPKIN=$(MCL_USE_GRUMPKIN)
 
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp
@@ -27,8 +35,8 @@ TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
-ifeq ($(MCL_FP_BIT),256)
-  TEST_SRC+=grumpkin_test.cpp # GG (Grumpkin) requires MCL_FP_BIT=256
+ifeq ($(MCL_USE_GRUMPKIN),1)
+  TEST_SRC+=grumpkin_test.cpp
 endif
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
@@ -202,7 +210,7 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG) and 384 (BLS12-381, BLS12-377, BN254, ...)
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG if MCL_USE_GRUMPKIN=1) and 384 (BLS12-381, BLS12-377, BN254, ...)
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
