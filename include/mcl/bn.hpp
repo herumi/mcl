@@ -8,7 +8,9 @@
 */
 #include <mcl/g1_def.hpp>
 #include <mcl/g2_def.hpp>
+#if MCL_FP_BIT == 256
 #include <mcl/gg_def.hpp>
+#endif
 #include <mcl/curve_type.hpp>
 #include <assert.h>
 
@@ -109,14 +111,17 @@ MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para);
 
 MCL_CXX_API const G1& getG1basePoint();
 
+#if MCL_FP_BIT == 256
 /*
 	init GG (Grumpkin : y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1)
 	Fp and Fr must be those of BN_SNARK1 (initPairing(BN_SNARK1)) or not initialized yet (then they are initialized here)
 	*pb = false if Fp or Fr is initialized for another curve (G1 / G2 of the curve are not broken)
 	GG has only the group operations (add / mul / mulVec / serialization) : no pairing, no hash-to-curve
+	GG is available only if MCL_FP_BIT=256 (see gg_def.hpp)
 */
 MCL_CXX_API void initGrumpkin(bool *pb);
 MCL_CXX_API const GG& getGGbasePoint();
+#endif
 
 /*
 	check x in Fp12 is in GT.
@@ -169,12 +174,14 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254)
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 
+#if MCL_FP_BIT == 256
 inline void initGrumpkin()
 {
 	bool b;
 	initGrumpkin(&b);
 	if (!b) throw cybozu::Exception("bn:initGrumpkin");
 }
+#endif
 
 inline void mapToG1(G1& P, const Fp& x)
 {

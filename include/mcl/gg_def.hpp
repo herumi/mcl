@@ -9,6 +9,10 @@
 
 #include <mcl/g1_def.hpp>
 
+#if MCL_FP_BIT != 256
+	#error "GG (Grumpkin) requires MCL_FP_BIT=256 (the 2-cycle with BN_SNARK1 ; build mcl with MCL_FP_BIT=256)"
+#endif
+
 namespace mcl {
 
 /*

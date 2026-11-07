@@ -111,9 +111,11 @@ uint32_t getCpuType()
 	#pragma warning(disable : 4127)
 #endif
 
-// define Fp, Fr, G1, GG
+// define Fp, Fr, G1, GG (GG only if MCL_FP_BIT=256)
 #include <mcl/g1_def.hpp>
+#if MCL_FP_BIT == 256
 #include <mcl/gg_def.hpp>
+#endif
 #include "fp_tower_impl.hpp"
 
 namespace mcl {
@@ -137,7 +139,9 @@ namespace mcl {
 	template Ec::MsmKernelPtr Ec::msmKernel;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
+#if MCL_FP_BIT == 256
 MCL_EC_STATIC_INST(GG, Fr)
+#endif
 #undef MCL_EC_STATIC_INST
 #endif
 
@@ -724,6 +728,8 @@ void initG1onlyGLV(int curveType)
 #endif
 }
 
+#if MCL_FP_BIT == 256
+
 namespace {
 
 GG s_ggBasePoint;
@@ -778,6 +784,8 @@ const GG& getGGbasePoint()
 	return s_ggBasePoint;
 }
 
+#endif // MCL_FP_BIT == 256
+
 namespace ec {
 
 const StaticMember* getStaticMember(int id)
@@ -785,19 +793,25 @@ const StaticMember* getStaticMember(int id)
 	struct Table {
 		StaticMember g1;
 		StaticMember g2;
+#if MCL_FP_BIT == 256
 		StaticMember gg;
+#endif
 		Table()
 		{
 			G1::setStaticMember(g1);
 			G2::setStaticMember(g2);
+#if MCL_FP_BIT == 256
 			GG::setStaticMember(gg);
+#endif
 		}
 	};
 	static const Table tbl;
 	switch (id) {
 	case StaticIdG1: return &tbl.g1;
 	case StaticIdG2: return &tbl.g2;
+#if MCL_FP_BIT == 256
 	case StaticIdGG: return &tbl.gg;
+#endif
 	default: return 0;
 	}
 }

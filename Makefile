@@ -27,7 +27,9 @@ TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
-TEST_SRC+=grumpkin_test.cpp
+ifeq ($(MCL_FP_BIT),256)
+  TEST_SRC+=grumpkin_test.cpp # GG (Grumpkin) requires MCL_FP_BIT=256
+endif
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp

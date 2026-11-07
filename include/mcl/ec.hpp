@@ -1054,7 +1054,7 @@ enum StaticIdType {
 	StaticIdG2 = 1,
 	StaticIdGG = 2
 };
-// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG)
+// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG, only if MCL_FP_BIT=256 ; otherwise 0)
 MCL_CXX_API const StaticMember* getStaticMember(int id);
 // StaticId<Fp>::id is defined in g1_def.hpp (Fp), g2_def.hpp (Fp2) and gg_def.hpp (Fr)
 template<class Fp> struct StaticId;
