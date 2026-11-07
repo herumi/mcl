@@ -777,6 +777,11 @@ void initGrumpkin(bool *pb)
 	*pb = GLVGG::useParamTbl(MCL_GRUMPKIN);
 	if (!*pb) return;
 	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
+#if MCL_MSM == 1
+	if (bint::getCpuType() & bint::tAVX512_IFMA) {
+		mcl::msm::initMsmGG(MCL_GRUMPKIN, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)
+	}
+#endif
 }
 
 const GG& getGGbasePoint()

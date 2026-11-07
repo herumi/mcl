@@ -202,7 +202,7 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1) and 384 (BLS12-381, BLS12-377, BN254, ...)
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG) and 384 (BLS12-381, BLS12-377, BN254, ...)
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
@@ -215,7 +215,7 @@ ifeq ($(MCL_MSM),1)
   # -mavx512f is not given : the kernels are compiled with the target attribute (MCL_MSM_AVX512_BEGIN / END in msm_avx.cpp),
   # otherwise the template instances shared with the other objects (COMDAT) may use AVX-512 and crash on a CPU without it
   MSM_CFLAGS=-std=c++11
-$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_impl.hpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
 src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py src/gen_glv.py
