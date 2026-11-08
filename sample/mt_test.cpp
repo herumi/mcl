@@ -76,7 +76,6 @@ int main(int argc, char *argv[])
 		xVec[i].setByCSPRNG(rg);
 	}
 	G1 P1, P2;
-#ifdef MCL_MSM
 	if (msmOnly) {
 		for (int b = minb; b <= maxb; b++) {
 			size_t nn = 1u << b;
@@ -86,7 +85,6 @@ int main(int argc, char *argv[])
 		}
 		return 0;
 	}
-#endif
 	CYBOZU_BENCH_C("G1 single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
 	if (n < 1024) {
 		CYBOZU_BENCH_C("naive", C, mulVec_naive, P2, Pvec.data(), xVec.data(), n);
