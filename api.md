@@ -624,14 +624,31 @@ T::mulVec(T& z, T* x, const Fr *y, size_t n);
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
 - `x[]` is not const because the points may be normalized (the values they represent do not change).
 
+`mulVec` runs in parallel on the threads of the caller : it splits the windows and the point chunks into tasks and runs them by the parallel-for registered with `setParallelFor`. The library has no thread.
+```cpp
+namespace mcl { namespace ec {
+typedef void (*ParallelForTask)(size_t begin, size_t end, size_t tid, void *arg);
+typedef void (*ParallelForFunc)(ParallelForTask task, void *arg, size_t n);
+void setParallelFor(ParallelForFunc f, size_t maxThreads);
+ParallelForFunc getParallelFor(size_t *pMaxThreads = 0);
+} }
+```
+- `f(task, arg, n)` calls `task(begin, end, tid, arg)` for a partition `[begin, end)` of `[0, n)` on at most `maxThreads` threads (`tid` < the number of the parts <= `maxThreads`) and returns after all the parts are done. The tasks do not call `f`.
+- `f` is implemented by the caller (std::thread, a thread pool, OpenMP, ...). `mulVec` is sequential if none is registered (`f = 0` or `maxThreads = 1`).
+- `getParallelFor` returns the registered function (0 if none) and its `maxThreads`.
+
 ### multi-threaded multi-scalar multiplication
 ```c
 void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
 void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
 ```
+C++
+```cpp
+T::mulVecMT(T& z, T* x, const Fr *y, size_t n, size_t cpuN = 0);
+```
 
-- multi-threaded version of `mulVec` with `cpuN` threads
-- enabled if the library is built with `MCL_USE_OMP=1`
+- `mulVec` with the OpenMP parallel-for : if no parallel-for is registered, `mcl::ec::parallelForOMP` is registered with `cpuN` threads (`omp_get_max_threads()` if `cpuN = 0`) at the first call. `cpuN` is ignored if one is registered.
+- requires the library and the caller built with `MCL_USE_OMP=1`, otherwise it is the sequential `mulVec`.
 
 ### scalar multiplication of each point
 ```c

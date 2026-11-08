@@ -1064,7 +1064,7 @@ template<class Fp> struct StaticId;
 	f(task, arg, n) calls task(begin, end, tid, arg) for a partition [begin, end) of [0, n) (begin < end) on at most maxThreads threads,
 	tid < the number of the parts (<= maxThreads), and returns after all the parts are done. the tasks are not reentrant (f is not called in task).
 	the library has no thread : the caller registers its own implementation (std::thread, OpenMP, ...) by setParallelFor,
-	otherwise mulVec is sequential (parallelForOMP is the OpenMP one of mulVecMT if MCL_USE_OMP)
+	otherwise mulVec is sequential
 */
 typedef void (*ParallelForTask)(size_t begin, size_t end, size_t tid, void *arg);
 typedef void (*ParallelForFunc)(ParallelForTask task, void *arg, size_t n);
@@ -1961,8 +1961,7 @@ public:
 		multi thread version of mulVec
 		mulVec itself runs the windows and the point chunks in parallel by the parallel-for registered by ec::setParallelFor,
 		so this is mulVec if one is registered (cpuN is ignored).
-		if none is registered and MCL_USE_OMP is defined, the OpenMP one (ec::parallelForOMP) is registered with
-		cpuN threads (omp_get_num_procs() if cpuN = 0) at the first call. otherwise it is the sequential mulVec.
+		if none is registered, ec::parallelForOMP is registered with cpuN threads (omp_get_max_threads() if cpuN = 0) at the first call.
 	*/
 	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0)
 	{
