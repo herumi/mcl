@@ -793,6 +793,21 @@ const GG& getGGbasePoint()
 
 namespace ec {
 
+static ParallelForFunc s_parallelFor = 0;
+static size_t s_parallelForMaxThreads = 1;
+
+void setParallelFor(ParallelForFunc f, size_t maxThreads)
+{
+	if (f == 0 || maxThreads == 0) maxThreads = 1;
+	s_parallelFor = f;
+	s_parallelForMaxThreads = maxThreads;
+}
+ParallelForFunc getParallelFor(size_t *pMaxThreads)
+{
+	if (pMaxThreads) *pMaxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
+	return s_parallelFor;
+}
+
 const StaticMember* getStaticMember(int id)
 {
 	struct Table {
