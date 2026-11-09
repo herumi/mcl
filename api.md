@@ -144,6 +144,7 @@ MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|supported curves
 
 ## Thread safety
 All functions except initialization and global setting changes are thread-safe.
+`mcl::ec::setParallelFor` is a global setting : call it before `mulVec` / `millerLoopVec` run on other threads (typically once after `initPairing`).
 
 ## Initialization
 
@@ -624,18 +625,24 @@ T::mulVec(T& z, T* x, const Fr *y, size_t n);
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
 - `x[]` is not const because the points may be normalized (the values they represent do not change).
 
-`mulVec` runs in parallel on the threads of the caller : it splits the windows and the point chunks into tasks and runs them by the parallel-for registered with `setParallelFor`. The library has no thread.
+`mulVec` runs in parallel on the threads of the caller : it splits the windows and the point chunks into tasks and runs them by a parallel-for. The library owns no thread.
 ```cpp
-namespace mcl { namespace ec {
+namespace mcl { namespace ec { // mcl/op.hpp
 typedef void (*ParallelForTask)(size_t begin, size_t end, size_t tid, void *arg);
 typedef void (*ParallelForFunc)(ParallelForTask task, void *arg, size_t n);
 void setParallelFor(ParallelForFunc f, size_t maxThreads);
 ParallelForFunc getParallelFor(size_t *pMaxThreads = 0);
+void parallelForThread(ParallelForTask task, void *arg, size_t n);
+void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt);
 } }
 ```
-- `f(task, arg, n)` calls `task(begin, end, tid, arg)` for a partition `[begin, end)` of `[0, n)` on at most `maxThreads` threads (`tid` < the number of the parts <= `maxThreads`) and returns after all the parts are done. The tasks do not call `f`.
-- `f` is implemented by the caller (std::thread, a thread pool, OpenMP, ...). `mulVec` is sequential if none is registered (`f = 0` or `maxThreads = 1`).
+The rule : the functions use the parallel-for registered by `setParallelFor` if any, otherwise `parallelForThread` (the threads of the OS) with `cpuN` threads, where `cpuN` is the argument of the MT functions (`mulVecMT`, `millerLoopVecMT`) and 1 (sequential) for the others (`mulVec`, `mulVecConstRef`, `millerLoopVec`, `powVec`). So `mulVec` is `mulVecMT` with `cpuN = 1`, the MT functions are parallel without any setting, and no function changes the registration.
+- `f(task, arg, n)` calls `task(begin, end, tid, arg)` for a partition `[begin, end)` of `[0, n)` (`begin < end`) on at most `maxThreads` threads (`tid` < the number of the parts <= `maxThreads`) and returns after all the parts are done. The tasks do not call `f` (not reentrant). The tasks of `mulVec` are the windows and the point chunks (see `mulVecCore` in src/glv.hpp), those of `millerLoopVec` are chunks of at least 16 pairs.
+- `setParallelFor(f, maxThreads)` registers `f` (`f = 0` or `maxThreads <= 1` : sequential, `maxThreads = 0` is treated as 1). It is a global setting and not thread-safe : call it before `mulVec` etc. run on other threads (typically once after `initPairing`).
+- `f` is implemented by the caller (a thread pool, std::thread, ...) or is `parallelForThread`. `setParallelFor(0, 1)` removes the registration. Register one when you have your own thread pool (so that the library does not create threads of its own), when you want `mulVec` / `powVec` / `millerLoopVec` to be parallel without changing the call sites, or when the MT functions are called frequently with small inputs (the threads of `parallelForThread` are created at each call).
 - `getParallelFor` returns the registered function (0 if none) and its `maxThreads`.
+- `parallelForThread` is the `ParallelForFunc` of the library by the threads of the OS (pthread or the Windows threads) : `nt = min(maxThreads, n)` parts with the `maxThreads` of `setParallelFor`, `nt - 1` threads are created at each call and the last part runs on the caller, then all are joined (a part whose thread can not be created runs on the caller). `parallelForThreadN` is the same with `nt` given. They are sequential if `MCL_DONT_USE_THREAD` is defined (always for wasm and `MCL_STANDALONE`).
+- `mcl::ec::ParallelFor` (the pair of `f` and `maxThreads`) and `getParallelForOrThread(cpuN)` are how the library passes the chosen parallel-for to the MSM backends ; they are not needed by the caller.
 
 ### multi-threaded multi-scalar multiplication
 ```c
@@ -647,8 +654,8 @@ C++
 T::mulVecMT(T& z, T* x, const Fr *y, size_t n, size_t cpuN = 0);
 ```
 
-- `mulVec` with the OpenMP parallel-for : if no parallel-for is registered, `mcl::ec::parallelForOMP` is registered with `cpuN` threads (`omp_get_max_threads()` if `cpuN = 0`) at the first call. `cpuN` is ignored if one is registered.
-- requires the library and the caller built with `MCL_USE_OMP=1`, otherwise it is the sequential `mulVec`.
+- `mulVec` with `cpuN` threads of the library (the number of the processors if `cpuN = 0`). If a parallel-for is registered by `mcl::ec::setParallelFor`, it is used and `cpuN` is ignored. `mulVec` is `mulVecMT` with `cpuN = 1`. The registration is not changed.
+- sequential if `MCL_DONT_USE_THREAD` (wasm, `MCL_STANDALONE`) and none is registered.
 
 ### scalar multiplication of each point
 ```c
@@ -769,8 +776,7 @@ void millerLoopVec(GT& z, const G1 *x, const G2 *y, size_t n);
 ```c
 void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
 ```
-- multi-threaded version of `mclBn_millerLoopVec` with `cpuN` threads
-- enabled if the library is built with `MCL_USE_OMP=1`
+- multi-threaded version of `mclBn_millerLoopVec` with `cpuN` threads : the points are split into chunks of at least 16 pairs and the chunks are the tasks of the parallel-for. The rule of `cpuN` is the same as `mulVecMT` (ignored if a parallel-for is registered by `mcl::ec::setParallelFor`, otherwise the threads of the library). `millerLoopVec` is `millerLoopVecMT` with `cpuN = 1` (parallel only if a parallel-for is registered).
 
 ### pairing for a fixed point of G2
 ```c

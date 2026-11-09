@@ -14,10 +14,6 @@
 #include <mcl/curve_type.hpp>
 #include <assert.h>
 
-#ifdef MCL_USE_OMP
-#include <omp.h>
-#endif
-
 namespace mcl {
 
 MCL_CXX_API void finalExp(Fp12& y, const Fp12& x);
@@ -66,8 +62,7 @@ MCL_CXX_API void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coe
 */
 MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true);
 
-// multi thread version of millerLoopVec
-// the num of thread is automatically detected if cpuN = 0
+// multi thread version of millerLoopVec with cpuN threads (the number of the processors if cpuN = 0) : see api.md
 MCL_CXX_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0);
 
 MCL_CXX_API bool setMapToMode(int mode);

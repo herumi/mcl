@@ -1,6 +1,7 @@
 /*
-	the parallel mulVec by the parallel-for registered by mcl::ec::setParallelFor (the windows and the point chunks are the tasks)
+	the parallel mulVec and millerLoopVecMT by the parallel-for registered by mcl::ec::setParallelFor (the windows and the point chunks are the tasks)
 	the results must not depend on the number of threads nor on the implementation of the parallel-for
+	(a sequential one, a pthread one of this test and mcl::ec::parallelForThread of the library)
 */
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
@@ -16,10 +17,13 @@ using namespace mcl::bn;
 
 // the number of the parts of the test parallel-for
 static size_t g_parts = 1;
+// the number of the calls of parallelForSeq
+static size_t g_seqCalls = 0;
 
 // a sequential parallel-for : task(begin, end, tid) for g_parts parts in the order of tid
 static void parallelForSeq(mcl::ec::ParallelForTask task, void *arg, size_t n)
 {
+	g_seqCalls++;
 	size_t nt = g_parts;
 	if (nt > n) nt = n;
 	if (nt == 0) nt = 1;
@@ -131,15 +135,17 @@ void testPar(const char *name, const G& P, const size_t *nTbl, size_t nTblN)
 		const size_t partsTbl[] = { 1, 2, 3, 7, 64 };
 		for (size_t pi = 0; pi < CYBOZU_NUM_OF_ARRAY(partsTbl); pi++) {
 			g_parts = partsTbl[pi];
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < 3; mode++) {
 				if (mode == 0) {
 					mcl::ec::setParallelFor(parallelForSeq, g_parts);
-				} else {
+				} else if (mode == 1) {
 #ifdef _WIN32
 					continue;
 #else
 					mcl::ec::setParallelFor(parallelForThread, g_parts);
 #endif
+				} else {
+					mcl::ec::setParallelFor(mcl::ec::parallelForThread, g_parts);
 				}
 				G Q1;
 				G::mulVecConstRef(Q1, xVec.data(), yVec.data(), n);
@@ -147,7 +153,7 @@ void testPar(const char *name, const G& P, const size_t *nTbl, size_t nTblN)
 				std::vector<G> xVec2 = xVec;
 				G::mulVec(Q1, xVec2.data(), yVec.data(), n);
 				CYBOZU_TEST_EQUAL(Q0, Q1);
-				G::mulVecMT(Q1, xVec2.data(), yVec.data(), n);
+				G::mulVecMT(Q1, xVec2.data(), yVec.data(), n, 7); // the registered one is used (cpuN is ignored)
 				CYBOZU_TEST_EQUAL(Q0, Q1);
 				// the bucket size of the argument
 				G::mulVecConstRef(Q1, xVec.data(), yVec.data(), n, 7);
@@ -208,8 +214,180 @@ CYBOZU_TEST_AUTO(GT)
 		GT::powVec(z1, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(z0, z1);
 #endif
+		mcl::ec::setParallelFor(mcl::ec::parallelForThread, g_parts);
+		GT::powVec(z1, xVec.data(), yVec.data(), n);
+		CYBOZU_TEST_EQUAL(z0, z1);
 	}
 	mcl::ec::setParallelFor(0, 0);
+}
+
+// the library parallel-for : the parts cover [0, n) exactly once with tid < min(maxThreads, n)
+struct CoverCtx {
+	size_t n;
+	size_t maxThreads;
+	std::vector<size_t> count; // [n] how many times i is done
+	std::vector<size_t> tidOfPart; // [maxThreads] 1 + the number of the parts of tid
+};
+static void coverTask(size_t begin, size_t end, size_t tid, void *arg)
+{
+	CoverCtx& ctx = *(CoverCtx*)arg;
+	CYBOZU_TEST_ASSERT(begin < end);
+	CYBOZU_TEST_ASSERT(end <= ctx.n);
+	CYBOZU_TEST_ASSERT(tid < ctx.maxThreads);
+	for (size_t i = begin; i < end; i++) ctx.count[i]++;
+	ctx.tidOfPart[tid]++;
+}
+CYBOZU_TEST_AUTO(parallelForThread)
+{
+	const size_t maxThreadsTbl[] = { 1, 2, 3, 7, 16 };
+	const size_t nTbl[] = { 0, 1, 2, 5, 16, 17, 100 };
+	for (size_t ti = 0; ti < CYBOZU_NUM_OF_ARRAY(maxThreadsTbl); ti++) {
+		const size_t maxThreads = maxThreadsTbl[ti];
+		mcl::ec::setParallelFor(mcl::ec::parallelForThread, maxThreads);
+		for (size_t ni = 0; ni < CYBOZU_NUM_OF_ARRAY(nTbl); ni++) {
+			CoverCtx ctx;
+			ctx.n = nTbl[ni];
+			ctx.maxThreads = maxThreads;
+			ctx.count.resize(ctx.n);
+			ctx.tidOfPart.resize(maxThreads);
+			mcl::ec::parallelForThread(coverTask, &ctx, ctx.n);
+			for (size_t i = 0; i < ctx.n; i++) CYBOZU_TEST_EQUAL(ctx.count[i], 1u);
+			size_t parts = 0;
+			for (size_t i = 0; i < maxThreads; i++) {
+				CYBOZU_TEST_ASSERT(ctx.tidOfPart[i] <= 1); // each tid has one part
+				parts += ctx.tidOfPart[i];
+			}
+			const size_t expected = ctx.n < maxThreads ? ctx.n : maxThreads;
+			CYBOZU_TEST_EQUAL(parts, expected);
+		}
+	}
+	mcl::ec::setParallelFor(0, 0);
+}
+
+// millerLoopVecMT with the registered parallel-for and with the automatic registration of the library one
+CYBOZU_TEST_AUTO(millerLoopVecMT)
+{
+	const size_t maxN = 100;
+	std::vector<G1> Pvec(maxN);
+	std::vector<G2> Qvec(maxN);
+	std::vector<Fp12> prod(maxN + 1); // prod[m] = prod_{i<m} millerLoop(P[i], Q[i])
+	prod[0] = 1;
+	for (size_t i = 0; i < maxN; i++) {
+		char c = char('a' + (i % 26));
+		char buf[2] = { c, char('0' + (i / 26)) };
+		hashAndMapToG1(Pvec[i], buf, 2);
+		hashAndMapToG2(Qvec[i], buf, 2);
+		Fp12 e;
+		millerLoop(e, Pvec[i], Qvec[i]);
+		Fp12::mul(prod[i + 1], prod[i], e);
+	}
+	const size_t nTbl[] = { 0, 1, 15, 16, 31, 32, 33, 50, 100 };
+	const size_t partsTbl[] = { 1, 2, 3, 5, 7, 16 };
+	for (size_t pi = 0; pi < CYBOZU_NUM_OF_ARRAY(partsTbl); pi++) {
+		g_parts = partsTbl[pi];
+		for (int mode = 0; mode < 3; mode++) {
+			if (mode == 0) {
+				mcl::ec::setParallelFor(parallelForSeq, g_parts);
+			} else if (mode == 1) {
+#ifdef _WIN32
+				continue;
+#else
+				mcl::ec::setParallelFor(parallelForThread, g_parts);
+#endif
+			} else {
+				mcl::ec::setParallelFor(mcl::ec::parallelForThread, g_parts);
+			}
+			for (size_t ni = 0; ni < CYBOZU_NUM_OF_ARRAY(nTbl); ni++) {
+				const size_t n = nTbl[ni];
+				Fp12 f;
+				f.clear();
+				millerLoopVecMT(f, Pvec.data(), Qvec.data(), n, 123); // cpuN is ignored
+				CYBOZU_TEST_EQUAL(f, prod[n]);
+			}
+		}
+	}
+	// the non-MT millerLoopVec uses the registered parallel-for (initF = true / false)
+	for (size_t pi = 0; pi < CYBOZU_NUM_OF_ARRAY(partsTbl); pi++) {
+		g_parts = partsTbl[pi];
+		mcl::ec::setParallelFor(parallelForSeq, g_parts);
+		for (size_t ni = 0; ni < CYBOZU_NUM_OF_ARRAY(nTbl); ni++) {
+			const size_t n = nTbl[ni];
+			Fp12 f;
+			f.clear();
+			millerLoopVec(f, Pvec.data(), Qvec.data(), n);
+			CYBOZU_TEST_EQUAL(f, prod[n]);
+			f = prod[1];
+			millerLoopVec(f, Pvec.data(), Qvec.data(), n, false);
+			CYBOZU_TEST_EQUAL(f, prod[1] * prod[n]);
+		}
+	}
+	// the MT functions with cpuN threads of the library without registration : the registration is not changed
+	for (size_t cpuN = 0; cpuN < 4; cpuN++) {
+		mcl::ec::setParallelFor(0, 0);
+		for (size_t ni = 0; ni < CYBOZU_NUM_OF_ARRAY(nTbl); ni++) {
+			const size_t n = nTbl[ni];
+			Fp12 f;
+			f.clear();
+			millerLoopVecMT(f, Pvec.data(), Qvec.data(), n, cpuN);
+			CYBOZU_TEST_EQUAL(f, prod[n]);
+			CYBOZU_TEST_ASSERT(mcl::ec::getParallelFor() == 0);
+		}
+	}
+	mcl::ec::setParallelFor(0, 0);
+}
+
+// mulVecMT / millerLoopVecMT : the registered parallel-for is used (cpuN is ignored) if any, the registration is never changed
+CYBOZU_TEST_AUTO(mulVecMT)
+{
+	G1 P;
+	hashAndMapToG1(P, "abc", 3);
+	const size_t n = 5000; // >= 2 * MCL_MSM_PAR_MIN_CHUNK (the parallel path)
+	cybozu::XorShift rg;
+	std::vector<G1> xVec, xVec2;
+	std::vector<Fr> yVec;
+	setVec(xVec, yVec, P, n, rg);
+	mcl::ec::setParallelFor(0, 0);
+	G1 Q0, Q1;
+	G1::mulVecConstRef(Q0, xVec.data(), yVec.data(), n);
+	// without registration : mulVecMT with cpuN threads of the library, the registration stays empty
+	const size_t cpuNTbl[] = { 0, 1, 2, 3, 16 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(cpuNTbl); i++) {
+		xVec2 = xVec;
+		G1::mulVecMT(Q1, xVec2.data(), yVec.data(), n, cpuNTbl[i]);
+		CYBOZU_TEST_EQUAL(Q0, Q1);
+		CYBOZU_TEST_ASSERT(mcl::ec::getParallelFor() == 0);
+	}
+	// with registration : the registered one is used and cpuN is ignored
+	g_parts = 3;
+	mcl::ec::setParallelFor(parallelForSeq, g_parts);
+	g_seqCalls = 0;
+	xVec2 = xVec;
+	G1::mulVecMT(Q1, xVec2.data(), yVec.data(), n, 7);
+	CYBOZU_TEST_EQUAL(Q0, Q1);
+	CYBOZU_TEST_ASSERT(g_seqCalls > 0);
+	size_t calls = g_seqCalls;
+	G1::mulVec(Q1, xVec2.data(), yVec.data(), n); // mulVec uses it too
+	CYBOZU_TEST_EQUAL(Q0, Q1);
+	CYBOZU_TEST_ASSERT(g_seqCalls > calls);
+	calls = g_seqCalls;
+	{
+		const size_t m = 64;
+		std::vector<G2> Qvec(m);
+		for (size_t i = 0; i < m; i++) hashAndMapToG2(Qvec[i], &i, sizeof(i));
+		Fp12 f1, f2;
+		millerLoopVecMT(f1, xVec.data(), Qvec.data(), m, 7);
+		CYBOZU_TEST_ASSERT(g_seqCalls > calls);
+		mcl::ec::setParallelFor(0, 0);
+		millerLoopVec(f2, xVec.data(), Qvec.data(), m);
+		CYBOZU_TEST_EQUAL(f1, f2);
+	}
+	// without registration : mulVec and millerLoopVec do not call any parallel-for
+	mcl::ec::setParallelFor(0, 0);
+	calls = g_seqCalls;
+	G1::mulVec(Q1, xVec2.data(), yVec.data(), n);
+	CYBOZU_TEST_EQUAL(Q0, Q1);
+	CYBOZU_TEST_EQUAL(g_seqCalls, calls);
+	CYBOZU_TEST_ASSERT(mcl::ec::getParallelFor() == 0);
 }
 
 #ifndef _WIN32
@@ -238,6 +416,9 @@ CYBOZU_TEST_AUTO(bench)
 		mcl::ec::setParallelFor(parallelForThread, g_parts);
 		char buf[64];
 		snprintf(buf, sizeof(buf), "mulVec %2zd threads", g_parts);
+		CYBOZU_BENCH_C(buf, C, G1::mulVecConstRef, z, xVec.data(), yVec.data(), n);
+		mcl::ec::setParallelFor(mcl::ec::parallelForThread, g_parts);
+		snprintf(buf, sizeof(buf), "   lib %2zd threads", g_parts);
 		CYBOZU_BENCH_C(buf, C, G1::mulVecConstRef, z, xVec.data(), yVec.data(), n);
 	}
 	mcl::ec::setParallelFor(0, 0);

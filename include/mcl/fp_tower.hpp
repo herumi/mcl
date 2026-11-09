@@ -1385,17 +1385,18 @@ struct Fp12 : public fp::Serializable<Fp12, fp::Operator<Fp12> > {
 		return os;
 	}
 #endif
-	static void setPowVecGLV(bool f(Fp12& z, const Fp12 *xVec, const void *yVec, size_t yn) = 0)
+	static void setPowVecGLV(bool f(Fp12& z, const Fp12 *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par) = 0)
 	{
 		BaseClass::powVecGLV = f;
 	}
+	// z = prod xVec[i]^yVec[i] (the registered parallel-for is used if any, as G1::mulVec)
 	static inline void powVec(Fp12& z, const Fp12 *xVec, const Fr *yVec, size_t n)
 	{
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n)) {
+		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n, ec::getParallelForOrThread(1))) {
 			return;
 		}
 		size_t done = powVecN(z, xVec, yVec, n);

@@ -278,7 +278,7 @@ struct Operator : public E {
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		if (powVecGLV) {
-			powVecGLV(z, &x, &y, 1);
+			powVecGLV(z, &x, &y, 1, ec::ParallelFor::seq());
 			return;
 		}
 		fp::Block b;
@@ -313,7 +313,7 @@ struct Operator : public E {
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 protected:
-	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
+	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		powUnit(z, x, y, yn);
@@ -324,7 +324,7 @@ protected:
 };
 
 template<class T, class E>
-bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
+bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par);
 
 /*
 	T must have save and load

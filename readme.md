@@ -10,7 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)).
+- `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)). `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default ; OpenMP is no longer used (`MCL_USE_OMP` is removed).
 - Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)` ; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
   - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
 - Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 about 1.5-2.3x (w/ AVX-512 IFMA), 1.3-1.7x (w/o AVX-512), and 1.2-1.8x (Apple M4).
@@ -72,9 +72,7 @@ GMP is necessary only to build test programs.
 - `sudo apt install libgmp-dev` on Ubuntu
 - `brew install gmp` on macOS
 
-OpenMP is optional (`make MCL_USE_OMP=1`). It is used only by `mulVecMT` and `millerLoopVecMT`.
-- `sudo apt install libomp-dev` on Ubuntu
-- `brew install libomp`
+`mulVecMT` and `millerLoopVecMT` use pthread on Linux / macOS (`-pthread` may be required to link statically with glibc < 2.34) and the Windows threads on Windows. No other library is required.
 
 ## How to build with Makefile
 

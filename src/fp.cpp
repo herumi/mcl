@@ -103,6 +103,9 @@ uint32_t getCpuType()
 
 #include "low_func.hpp"
 #include <cybozu/itoa.hpp>
+#ifndef MCL_DONT_USE_THREAD
+#include <cybozu/thread.hpp>
+#endif
 #include <mcl/randgen.hpp>
 #include "llvm_proto.hpp"
 
@@ -807,6 +810,107 @@ ParallelForFunc getParallelFor(size_t *pMaxThreads)
 	if (pMaxThreads) *pMaxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
 	return s_parallelFor;
 }
+
+#ifdef MCL_DONT_USE_THREAD
+
+void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t)
+{
+	if (n > 0) task(0, n, 0, arg);
+}
+void parallelForThread(ParallelForTask task, void *arg, size_t n)
+{
+	if (n > 0) task(0, n, 0, arg);
+}
+ParallelFor getParallelForOrThread(size_t)
+{
+	ParallelFor par;
+	par.f = s_parallelFor;
+	par.maxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
+	return par;
+}
+
+#else
+
+namespace {
+
+struct ParallelForThreadArg {
+	ParallelForTask task;
+	void *arg;
+	size_t begin, end, tid;
+	cybozu::thread::ThreadHandle hdl;
+	bool created; // the thread of hdl is created
+};
+
+#ifdef _WIN32
+unsigned __stdcall parallelForThreadEntry(void *p)
+#else
+void* parallelForThreadEntry(void *p)
+#endif
+{
+	const ParallelForThreadArg& a = *(const ParallelForThreadArg*)p;
+	a.task(a.begin, a.end, a.tid, a.arg);
+	return 0;
+}
+
+} // anonymous namespace
+
+void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt)
+{
+	if (n == 0) return;
+	if (nt > n) nt = n;
+	ParallelForThreadArg *args = 0;
+	if (nt > 1) {
+		args = (ParallelForThreadArg*)malloc(sizeof(ParallelForThreadArg) * nt);
+		if (args == 0) nt = 1;
+	}
+	if (nt <= 1) {
+		task(0, n, 0, arg);
+		return;
+	}
+	const size_t q = n / nt;
+	const size_t r = n % nt;
+	for (size_t t = 0; t < nt; t++) {
+		ParallelForThreadArg& a = args[t];
+		a.task = task;
+		a.arg = arg;
+		a.begin = q * t + (t < r ? t : r);
+		a.end = a.begin + q + (t < r ? 1 : 0);
+		a.tid = t;
+		// the last part runs on the caller
+		a.created = t + 1 < nt && cybozu::thread::Begin(a.hdl, parallelForThreadEntry, &a, 0);
+		if (!a.created) parallelForThreadEntry(&a);
+	}
+	for (size_t t = 0; t + 1 < nt; t++) {
+		if (args[t].created) cybozu::thread::Join(args[t].hdl, cybozu::thread::Infinite);
+	}
+	free(args);
+}
+
+void parallelForThread(ParallelForTask task, void *arg, size_t n)
+{
+	size_t nt = 1;
+	getParallelFor(&nt);
+	parallelForThreadN(task, arg, n, nt);
+}
+
+ParallelFor getParallelForOrThread(size_t cpuN)
+{
+	ParallelFor par;
+	if (s_parallelFor) {
+		par.f = s_parallelFor;
+		par.maxThreads = s_parallelForMaxThreads;
+		return par;
+	}
+	if (cpuN == 0) {
+		int n = cybozu::GetProcessorNum();
+		cpuN = n > 0 ? size_t(n) : 1;
+	}
+	par.f = parallelForThread;
+	par.maxThreads = cpuN;
+	return par;
+}
+
+#endif // MCL_DONT_USE_THREAD
 
 const StaticMember* getStaticMember(int id)
 {

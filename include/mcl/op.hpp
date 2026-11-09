@@ -401,3 +401,42 @@ inline int detectIoMode(int ioMode, const std::ios_base& ios)
 
 } } // mcl::fp
 
+namespace mcl { namespace ec {
+
+// the parallel-for of mulVec / powVec / millerLoopVec : see "multi-scalar multiplication" in api.md
+typedef void (*ParallelForTask)(size_t begin, size_t end, size_t tid, void *arg);
+typedef void (*ParallelForFunc)(ParallelForTask task, void *arg, size_t n);
+MCL_CXX_API void setParallelFor(ParallelForFunc f, size_t maxThreads);
+MCL_CXX_API ParallelForFunc getParallelFor(size_t *pMaxThreads = 0);
+// the threads of the OS (the maxThreads of setParallelFor / nt threads)
+MCL_CXX_API void parallelForThread(ParallelForTask task, void *arg, size_t n);
+MCL_CXX_API void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt);
+
+// the parallel-for to use (f = 0 or maxThreads <= 1 : sequential), passed to the library by mulVecMT etc.
+struct ParallelFor {
+	ParallelForFunc f;
+	size_t maxThreads;
+	static ParallelFor seq()
+	{
+		ParallelFor par;
+		par.f = 0;
+		par.maxThreads = 1;
+		return par;
+	}
+	bool isParallel() const { return f != 0 && maxThreads > 1; }
+	void run(ParallelForTask task, void *arg, size_t n) const
+	{
+		if (f == parallelForThread) {
+			parallelForThreadN(task, arg, n, maxThreads);
+		} else if (f) {
+			f(task, arg, n);
+		} else {
+			if (n > 0) task(0, n, 0, arg);
+		}
+	}
+};
+// the registered parallel-for if any, otherwise parallelForThread with cpuN threads (the number of the processors if cpuN = 0)
+MCL_CXX_API ParallelFor getParallelForOrThread(size_t cpuN);
+
+} } // mcl::ec
+

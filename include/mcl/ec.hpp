@@ -16,10 +16,6 @@
 	#pragma warning(push)
 	#pragma warning(disable : 4458)
 #endif
-#ifdef MCL_USE_OMP
-#include <omp.h>
-#endif
-
 namespace mcl {
 
 namespace ec {
@@ -1059,42 +1055,7 @@ MCL_CXX_API const StaticMember* getStaticMember(int id);
 // StaticId<Fp>::id is defined in g1_def.hpp (Fp), g2_def.hpp (Fp2) and gg_def.hpp (Fr)
 template<class Fp> struct StaticId;
 
-/*
-	the parallel-for of the multi scalar multiplication (mulVec splits the windows and the points into tasks, see mulVecCore in src/glv.hpp)
-	f(task, arg, n) calls task(begin, end, tid, arg) for a partition [begin, end) of [0, n) (begin < end) on at most maxThreads threads,
-	tid < the number of the parts (<= maxThreads), and returns after all the parts are done. the tasks are not reentrant (f is not called in task).
-	the library has no thread : the caller registers its own implementation (std::thread, OpenMP, ...) by setParallelFor,
-	otherwise mulVec is sequential
-*/
-typedef void (*ParallelForTask)(size_t begin, size_t end, size_t tid, void *arg);
-typedef void (*ParallelForFunc)(ParallelForTask task, void *arg, size_t n);
-// f = 0 : sequential, maxThreads : the max number of threads of f (1 : sequential)
-MCL_CXX_API void setParallelFor(ParallelForFunc f, size_t maxThreads);
-// return the registered function (0 if none) and its maxThreads (if pMaxThreads != 0)
-MCL_CXX_API ParallelForFunc getParallelFor(size_t *pMaxThreads = 0);
-
-#ifdef MCL_USE_OMP
-// the OpenMP implementation of ParallelForFunc (nt = omp_get_max_threads() parts)
-inline void parallelForOMP(ParallelForTask task, void *arg, size_t n)
-{
-	int nt = omp_get_max_threads();
-	if (nt < 1) nt = 1;
-	if (size_t(nt) > n) nt = int(n);
-	if (nt <= 1) {
-		if (n > 0) task(0, n, 0, arg);
-		return;
-	}
-	const size_t q = n / size_t(nt);
-	const size_t r = n % size_t(nt);
-	#pragma omp parallel for num_threads(nt)
-	for (int t = 0; t < nt; t++) {
-		const size_t tt = size_t(t);
-		const size_t begin = q * tt + (tt < r ? tt : r);
-		const size_t end = begin + q + (tt < r ? 1 : 0);
-		task(begin, end, tt, arg);
-	}
-}
-#endif
+// the parallel-for (ParallelFor, setParallelFor, ...) is declared in mcl/op.hpp
 
 } // mcl::ec
 
@@ -1110,8 +1071,8 @@ public:
 	typedef _Fp BaseFp;
 	typedef _Fr Fr; // the scalar field (the order of the group) : mcl::Fr for G1 / G2, mcl::Fp for GG (Grumpkin)
 	Fp x, y, z;
-	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
+	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b, const ec::ParallelFor& par);
+	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b, const ec::ParallelFor& par);
 	typedef void (*MulEachOptiFunc)(EcT *xVec, const Fr *yVec, size_t n);
 	typedef bool (*IsValidOrderFastFunc)(const EcT& x);
 	typedef const ec::MsmKernel* MsmKernelPtr;
@@ -1244,11 +1205,11 @@ public:
 	{
 		isValidOrderFast = f;
 	}
-	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime, size_t b))
+	static void setMulVecGLV(MulVecGLVFunc f)
 	{
 		mulVecGLV = f;
 	}
-	static void setMulVecOpti(void f(EcT& z, EcT *xVec, const Fr *yVec, size_t yn, size_t b))
+	static void setMulVecOpti(MulVecOptiFunc f)
 	{
 		mulVecOpti = f;
 	}
@@ -1370,7 +1331,7 @@ public:
 	static inline void mul(EcT& z, const EcT& x, const Fr& y, bool constTime = false)
 	{
 		if (mulVecGLV) {
-			mulVecGLV(z, &x, &y, 1, constTime, 0);
+			mulVecGLV(z, &x, &y, 1, constTime, 0, ec::ParallelFor::seq());
 			return;
 		}
 		fp::Block b;
@@ -1925,11 +1886,17 @@ public:
 	*/
 	static inline void mulVec(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
+		mulVecMT(z, xVec, yVec, n, 1, b);
+	}
+	// multi thread version of mulVec with cpuN threads (the number of the processors if cpuN = 0) : see api.md
+	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0, size_t b = 0)
+	{
+		const ec::ParallelFor par = ec::getParallelForOrThread(cpuN);
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti(z, xVec, yVec, n, b);
+			mulVecOpti(z, xVec, yVec, n, b, par);
 			return;
 		}
-		mulVecConstRef(z, xVec, yVec, n, b);
+		mulVecConstRefPar(z, xVec, yVec, n, b, par);
 	}
 	/*
 		z = sum_{i<n} xVec[i] yVec[i]
@@ -1938,11 +1905,15 @@ public:
 	*/
 	static inline void mulVecConstRef(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
+		mulVecConstRefPar(z, xVec, yVec, n, b, ec::getParallelForOrThread(1));
+	}
+	static inline void mulVecConstRefPar(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b, const ec::ParallelFor& par)
+	{
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {
+		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b, par)) {
 			return;
 		}
 		EcT r;
@@ -1956,24 +1927,6 @@ public:
 			n -= done;
 		}
 		z = r;
-	}
-	/*
-		multi thread version of mulVec
-		mulVec itself runs the windows and the point chunks in parallel by the parallel-for registered by ec::setParallelFor,
-		so this is mulVec if one is registered (cpuN is ignored).
-		if none is registered, ec::parallelForOMP is registered with cpuN threads (omp_get_max_threads() if cpuN = 0) at the first call.
-	*/
-	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0)
-	{
-		if (ec::getParallelFor() == 0) {
-#ifdef MCL_USE_OMP
-			if (cpuN == 0) cpuN = size_t(omp_get_max_threads());
-			ec::setParallelFor(ec::parallelForOMP, cpuN);
-#else
-			(void)cpuN;
-#endif
-		}
-		mulVec(z, xVec, yVec, n);
 	}
 	// xVec[i] *= yVec[i]
 	static void mulEach(EcT *xVec, const Fr *yVec, size_t n)

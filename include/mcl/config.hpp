@@ -12,6 +12,7 @@
 	#define MCL_SIZEOF_UNIT 4
 	#define MCL_WASM32
 	#define MCL_DONT_USE_MALLOC
+	#define MCL_DONT_USE_THREAD
 #endif
 
 #ifndef MCL_SIZEOF_UNIT
@@ -40,6 +41,8 @@
 	#define MCL_DONT_USE_CSPRNG
 	#endif
 	#define MCL_DONT_USE_MALLOC
+	// MCL_DONT_USE_THREAD : no thread (ec::parallelForThread is sequential and the MT functions register nothing)
+	#define MCL_DONT_USE_THREAD
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
