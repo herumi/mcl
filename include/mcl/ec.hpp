@@ -2040,6 +2040,8 @@ public:
 
 #ifdef MCL_DLL_IMPORT_STATIC
 // the static data members refer to the instances in mcl.dll
+// MCL_COMMA : a comma in the type argument of MCL_EC_STATIC_REF (EcT<Fp, Fr>)
+#define MCL_COMMA ,
 #define MCL_EC_STATIC_REF(type, name, member) \
 	template<class Fp, class Fr> type& EcT<Fp, Fr>::name = *static_cast<type*>(ec::getStaticMember(ec::StaticId<Fp>::id)->member);
 MCL_EC_STATIC_REF(Fp, a_, a)
@@ -2050,13 +2052,14 @@ MCL_EC_STATIC_REF(int, specialB_, specialB)
 MCL_EC_STATIC_REF(int, ioMode_, ioMode)
 MCL_EC_STATIC_REF(bool, verifyOrder_, verifyOrder)
 MCL_EC_STATIC_REF(mpz_class, order_, order)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
 MCL_EC_STATIC_REF(int, mode_, mode)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MsmKernelPtr, msmKernel, msmKernel)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MsmKernelPtr, msmKernel, msmKernel)
 #undef MCL_EC_STATIC_REF
+#undef MCL_COMMA
 #elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
 /*
 	The static data members are defined only in the library (src/fp.cpp, MCL_EC_STATIC_INST)
