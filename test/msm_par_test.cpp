@@ -221,6 +221,46 @@ CYBOZU_TEST_AUTO(GT)
 	mcl::ec::setParallelFor(0, 0);
 }
 
+#ifdef NDEBUG
+// a parallel-for violating the contract (tid >= maxThreads, end > n, begin == end) : the library must fall back to the sequential one
+// (the violation is an assert in the debug build)
+static int g_badMode = 0;
+static void parallelForBad(mcl::ec::ParallelForTask task, void *arg, size_t n)
+{
+	switch (g_badMode) {
+	case 0: task(0, n, 100, arg); break; // tid >= maxThreads
+	case 1: task(0, n + 1, 0, arg); break; // end > n
+	case 2: task(0, 0, 0, arg); break; // empty
+	default: task(0, n, 0, arg); if (n > 1) task(0, n, 1, arg); break; // the same points twice
+	}
+}
+CYBOZU_TEST_AUTO(badParallelFor)
+{
+	G1 P;
+	hashAndMapToG1(P, "abc", 3);
+	const size_t n = 5000;
+	cybozu::XorShift rg;
+	std::vector<G1> xVec;
+	std::vector<Fr> yVec;
+	setVec(xVec, yVec, P, n, rg);
+	std::vector<G2> Qvec(64);
+	for (size_t i = 0; i < Qvec.size(); i++) hashAndMapToG2(Qvec[i], &i, sizeof(i));
+	mcl::ec::setParallelFor(0, 0);
+	G1 Q0, Q1;
+	G1::mulVecConstRef(Q0, xVec.data(), yVec.data(), n);
+	Fp12 f0, f1;
+	millerLoopVec(f0, xVec.data(), Qvec.data(), Qvec.size());
+	for (g_badMode = 0; g_badMode < 4; g_badMode++) {
+		mcl::ec::setParallelFor(parallelForBad, 4);
+		G1::mulVecConstRef(Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_TEST_EQUAL(Q0, Q1);
+		millerLoopVec(f1, xVec.data(), Qvec.data(), Qvec.size());
+		CYBOZU_TEST_EQUAL(f0, f1);
+	}
+	mcl::ec::setParallelFor(0, 0);
+}
+#endif
+
 // the library parallel-for : the parts cover [0, n) exactly once with tid < min(maxThreads, n)
 struct CoverCtx {
 	size_t n;
