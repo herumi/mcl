@@ -1167,14 +1167,14 @@ inline void millerLoopVecPar(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, 
 	ctx.fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * maxThreads);
 	ctx.len = (size_t*)CYBOZU_ALLOCA(sizeof(size_t) * maxThreads);
 #else
-	ctx.fs = (Fp12*)malloc(sizeof(Fp12) * maxThreads);
-	ctx.len = (size_t*)malloc(sizeof(size_t) * maxThreads);
-	if (ctx.fs == 0 || ctx.len == 0) {
-		free(ctx.len);
-		free(ctx.fs);
+	mcl::Array<Fp12> fs;
+	mcl::Array<size_t> len;
+	if (!fs.resize(maxThreads) || !len.resize(maxThreads)) {
 		millerLoopVecSeq(f, Pvec, Qvec, n, true);
 		return;
 	}
+	ctx.fs = fs.data();
+	ctx.len = len.data();
 #endif
 	for (size_t i = 0; i < maxThreads; i++) ctx.len[i] = 0;
 	par.run(local::MillerLoopVecCtx::task, &ctx, ctx.C);
@@ -1189,10 +1189,6 @@ inline void millerLoopVecPar(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, 
 	} else {
 		millerLoopVecSeq(f, Pvec, Qvec, n, true);
 	}
-#ifndef MCL_DONT_USE_MALLOC
-	free(ctx.len);
-	free(ctx.fs);
-#endif
 }
 
 } // mcl::local

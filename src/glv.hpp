@@ -328,6 +328,16 @@ inline void* mallocLarge(size_t size)
 	return malloc(size);
 }
 
+// the buffer of mallocLarge (freed by the destructor), p = 0 if it fails
+struct LargeBuf {
+	void *p;
+	explicit LargeBuf(size_t size) : p(mallocLarge(size)) {}
+	~LargeBuf() { free(p); }
+private:
+	LargeBuf(const LargeBuf&);
+	void operator=(const LargeBuf&);
+};
+
 // prefetch the cache line of p for reading (PREFETCHT0 on x64, PRFM PLDL1KEEP on AArch64)
 inline void prefetchRead(const void *p)
 {
@@ -550,9 +560,7 @@ struct MsmBatchWork {
 	G *pendQ; // [pendMax] the sums of the pending additions (Jacobi)
 	size_t pendN;
 	size_t pendMax; // the number of the chunk boundaries + 1
-	void *buf_;
-	MsmBatchWork() : buf_(0) {}
-	~MsmBatchWork() { if (buf_) free(buf_); }
+	mcl::Array<uint8_t> buf_;
 	// kernel : the SIMD kernel (0 : the generic one), hasBase : the caller gives the points in the layout of the kernel (base is not allocated)
 	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel, bool hasBase = false)
 	{
@@ -577,9 +585,8 @@ struct MsmBatchWork {
 		const size_t qSize = (sizeof(G) * pendMax + align - 1) / align * align;
 		size_t size = align + sSize + wSize + bSize + tSize + qSize;
 		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * pairN + pendMax) + sizeof(MsmPart) * 2 * (chunk + 1) + tblN;
-		buf_ = malloc(size);
-		if (buf_ == 0) return false;
-		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
+		if (!buf_.resize(size)) return false;
+		char *p = (char*)(((uintptr_t)buf_.data() + align - 1) & ~(uintptr_t)(align - 1));
 		S = p; p += sSize;
 		work = p; p += wSize;
 		base = allocBase ? p : 0; p += bSize;
@@ -974,11 +981,10 @@ struct MsmParCtx {
 	// the work of a thread (allocated by the thread at its first task)
 	struct ThreadWork {
 		Work wk;
-		G *tbl;
+		mcl::Array<G> tbl; // the bucket table of the generic path
 		bool ready;
 		bool ok;
-		ThreadWork() : tbl(0), ready(false), ok(false) {}
-		~ThreadWork() { free(tbl); }
+		ThreadWork() : ready(false), ok(false) {}
 	};
 	size_t n; // the number of the (split) scalars
 	size_t C; // the number of the chunks
@@ -1027,8 +1033,7 @@ struct MsmParCtx {
 			if (ctx.useBatch) {
 				tw.ok = tw.wk.init(nMax, ctx.tblN, ctx.kernel, true);
 			} else {
-				tw.tbl = (G*)malloc(sizeof(G) * ctx.tblN);
-				tw.ok = tw.tbl != 0;
+				tw.ok = tw.tbl.resize(ctx.tblN);
 			}
 		}
 		if (!tw.ok) return;
@@ -1039,7 +1044,7 @@ struct MsmParCtx {
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			const void *base = ctx.base ? (const char*)ctx.base + off * ctx.pointSize : 0;
 			const G *xVec = ctx.xVec ? ctx.xVec + off : 0; // xVec = 0 if the caller gives base
-			msmWindow(ctx.res[i], w, ctx.winN, ctx.b, ctx.rem, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.useBatch, &tw.wk, tw.tbl);
+			msmWindow(ctx.res[i], w, ctx.winN, ctx.b, ctx.rem, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.useBatch, &tw.wk, tw.tbl.data());
 			ctx.ok[i] = 1;
 		}
 	}
@@ -1080,9 +1085,9 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 	const size_t resBytes = (sizeof(G) * numTasks + align - 1) / align * align;
 	ctx.workN = maxThreads < numTasks ? maxThreads : numTasks;
 	const size_t workBytes = (sizeof(ThreadWork) * ctx.workN + align - 1) / align * align;
-	void *buf = local::mallocLarge(align + baseBytes + resBytes + workBytes + numTasks);
-	if (buf == 0) return 0;
-	char *p = (char*)(((uintptr_t)buf + align - 1) & ~(uintptr_t)(align - 1));
+	local::LargeBuf buf(align + baseBytes + resBytes + workBytes + numTasks);
+	if (buf.p == 0) return 0;
+	char *p = (char*)(((uintptr_t)buf.p + align - 1) & ~(uintptr_t)(align - 1));
 	ctx.baseW = needCvt ? p : 0; p += baseBytes;
 	ctx.res = (G*)p; p += resBytes;
 	ctx.works = (ThreadWork*)p; p += workBytes;
@@ -1116,7 +1121,6 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 		}
 	}
 	for (size_t i = 0; i < ctx.workN; i++) ctx.works[i].~ThreadWork();
-	free(buf);
 	return ok ? n : 0;
 }
 
@@ -1174,7 +1178,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel, baseArg != 0);
 	if (baseArg && !useBatch) return 0; // the caller gives only the converted points
 #ifndef MCL_DONT_USE_MALLOC
-	G *tbl_ = 0; // malloc is used if tbl_ != 0
+	mcl::Array<G> tbl_; // the table on the heap if not on the stack
 #endif
 	if (!useBatch) {
 		// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
@@ -1182,10 +1186,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		(void)useStack;
 #ifndef MCL_DONT_USE_MALLOC
 		// if n or the table is large then try to use malloc
-		if (!useStack) {
-			tbl_ = (G*)malloc(sizeof(G) * tblN);
-			tbl = tbl_;
-		}
+		if (!useStack && tbl_.resize(tblN)) tbl = tbl_.data();
 #endif
 		if (tbl == 0) {
 			// n is small or malloc fails so use stack
@@ -1222,9 +1223,6 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		local::msmWindow(t, w - 1, winN, b, rem, xVec, base, yVec, yUnitSize, next, n, useBatch, &wk, tbl);
 		z += t;
 	}
-#ifndef MCL_DONT_USE_MALLOC
-	if (tbl_) free(tbl_);
-#endif
 	return n;
 }
 template<class G>
@@ -1446,13 +1444,15 @@ struct MsmCvtGLVCtx {
 
 } // mcl::ec::local
 
-// the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N (MCL_MSM_MIN_SPLIT_N_NO_BATCH for GT)
+/*
+	the bucket method for n * splitN >= MCL_MSM_MIN_SPLIT_N (MCL_MSM_MIN_SPLIT_N_NO_BATCH for GT)
+	return 1 if done, 0 if malloc fails, -1 if the tasks of par violate the contract (then retry sequentially)
+*/
 template<class GLV, class G>
-bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket, const ec::ParallelFor& par)
+int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket, const ec::ParallelFor& par)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
-	const G *xVec0 = xVec; // for the sequential retry
 	uint8_t done[local::MAX_PAR_CHUNKS]; // the chunk counters of the tasks of par
 	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
@@ -1481,13 +1481,13 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		{
 			uint8_t flag[local::MAX_PAR_CHUNKS];
 			local::MsmNormalizedCtx<G> ctx = { xVec, n, C, flag, done };
-			if (!ctx.run(par, &normalized)) return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
+			if (!ctx.run(par, &normalized)) return -1;
 		}
 		const size_t tmpByteSize = normalized ? 0 : (sizeof(G) * n + align - 1) / align * align;
 		const size_t negByteSize = (n + align - 1) / align * align;
-		void *buf = local::mallocLarge(align + baseByteSize + tmpByteSize + negByteSize + ypByteSize + maxBitByteSize);
-		if (buf == 0) return false;
-		char *p = (char*)(((uintptr_t)buf + align - 1) & ~(uintptr_t)(align - 1));
+		local::LargeBuf buf(align + baseByteSize + tmpByteSize + negByteSize + ypByteSize + maxBitByteSize);
+		if (buf.p == 0) return 0;
+		char *p = (char*)(((uintptr_t)buf.p + align - 1) & ~(uintptr_t)(align - 1));
 		void *base = p; p += baseByteSize;
 		G *tmp = (G*)p; p += tmpByteSize;
 		uint8_t *neg = (uint8_t*)p; p += negByteSize;
@@ -1499,30 +1499,22 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		}
 		{
 			local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, neg, 0, maxBit, done };
-			if (!ctx.run(par, &maxBitSize)) {
-				free(buf);
-				return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
-			}
+			if (!ctx.run(par, &maxBitSize)) return -1;
 		}
-		bool ret = true;
 		if (maxBitSize == 0) {
 			z.clear();
-		} else {
-			local::MsmCvtGLVCtx<G> ctx = { kernel, base, xVec, neg, n, C, done };
-			if (!ctx.run(par)) {
-				free(buf);
-				return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
-			}
-			const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
-			ret = mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, base) == n * splitN;
+			return 1;
 		}
-		free(buf);
-		return ret;
+		local::MsmCvtGLVCtx<G> ctx = { kernel, base, xVec, neg, n, C, done };
+		if (!ctx.run(par)) return -1;
+		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
+		return mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, base) == n * splitN ? 1 : 0;
 	}
 
 	const size_t tblByteSize = sizeof(G) * splitN * n;
-	G *tbl = (G*)local::mallocLarge(tblByteSize + ypByteSize + maxBitByteSize);
-	if (tbl == 0) return false;
+	local::LargeBuf buf(tblByteSize + ypByteSize + maxBitByteSize);
+	if (buf.p == 0) return 0;
+	G *tbl = (G*)buf.p;
 
 	Unit *yp = (Unit *)(tbl + splitN * n);
 	size_t *maxBit = (size_t*)((char*)yp + ypByteSize);
@@ -1535,10 +1527,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 	}
 	if (splitRaw) {
 		local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, 0, tbl, maxBit, done };
-		if (!ctx.run(par, &maxBitSize)) {
-			free(tbl);
-			return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
-		}
+		if (!ctx.run(par, &maxBitSize)) return -1;
 	}
 	for (size_t i = 0; splitRaw == 0 && i < n; i++) {
 		getUnitAt(y, yVec, i);
@@ -1562,8 +1551,16 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 		mulVecLong(z, tbl, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize);
 	}
-	free(tbl);
-	return true;
+	return 1;
+}
+
+template<class GLV, class G>
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket, const ec::ParallelFor& par)
+{
+	int r = mulVecGLVlargeCore<GLV, G>(z, xVec, yVec, n, bucket, par);
+	// the buffers of the parallel run are released before the sequential retry
+	if (r < 0) r = mulVecGLVlargeCore<GLV, G>(z, xVec, yVec, n, bucket, ec::ParallelFor::seq());
+	return r > 0;
 }
 
 /*

@@ -870,11 +870,8 @@ void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt)
 {
 	if (n == 0) return;
 	if (nt > n) nt = n;
-	ParallelForThreadArg *args = 0;
-	if (nt > 1) {
-		args = (ParallelForThreadArg*)malloc(sizeof(ParallelForThreadArg) * nt);
-		if (args == 0) nt = 1;
-	}
+	mcl::Array<ParallelForThreadArg> args;
+	if (nt > 1 && !args.resize(nt)) nt = 1;
 	if (nt <= 1) {
 		task(0, n, 0, arg);
 		return;
@@ -895,7 +892,6 @@ void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt)
 	for (size_t t = 0; t + 1 < nt; t++) {
 		if (args[t].created) cybozu::thread::Join(args[t].hdl, cybozu::thread::Infinite);
 	}
-	free(args);
 }
 
 void parallelForThread(ParallelForTask task, void *arg, size_t n)
