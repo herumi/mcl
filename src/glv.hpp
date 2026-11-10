@@ -1,4 +1,5 @@
 #pragma once
+#include <assert.h>
 #include <string.h>
 #include <new> // placement new of the per-thread work of mulVecCorePar
 #if defined(__linux__)
@@ -1004,6 +1005,8 @@ struct MsmParCtx {
 	static void prepareTask(size_t begin, size_t end, size_t, void *arg)
 	{
 		MsmParCtx& ctx = *(MsmParCtx*)arg;
+		assert(begin < end && end <= ctx.C);
+		if (begin >= end || end > ctx.C) return; // the parallel-for violates the contract (the chunks are left unprepared, then the windows see non-normalized points : ok = 0 is not set here, see windowTask)
 		for (size_t c = begin; c < end; c++) {
 			const size_t off = ctx.chunkBegin(c);
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
@@ -1014,7 +1017,9 @@ struct MsmParCtx {
 	static void windowTask(size_t begin, size_t end, size_t tid, void *arg)
 	{
 		MsmParCtx& ctx = *(MsmParCtx*)arg;
-		if (tid >= ctx.workN) return; // the parallel-for violates maxThreads : the tasks are left undone (ok = 0)
+		const size_t numTasks = ctx.C * ctx.winN;
+		assert(tid < ctx.workN && begin < end && end <= numTasks);
+		if (tid >= ctx.workN || begin >= end || end > numTasks) return; // the parallel-for violates the contract : the tasks are left undone (ok = 0, then the caller runs the sequential one)
 		ThreadWork& tw = ctx.works[tid];
 		if (!tw.ready) {
 			tw.ready = true;
@@ -1268,6 +1273,23 @@ inline uint32_t msmSplitRaw(Unit *ya, Unit *yb, const Unit *y, size_t next, Spli
 	  (the same layout as cvtBaseGLV of the chunk, so the chunks are converted independently)
 	generic (neg = 0) : yp[i] = |a|, yp[n + i] = |b| and tbl[i], tbl[n + i] are negated by the signs
 */
+/*
+	the contract of the parallel-for for the chunk tasks of mulVecGLVlarge : [begin, end) is a part of [0, C) and each chunk is done exactly once.
+	a violation is an assert, and the caller detects it by done[c] (the number of times the chunk c is processed) and runs the sequential one.
+*/
+inline bool msmChunkRangeOk(size_t begin, size_t end, size_t C)
+{
+	assert(begin < end && end <= C);
+	return begin < end && end <= C;
+}
+inline bool msmChunksDoneOnce(const uint8_t *done, size_t C)
+{
+	for (size_t c = 0; c < C; c++) {
+		if (done[c] != 1) return false;
+	}
+	return true;
+}
+
 template<class G>
 struct MsmSplitCtx {
 	typedef typename G::Fr F;
@@ -1281,12 +1303,15 @@ struct MsmSplitCtx {
 	uint8_t *neg;
 	G *tbl;
 	size_t *maxBit; // [C] the max bit size of the split scalars of each chunk
+	uint8_t *done; // [C]
 	size_t chunkBegin(size_t c) const { return n * c / C; }
 	static void task(size_t begin, size_t end, size_t, void *arg)
 	{
 		MsmSplitCtx& ctx = *(MsmSplitCtx*)arg;
+		if (!msmChunkRangeOk(begin, end, ctx.C)) return;
 		Unit y[F::maxSize];
 		for (size_t c = begin; c < end; c++) {
+			ctx.done[c]++;
 			const size_t off = ctx.chunkBegin(c);
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			size_t maxBitSize = 0;
@@ -1312,19 +1337,22 @@ struct MsmSplitCtx {
 			ctx.maxBit[c] = maxBitSize;
 		}
 	}
-	// run the split (by par if C > 1) and return the max bit size
-	size_t run(const ec::ParallelFor& par)
+	// run the split (by par if C > 1) and set the max bit size. return false if the parallel-for violates the contract
+	bool run(const ec::ParallelFor& par, size_t *pMaxBitSize)
 	{
+		memset(done, 0, C);
 		if (C > 1) {
 			par.run(task, this, C);
 		} else {
 			task(0, 1, 0, this);
 		}
+		if (!msmChunksDoneOnce(done, C)) return false;
 		size_t maxBitSize = 0;
 		for (size_t c = 0; c < C; c++) {
 			if (maxBit[c] > maxBitSize) maxBitSize = maxBit[c];
 		}
-		return maxBitSize;
+		*pMaxBitSize = maxBitSize;
+		return true;
 	}
 };
 
@@ -1348,24 +1376,34 @@ struct MsmNormalizedCtx {
 	size_t n;
 	size_t C;
 	uint8_t *flag; // [C] 1 if the chunk is normalized
+	uint8_t *done; // [C]
 	size_t chunkBegin(size_t c) const { return n * c / C; }
 	static void task(size_t begin, size_t end, size_t, void *arg)
 	{
 		const MsmNormalizedCtx& ctx = *(const MsmNormalizedCtx*)arg;
+		if (!msmChunkRangeOk(begin, end, ctx.C)) return;
 		for (size_t c = begin; c < end; c++) {
+			ctx.done[c]++;
 			const size_t off = ctx.chunkBegin(c);
 			ctx.flag[c] = MsmBatch<G>::isNormalizedVec(ctx.xVec + off, ctx.chunkBegin(c + 1) - off) ? 1 : 0;
 		}
 	}
-	bool run(const ec::ParallelFor& par)
+	// set *pNormalized = true if all the points are normalized. return false if the parallel-for violates the contract
+	bool run(const ec::ParallelFor& par, bool *pNormalized)
 	{
+		memset(done, 0, C);
 		if (C > 1) {
 			par.run(task, this, C);
 		} else {
 			task(0, 1, 0, this);
 		}
+		if (!msmChunksDoneOnce(done, C)) return false;
+		*pNormalized = true;
 		for (size_t c = 0; c < C; c++) {
-			if (!flag[c]) return false;
+			if (!flag[c]) {
+				*pNormalized = false;
+				break;
+			}
 		}
 		return true;
 	}
@@ -1380,23 +1418,29 @@ struct MsmCvtGLVCtx {
 	const uint8_t *neg;
 	size_t n;
 	size_t C;
+	uint8_t *done; // [C]
 	size_t chunkBegin(size_t c) const { return n * c / C; }
 	static void task(size_t begin, size_t end, size_t, void *arg)
 	{
 		const MsmCvtGLVCtx& ctx = *(const MsmCvtGLVCtx*)arg;
+		if (!msmChunkRangeOk(begin, end, ctx.C)) return;
 		for (size_t c = begin; c < end; c++) {
+			ctx.done[c]++;
 			const size_t off = ctx.chunkBegin(c);
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			ctx.kernel->cvtBaseGLV((char*)ctx.base + 2 * off * ctx.kernel->pointSize, ctx.xVec + off, nc, ctx.neg + off);
 		}
 	}
-	void run(const ec::ParallelFor& par)
+	// return false if the parallel-for violates the contract
+	bool run(const ec::ParallelFor& par)
 	{
+		memset(done, 0, C);
 		if (C > 1) {
 			par.run(task, this, C);
 		} else {
 			task(0, 1, 0, this);
 		}
+		return msmChunksDoneOnce(done, C);
 	}
 };
 
@@ -1408,6 +1452,8 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
+	const G *xVec0 = xVec; // for the sequential retry
+	uint8_t done[local::MAX_PAR_CHUNKS]; // the chunk counters of the tasks of par
 	typedef typename G::Fr F;
 	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	typedef mcl::Unit Unit;
@@ -1434,8 +1480,8 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		bool normalized;
 		{
 			uint8_t flag[local::MAX_PAR_CHUNKS];
-			local::MsmNormalizedCtx<G> ctx = { xVec, n, C, flag };
-			normalized = ctx.run(par);
+			local::MsmNormalizedCtx<G> ctx = { xVec, n, C, flag, done };
+			if (!ctx.run(par, &normalized)) return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
 		}
 		const size_t tmpByteSize = normalized ? 0 : (sizeof(G) * n + align - 1) / align * align;
 		const size_t negByteSize = (n + align - 1) / align * align;
@@ -1452,15 +1498,21 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			xVec = tmp;
 		}
 		{
-			local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, neg, 0, maxBit };
-			maxBitSize = ctx.run(par);
+			local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, neg, 0, maxBit, done };
+			if (!ctx.run(par, &maxBitSize)) {
+				free(buf);
+				return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
+			}
 		}
 		bool ret = true;
 		if (maxBitSize == 0) {
 			z.clear();
 		} else {
-			local::MsmCvtGLVCtx<G> ctx = { kernel, base, xVec, neg, n, C };
-			ctx.run(par);
+			local::MsmCvtGLVCtx<G> ctx = { kernel, base, xVec, neg, n, C, done };
+			if (!ctx.run(par)) {
+				free(buf);
+				return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
+			}
 			const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 			ret = mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, base) == n * splitN;
 		}
@@ -1482,8 +1534,11 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		}
 	}
 	if (splitRaw) {
-		local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, 0, tbl, maxBit };
-		maxBitSize = ctx.run(par);
+		local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, 0, tbl, maxBit, done };
+		if (!ctx.run(par, &maxBitSize)) {
+			free(tbl);
+			return mulVecGLVlarge<GLV, G>(z, xVec0, yVec, n, bucket, ec::ParallelFor::seq());
+		}
 	}
 	for (size_t i = 0; splitRaw == 0 && i < n; i++) {
 		getUnitAt(y, yVec, i);

@@ -1123,6 +1123,7 @@ struct MillerLoopVecCtx {
 	const G2 *Qvec;
 	size_t n;
 	size_t C;
+	size_t maxThreads;
 	Fp12 *fs; // [maxThreads]
 	size_t *len; // [maxThreads] the number of the points done by the thread (0 : nothing)
 	size_t chunkBegin(size_t c) const
@@ -1134,6 +1135,8 @@ struct MillerLoopVecCtx {
 	static void task(size_t begin, size_t end, size_t tid, void *arg)
 	{
 		MillerLoopVecCtx& ctx = *(MillerLoopVecCtx*)arg;
+		assert(tid < ctx.maxThreads && begin < end && end <= ctx.C);
+		if (tid >= ctx.maxThreads || begin >= end || end > ctx.C) return; // the parallel-for violates the contract : the points are left undone (then the caller recomputes sequentially)
 		const size_t pos = ctx.chunkBegin(begin);
 		const size_t m = ctx.chunkBegin(end) - pos;
 		millerLoopVecSeq(ctx.fs[tid], ctx.Pvec + pos, ctx.Qvec + pos, m, true);
@@ -1159,6 +1162,7 @@ inline void millerLoopVecPar(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, 
 	ctx.Qvec = Qvec;
 	ctx.n = n;
 	ctx.C = fp::min_(maxThreads, n / minN);
+	ctx.maxThreads = maxThreads;
 #ifdef MCL_DONT_USE_MALLOC
 	ctx.fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * maxThreads);
 	ctx.len = (size_t*)CYBOZU_ALLOCA(sizeof(size_t) * maxThreads);
