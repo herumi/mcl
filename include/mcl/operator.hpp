@@ -270,17 +270,11 @@ struct Operator : public E {
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 
 	/*
-		powGeneric = pow if T = Fp, Fp2, Fp6
-		pow is for GT (use GLV method and unitaryInv)
-		powGeneric is for Fp12
+		pow = powGeneric here. Fp12 (GT) hides pow(z, x, FpT) by the GLV method (see Fp12::pow in fp_tower.hpp)
 	*/
 	template<int tag2, size_t maxBitSize2, template<int _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
-		if (powVecGLV) {
-			powVecGLV(z, &x, &y, 1, ec::ParallelFor::seq());
-			return;
-		}
 		fp::Block b;
 		y.getBlock(b);
 		powArray(z, x, b.p, b.n);
@@ -313,7 +307,6 @@ struct Operator : public E {
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 protected:
-	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		powUnit(z, x, y, yn);
@@ -322,9 +315,6 @@ protected:
 		}
 	}
 };
-
-template<class T, class E>
-bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par);
 
 /*
 	T must have save and load

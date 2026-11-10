@@ -794,6 +794,18 @@ const GG& getGGbasePoint()
 
 #endif // MCL_USE_GRUMPKIN == 1
 
+// the GLV function of Fp12::pow / Fp12::powVec (see fp_tower.hpp)
+static Fp12PowVecGLVFunc s_fp12PowVecGLV = 0;
+
+void setFp12PowVecGLV(Fp12PowVecGLVFunc f)
+{
+	s_fp12PowVecGLV = f;
+}
+Fp12PowVecGLVFunc getFp12PowVecGLV()
+{
+	return s_fp12PowVecGLV;
+}
+
 namespace ec {
 
 static ParallelForFunc s_parallelFor = 0;

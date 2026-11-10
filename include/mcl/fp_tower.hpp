@@ -1125,6 +1125,16 @@ struct Fp6Dbl {
 	}
 };
 
+struct Fp12;
+/*
+	z = prod_{i<yn} xVec[i]^yVec[i] (yVec : Fr) by the GLV method, return false if not supported.
+	registered by initPairing (powVecGLV in src/pairing_impl.hpp) and used by Fp12::pow / Fp12::powVec.
+	the function is held in the library (set / get) : a static data member of a class template can not be shared with a client of mcl.dll
+*/
+typedef bool (*Fp12PowVecGLVFunc)(Fp12& z, const Fp12 *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par);
+MCL_CXX_API void setFp12PowVecGLV(Fp12PowVecGLVFunc f);
+MCL_CXX_API Fp12PowVecGLVFunc getFp12PowVecGLV();
+
 /*
 	Fp12 = Fp6[w] / (w^2 - v)
 	x = a + b w
@@ -1385,10 +1395,27 @@ struct Fp12 : public fp::Serializable<Fp12, fp::Operator<Fp12> > {
 		return os;
 	}
 #endif
-	static void setPowVecGLV(bool f(Fp12& z, const Fp12 *xVec, const void *yVec, size_t yn, const ec::ParallelFor& par) = 0)
+	static void setPowVecGLV(Fp12PowVecGLVFunc f = 0)
 	{
-		BaseClass::powVecGLV = f;
+		setFp12PowVecGLV(f);
 	}
+	/*
+		z = x^y by the GLV method if registered (initPairing), otherwise BaseClass::powGeneric.
+		this hides the pow of BaseClass (Operator), so the other overloads (int64_t, mpz_class) are forwarded
+		(a using-declaration of BaseClass::pow makes the call ambiguous on MSVC)
+	*/
+	template<int tag2, size_t maxBitSize2, template<int _tag, size_t _maxBitSize> class FpT>
+	static void pow(Fp12& z, const Fp12& x, const FpT<tag2, maxBitSize2>& y)
+	{
+		const Fp12PowVecGLVFunc f = getFp12PowVecGLV();
+		if (f) {
+			f(z, &x, &y, 1, ec::ParallelFor::seq());
+			return;
+		}
+		BaseClass::powGeneric(z, x, y);
+	}
+	static void pow(Fp12& z, const Fp12& x, int64_t y) { BaseClass::pow(z, x, y); }
+	static void pow(Fp12& z, const Fp12& x, const mpz_class& y) { BaseClass::pow(z, x, y); }
 	// z = prod xVec[i]^yVec[i] (the registered parallel-for is used if any, as G1::mulVec)
 	static inline void powVec(Fp12& z, const Fp12 *xVec, const Fr *yVec, size_t n)
 	{
@@ -1396,7 +1423,8 @@ struct Fp12 : public fp::Serializable<Fp12, fp::Operator<Fp12> > {
 			z.clear();
 			return;
 		}
-		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n, ec::getParallelForOrThread(1))) {
+		const Fp12PowVecGLVFunc f = getFp12PowVecGLV();
+		if (f && f(z, xVec, yVec, n, ec::getParallelForOrThread(1))) {
 			return;
 		}
 		size_t done = powVecN(z, xVec, yVec, n);
