@@ -59,6 +59,25 @@ CYBOZU_TEST_AUTO(init)
 }
 
 // the pairing of BN_SNARK1 is not broken by initGrumpkin
+// the AVX-512 IFMA kernels of G1 (BN_SNARK1) and GG are registered at the same time (the two instances of src/msm_avx_impl.hpp)
+CYBOZU_TEST_AUTO(msmKernel)
+{
+	const bool ifma = (mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA) != 0;
+	printf("AVX-512 IFMA=%d G1::msmKernel=%d GG::msmKernel=%d G1::mulEachOpti=%d GG::mulEachOpti=%d\n",
+		ifma, G1::msmKernel != 0, GG::msmKernel != 0, G1::mulEachOpti != 0, GG::mulEachOpti != 0);
+#if MCL_MSM == 1
+	CYBOZU_TEST_EQUAL(G1::msmKernel != 0, ifma);
+	CYBOZU_TEST_EQUAL(GG::msmKernel != 0, ifma);
+	CYBOZU_TEST_EQUAL(GG::mulEachOpti != 0, ifma);
+	if (ifma) {
+		CYBOZU_TEST_ASSERT(GG::msmKernel != G1::msmKernel);
+		CYBOZU_TEST_ASSERT(GG::msmKernel->batchMinN > 0);
+	}
+#else
+	CYBOZU_TEST_ASSERT(GG::msmKernel == 0);
+#endif
+}
+
 CYBOZU_TEST_AUTO(pairing)
 {
 	G1 P;
@@ -225,6 +244,16 @@ CYBOZU_TEST_AUTO(bench)
 		}
 		printf("n=%zd ", n);
 		CYBOZU_BENCH_C("GG::mulVec", 3, GG::mulVec, Q, xVec.data(), yVec.data(), n);
+		// G1 of BN_SNARK1 for comparison (the same cost if the kernels of both are available)
+		std::vector<G1> xVec1(n);
+		std::vector<Fr> yVec1(n);
+		for (size_t j = 0; j < n; j++) {
+			hashAndMapToG1(xVec1[j], &j, sizeof(j));
+			yVec1[j].setByCSPRNG(g_rg);
+		}
+		G1 Q1;
+		printf("n=%zd ", n);
+		CYBOZU_BENCH_C("G1::mulVec", 3, G1::mulVec, Q1, xVec1.data(), yVec1.data(), n);
 	}
 }
 

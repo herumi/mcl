@@ -103,6 +103,9 @@ uint32_t getCpuType()
 
 #include "low_func.hpp"
 #include <cybozu/itoa.hpp>
+#ifndef MCL_DONT_USE_THREAD
+#include <cybozu/thread.hpp>
+#endif
 #include <mcl/randgen.hpp>
 #include "llvm_proto.hpp"
 
@@ -111,9 +114,11 @@ uint32_t getCpuType()
 	#pragma warning(disable : 4127)
 #endif
 
-// define Fp, Fr, G1, GG
+// define Fp, Fr, G1, GG (GG only if MCL_USE_GRUMPKIN=1)
 #include <mcl/g1_def.hpp>
+#if MCL_USE_GRUMPKIN == 1
 #include <mcl/gg_def.hpp>
+#endif
 #include "fp_tower_impl.hpp"
 
 namespace mcl {
@@ -137,7 +142,9 @@ namespace mcl {
 	template Ec::MsmKernelPtr Ec::msmKernel;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
+#if MCL_USE_GRUMPKIN == 1
 MCL_EC_STATIC_INST(GG, Fr)
+#endif
 #undef MCL_EC_STATIC_INST
 #endif
 
@@ -724,6 +731,8 @@ void initG1onlyGLV(int curveType)
 #endif
 }
 
+#if MCL_USE_GRUMPKIN == 1
+
 namespace {
 
 GG s_ggBasePoint;
@@ -771,6 +780,11 @@ void initGrumpkin(bool *pb)
 	*pb = GLVGG::useParamTbl(MCL_GRUMPKIN);
 	if (!*pb) return;
 	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
+#if MCL_MSM == 1
+	if (bint::getCpuType() & bint::tAVX512_IFMA) {
+		mcl::msm::initMsmGG(MCL_GRUMPKIN, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)
+	}
+#endif
 }
 
 const GG& getGGbasePoint()
@@ -778,26 +792,158 @@ const GG& getGGbasePoint()
 	return s_ggBasePoint;
 }
 
+#endif // MCL_USE_GRUMPKIN == 1
+
+// the GLV function of Fp12::pow / Fp12::powVec (see fp_tower.hpp)
+static Fp12PowVecGLVFunc s_fp12PowVecGLV = 0;
+
+void setFp12PowVecGLV(Fp12PowVecGLVFunc f)
+{
+	s_fp12PowVecGLV = f;
+}
+Fp12PowVecGLVFunc getFp12PowVecGLV()
+{
+	return s_fp12PowVecGLV;
+}
+
 namespace ec {
+
+static ParallelForFunc s_parallelFor = 0;
+static size_t s_parallelForMaxThreads = 1;
+
+void setParallelFor(ParallelForFunc f, size_t maxThreads)
+{
+	if (f == 0 || maxThreads == 0) maxThreads = 1;
+	s_parallelFor = f;
+	s_parallelForMaxThreads = maxThreads;
+}
+ParallelForFunc getParallelFor(size_t *pMaxThreads)
+{
+	if (pMaxThreads) *pMaxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
+	return s_parallelFor;
+}
+
+#ifdef MCL_DONT_USE_THREAD
+
+void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t)
+{
+	if (n > 0) task(0, n, 0, arg);
+}
+void parallelForThread(ParallelForTask task, void *arg, size_t n)
+{
+	if (n > 0) task(0, n, 0, arg);
+}
+ParallelFor getParallelForOrThread(size_t)
+{
+	ParallelFor par;
+	par.f = s_parallelFor;
+	par.maxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
+	return par;
+}
+
+#else
+
+namespace {
+
+struct ParallelForThreadArg {
+	ParallelForTask task;
+	void *arg;
+	size_t begin, end, tid;
+	cybozu::thread::ThreadHandle hdl;
+	bool created; // the thread of hdl is created
+};
+
+#ifdef _WIN32
+unsigned __stdcall parallelForThreadEntry(void *p)
+#else
+void* parallelForThreadEntry(void *p)
+#endif
+{
+	const ParallelForThreadArg& a = *(const ParallelForThreadArg*)p;
+	a.task(a.begin, a.end, a.tid, a.arg);
+	return 0;
+}
+
+} // anonymous namespace
+
+void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt)
+{
+	if (n == 0) return;
+	if (nt > n) nt = n;
+	mcl::Array<ParallelForThreadArg> args;
+	if (nt > 1 && !args.resize(nt)) nt = 1;
+	if (nt <= 1) {
+		task(0, n, 0, arg);
+		return;
+	}
+	const size_t q = n / nt;
+	const size_t r = n % nt;
+	for (size_t t = 0; t < nt; t++) {
+		ParallelForThreadArg& a = args[t];
+		a.task = task;
+		a.arg = arg;
+		a.begin = q * t + (t < r ? t : r);
+		a.end = a.begin + q + (t < r ? 1 : 0);
+		a.tid = t;
+		// the last part runs on the caller
+		a.created = t + 1 < nt && cybozu::thread::Begin(a.hdl, parallelForThreadEntry, &a, 0);
+		if (!a.created) parallelForThreadEntry(&a);
+	}
+	for (size_t t = 0; t + 1 < nt; t++) {
+		if (args[t].created) cybozu::thread::Join(args[t].hdl, cybozu::thread::Infinite);
+	}
+}
+
+void parallelForThread(ParallelForTask task, void *arg, size_t n)
+{
+	size_t nt = 1;
+	getParallelFor(&nt);
+	parallelForThreadN(task, arg, n, nt);
+}
+
+ParallelFor getParallelForOrThread(size_t cpuN)
+{
+	ParallelFor par;
+	if (s_parallelFor) {
+		par.f = s_parallelFor;
+		par.maxThreads = s_parallelForMaxThreads;
+		return par;
+	}
+	if (cpuN == 0) {
+		int n = cybozu::GetProcessorNum();
+		cpuN = n > 0 ? size_t(n) : 1;
+	}
+	par.f = parallelForThread;
+	par.maxThreads = cpuN;
+	return par;
+}
+
+#endif // MCL_DONT_USE_THREAD
 
 const StaticMember* getStaticMember(int id)
 {
 	struct Table {
 		StaticMember g1;
 		StaticMember g2;
+#if MCL_USE_GRUMPKIN == 1
 		StaticMember gg;
+#endif
 		Table()
 		{
 			G1::setStaticMember(g1);
 			G2::setStaticMember(g2);
+#if MCL_USE_GRUMPKIN == 1
 			GG::setStaticMember(gg);
+#endif
 		}
 	};
 	static const Table tbl;
 	switch (id) {
 	case StaticIdG1: return &tbl.g1;
 	case StaticIdG2: return &tbl.g2;
+#if MCL_USE_GRUMPKIN == 1
 	case StaticIdGG: return &tbl.gg;
+#endif
 	default: return 0;
 	}
 }

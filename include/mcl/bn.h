@@ -542,8 +542,7 @@ MCL_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
 MCL_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 // z = prod_{i=0}^{n-1} millerLoop(x[i], y[i])
 MCL_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
-// multi thread version of millerLoopVec/mclBnG1_mulVec/mclBnG2_mulVec (enabled if the library built with MCL_USE_OMP=1)
-// the num of thread is automatically detected if cpuN = 0
+// multi thread version of millerLoopVec/mclBnG1_mulVec/mclBnG2_mulVec with cpuN threads (the number of the processors if cpuN = 0) : see api.md
 // x[] may be normalized (the values are not changed) when computing z
 MCL_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
 MCL_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);

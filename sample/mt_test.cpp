@@ -1,6 +1,6 @@
 /*
-	make clean && make MCL_USE_OMP=1 -j bin/mt_test.exe CFLAGS_USER=-DCYBOZU_BENCH_USE_GETTIMEOFDAY
-	bin/mt_test.exe -n 2000
+	make -j bin/mt_test.exe CFLAGS_USER=-DCYBOZU_BENCH_USE_GETTIMEOFDAY
+	bin/mt_test.exe -b 11
 */
 #include <cybozu/benchmark.hpp>
 #include <mcl/bls12_381.hpp>
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	std::string curveName;
 	int C;
 	opt.appendOpt(&maxb, 16, "b", ": set n to 1<<b");
-	opt.appendOpt(&cpuN, 0, "cpu", ": # of cpu for OpenMP");
+	opt.appendOpt(&cpuN, 0, "cpu", ": # of threads of mulVecMT / millerLoopVecMT (0 : # of processors)");
 	opt.appendOpt(&C, 50, "c", ": count of loop");
 	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
 	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
@@ -76,17 +76,15 @@ int main(int argc, char *argv[])
 		xVec[i].setByCSPRNG(rg);
 	}
 	G1 P1, P2;
-#ifdef MCL_MSM
 	if (msmOnly) {
 		for (int b = minb; b <= maxb; b++) {
-			size_t nn = 1u << b;
+			size_t nn = size_t(1) << b;
 			printf("% 8zd %2d", nn, b);
 			CYBOZU_BENCH_C(" ", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
 			fflush(stdout);
 		}
 		return 0;
 	}
-#endif
 	CYBOZU_BENCH_C("G1 single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
 	if (n < 1024) {
 		CYBOZU_BENCH_C("naive", C, mulVec_naive, P2, Pvec.data(), xVec.data(), n);

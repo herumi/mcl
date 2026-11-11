@@ -147,15 +147,9 @@ ifeq ($(MCL_STATIC_CODE),1)
   CFLAGS+=-DMCL_STATIC_CODE
   CFLAGS+=-fno-exceptions -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 endif
-ifeq ($(MCL_USE_OMP),1)
-  CFLAGS+=-DMCL_USE_OMP
-  ifneq ($(findstring $(OS),mac/mac-m1),)
-    CFLAGS+=-Xpreprocessor -fopenmp
-    LDFLAGS+=-lomp -L/opt/homebrew/opt/libomp/lib
-  else
-    CFLAGS+=-fopenmp
-    LDFLAGS+=-fopenmp
-  endif
+# ec::parallelForThread uses pthread (not needed for glibc >= 2.34, mac and Windows, but harmless)
+ifeq ($(findstring $(OS),Linux/openbsd/freebsd),$(OS))
+  LDFLAGS+=-pthread
 endif
 LDFLAGS+=$(GMP_LIB) $(BIT_OPT) $(LDFLAGS_USER)
 

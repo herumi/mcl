@@ -5,7 +5,7 @@ import sys
 import random
 from montgomery import Montgomery
 from primetbl import curveTbl
-from gen_glv import glvCurves, makeParam
+from gen_glv import glvCurves, makeParam, sqrtMod
 
 # rw of the GLV method verified on a point of G1 by gen_glv.py (mulLambda of msm_avx.cpp must use the same root)
 glvRw = {e[0]: makeParam(*e).rw for e in glvCurves}
@@ -24,18 +24,15 @@ def toArray(x, n, w):
 def hexList(a):
   return ', '.join(map(hex, a))
 
-# a primitive cube root of unity mod p (rw^2 + rw + 1 = 0)
-def cubeRootOfUnity(p):
-  if (p + 1) % 4 == 0:
-    s = pow(-3, (p + 1) // 4, p) # sqrt(-3)
-    assert (s * s + 3) % p == 0
-    rw = (-(1 + s) * pow(2, -1, p)) % p
-  elif p == curveTbl['BLS12-377'].p:
-    rw = 0x9b3af05dd14f6ec619aaf7d34594aabc5ed1347970dec00452217cc900000008508c00000000001
-  else:
-    raise Exception(f'not supported {hex(p)=}')
-  assert (rw * rw + rw + 1) % p == 0
-  return rw
+# the two primitive cube roots of unity mod p (rw^2 + rw + 1 = 0) : (-1 +- sqrt(-3)) / 2
+def cubeRootsOfUnity(p):
+  s = sqrtMod(-3, p) # Tonelli-Shanks (p = 1 mod 4 for Grumpkin)
+  assert s is not None and (s * s + 3) % p == 0
+  rw = (-(1 + s) * pow(2, -1, p)) % p
+  roots = [rw, rw * rw % p]
+  for rw in roots:
+    assert (rw * rw + rw + 1) % p == 0
+  return roots
 
 class Para:
   def __init__(self, cv, N):
@@ -64,11 +61,12 @@ class Para:
     self.m52to64 = toArray(toMont(pow(2, -s, p)), N, W)
     self.m52to64s = toArray(pow(2, -s, p) * R64 % p, self.pN, 64) # the Montgomery form of Fp
     self.invR52 = toArray(pow(R52, -1, p), self.pN, 64) # for Fp not in the Montgomery form (secp256k1)
-    rw = cubeRootOfUnity(p)
-    assert rw == glvRw[cv.name], cv.name
+    # the root used by the GLV method (verified on a point by gen_glv.py) ; the other root gives a different lattice
+    rw = glvRw[cv.name]
+    assert rw in cubeRootsOfUnity(p), cv.name
     self.rw = toArray(toMont(rw), N, W)
-    assert cv.b > 0, cv.name
-    self.b3 = toArray(toMont(3 * cv.b), N, W)
+    assert cv.b != 0, cv.name
+    self.b3 = toArray(toMont(3 * cv.b % p), N, W) # b may be negative (Grumpkin : b = -17)
     self.p = toArray(p, self.pN, 64)
     # verify the conversions : x R64 (Fp) -> x R52 (FpM) -> x R64
     rng = random.Random(1)
@@ -112,7 +110,7 @@ def putTable(fpBit, N):
   print(f'#if MCL_FP_BIT == {fpBit}')
   print(f'static const size_t MSM_N = {N}; // the number of 52-bit limbs')
   print('static const MsmCurvePara g_msmCurveTbl[] = {')
-  for name in ['BN254', 'BN-SNARK', 'BLS12-381', 'BLS12-377', 'secp256k1']:
+  for name in ['BN254', 'BN-SNARK', 'BLS12-381', 'BLS12-377', 'secp256k1', 'Grumpkin']:
     cv = curveTbl[name]
     if cv.p.bit_length() > W * N - 2:
       continue
@@ -131,7 +129,7 @@ def main():
 struct MsmCurvePara {
 	int curveType; // MCL_BN254, MCL_BLS12_381, ...
 	size_t pN; // the number of 64-bit limbs of p (= Fp::getOp().N)
-	int b; // y^2 = x^3 + b (EcMT::specialB_)
+	int b; // y^2 = x^3 + b (EcMT::specialB_ : Plus1 / Plus4 / GenericB ; may be negative)
 	uint64_t p[6]; // p in 64-bit limbs
 	uint64_t rp; // -p^-1 mod 2^52
 	uint64_t ap[8]; // p in 52-bit limbs

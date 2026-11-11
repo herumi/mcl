@@ -8,13 +8,11 @@
 */
 #include <mcl/g1_def.hpp>
 #include <mcl/g2_def.hpp>
+#if MCL_USE_GRUMPKIN == 1
 #include <mcl/gg_def.hpp>
+#endif
 #include <mcl/curve_type.hpp>
 #include <assert.h>
-
-#ifdef MCL_USE_OMP
-#include <omp.h>
-#endif
 
 namespace mcl {
 
@@ -64,8 +62,7 @@ MCL_CXX_API void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coe
 */
 MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true);
 
-// multi thread version of millerLoopVec
-// the num of thread is automatically detected if cpuN = 0
+// multi thread version of millerLoopVec with cpuN threads (the number of the processors if cpuN = 0) : see api.md
 MCL_CXX_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0);
 
 MCL_CXX_API bool setMapToMode(int mode);
@@ -109,14 +106,17 @@ MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para);
 
 MCL_CXX_API const G1& getG1basePoint();
 
+#if MCL_USE_GRUMPKIN == 1
 /*
 	init GG (Grumpkin : y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1)
 	Fp and Fr must be those of BN_SNARK1 (initPairing(BN_SNARK1)) or not initialized yet (then they are initialized here)
 	*pb = false if Fp or Fr is initialized for another curve (G1 / G2 of the curve are not broken)
 	GG has only the group operations (add / mul / mulVec / serialization) : no pairing, no hash-to-curve
+	GG is available only if MCL_USE_GRUMPKIN=1 (requires MCL_FP_BIT=256, see gg_def.hpp)
 */
 MCL_CXX_API void initGrumpkin(bool *pb);
 MCL_CXX_API const GG& getGGbasePoint();
+#endif
 
 /*
 	check x in Fp12 is in GT.
@@ -169,12 +169,14 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254)
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 
+#if MCL_USE_GRUMPKIN == 1
 inline void initGrumpkin()
 {
 	bool b;
 	initGrumpkin(&b);
 	if (!b) throw cybozu::Exception("bn:initGrumpkin");
 }
+#endif
 
 inline void mapToG1(G1& P, const Fp& x)
 {

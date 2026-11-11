@@ -10,9 +10,11 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- Add the Grumpkin curve (class `GG`, y^2 = x^3 - 17 over the Fr of BN\_SNARK1 whose order is the p of BN\_SNARK1) for the 2-cycle with BN\_SNARK1 used by Nova / HyperNova. `initGrumpkin()` after `initPairing(BN_SNARK1)` ; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
-- Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 by a signed-digit bucket method, batch affine addition and a cost model for the window size: about 1.5-2.3x on CPUs with AVX-512 IFMA (a SIMD batch affine addition kernel), 1.3-1.7x on x64 without AVX-512 and 1.2-1.8x on Apple M4 (G1 of BLS12-381 and BN254, 2^7 to 2^20 points). The AVX-512 IFMA kernel supports BN254, BN_SNARK1 (also with MCL_FP_BIT=256) and secp256k1 in addition to BLS12-381 and BLS12-377, and G1::mulEach uses AVX-512 IFMA on these curves too.
-- Improve the performance of hashAndMapTo{G1,G2} (hash-to-curve) by using SHA-NI for SHA-256 if the CPU supports it.
+- `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)). `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default ; OpenMP is no longer used (`MCL_USE_OMP` is removed).
+- Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)` ; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
+  - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
+- Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 about 1.5-2.3x (w/ AVX-512 IFMA), 1.3-1.7x (w/o AVX-512), and 1.2-1.8x (Apple M4).
+- Improve the performance of hashAndMapTo{G1,G2} by using SHA-NI for SHA-256.
 - Improve the performance of finalExp by about 12% and pairing by about 8%.
 - Improve the performance of pairing on Apple M4 (aarch64) by about 14%.
 - Fix memory leak of some operations on Windows
@@ -55,7 +57,7 @@ and regenerate the low-level functions by `make update_all_asm` (requires LLVM) 
   - BN462 : a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
 - BLS12\_381
 - BLS12\_377
-- Grumpkin : y^2 = x^3 - 17 over the Fr of BN\_SNARK1 (the 2-cycle with BN\_SNARK1, class `GG`, the group operations only)
+- Grumpkin : y^2 = x^3 - 17 over the Fr of BN\_SNARK1 (the 2-cycle with BN\_SNARK1, class `GG`, the group operations only, requires `MCL_USE_GRUMPKIN=1` and `MCL_FP_BIT=256`)
 
 # BLS signature
 See [bls](https://github.com/herumi/bls) if you want mcl for BLS-signature.
@@ -70,9 +72,7 @@ GMP is necessary only to build test programs.
 - `sudo apt install libgmp-dev` on Ubuntu
 - `brew install gmp` on macOS
 
-OpenMP is optional (`make MCL_USE_OMP=1` to use OpenMP for `mulVec`)
-- `sudo apt install libomp-dev` on Ubuntu
-- `brew install libomp`
+`mulVecMT` and `millerLoopVecMT` use pthread on Linux / macOS (`-pthread` may be required to link statically with glibc < 2.34) and the Windows threads on Windows. No other library is required.
 
 ## How to build with Makefile
 

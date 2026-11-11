@@ -16,10 +16,6 @@
 	#pragma warning(push)
 	#pragma warning(disable : 4458)
 #endif
-#ifdef MCL_USE_OMP
-#include <omp.h>
-#endif
-
 namespace mcl {
 
 namespace ec {
@@ -1054,10 +1050,12 @@ enum StaticIdType {
 	StaticIdG2 = 1,
 	StaticIdGG = 2
 };
-// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG)
+// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG, only if MCL_USE_GRUMPKIN=1 ; otherwise 0)
 MCL_CXX_API const StaticMember* getStaticMember(int id);
 // StaticId<Fp>::id is defined in g1_def.hpp (Fp), g2_def.hpp (Fp2) and gg_def.hpp (Fr)
 template<class Fp> struct StaticId;
+
+// the parallel-for (ParallelFor, setParallelFor, ...) is declared in mcl/op.hpp
 
 } // mcl::ec
 
@@ -1073,8 +1071,8 @@ public:
 	typedef _Fp BaseFp;
 	typedef _Fr Fr; // the scalar field (the order of the group) : mcl::Fr for G1 / G2, mcl::Fp for GG (Grumpkin)
 	Fp x, y, z;
-	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
+	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b, const ec::ParallelFor& par);
+	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b, const ec::ParallelFor& par);
 	typedef void (*MulEachOptiFunc)(EcT *xVec, const Fr *yVec, size_t n);
 	typedef bool (*IsValidOrderFastFunc)(const EcT& x);
 	typedef const ec::MsmKernel* MsmKernelPtr;
@@ -1207,11 +1205,11 @@ public:
 	{
 		isValidOrderFast = f;
 	}
-	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime, size_t b))
+	static void setMulVecGLV(MulVecGLVFunc f)
 	{
 		mulVecGLV = f;
 	}
-	static void setMulVecOpti(void f(EcT& z, EcT *xVec, const Fr *yVec, size_t yn, size_t b))
+	static void setMulVecOpti(MulVecOptiFunc f)
 	{
 		mulVecOpti = f;
 	}
@@ -1333,7 +1331,7 @@ public:
 	static inline void mul(EcT& z, const EcT& x, const Fr& y, bool constTime = false)
 	{
 		if (mulVecGLV) {
-			mulVecGLV(z, &x, &y, 1, constTime, 0);
+			mulVecGLV(z, &x, &y, 1, constTime, 0, ec::ParallelFor::seq());
 			return;
 		}
 		fp::Block b;
@@ -1888,11 +1886,17 @@ public:
 	*/
 	static inline void mulVec(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
+		mulVecMT(z, xVec, yVec, n, 1, b);
+	}
+	// multi thread version of mulVec with cpuN threads (the number of the processors if cpuN = 0) : see api.md
+	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0, size_t b = 0)
+	{
+		const ec::ParallelFor par = ec::getParallelForOrThread(cpuN);
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti(z, xVec, yVec, n, b);
+			mulVecOpti(z, xVec, yVec, n, b, par);
 			return;
 		}
-		mulVecConstRef(z, xVec, yVec, n, b);
+		mulVecConstRefPar(z, xVec, yVec, n, b, par);
 	}
 	/*
 		z = sum_{i<n} xVec[i] yVec[i]
@@ -1901,11 +1905,15 @@ public:
 	*/
 	static inline void mulVecConstRef(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
+		mulVecConstRefPar(z, xVec, yVec, n, b, ec::getParallelForOrThread(1));
+	}
+	static inline void mulVecConstRefPar(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b, const ec::ParallelFor& par)
+	{
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {
+		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b, par)) {
 			return;
 		}
 		EcT r;
@@ -1919,41 +1927,6 @@ public:
 			n -= done;
 		}
 		z = r;
-	}
-	// multi thread version of mulVec
-	// the num of thread is automatically detected if cpuN = 0
-	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0)
-	{
-#ifdef MCL_USE_OMP
-	const size_t minN = mcl::fp::maxMulVecN;
-	if (cpuN == 0) {
-		cpuN = omp_get_num_procs();
-		if (n < minN * cpuN) {
-			cpuN = (n + minN - 1) / minN;
-		}
-	}
-	if (cpuN <= 1 || n <= cpuN) {
-		mulVec(z, xVec, yVec, n);
-		return;
-	}
-	EcT *zs = (EcT*)CYBOZU_ALLOCA(sizeof(EcT) * cpuN);
-	size_t q = n / cpuN;
-	size_t r = n % cpuN;
-	#pragma omp parallel for
-	for (size_t i = 0; i < cpuN; i++) {
-		size_t adj = q * i + fp::min_(i, r);
-		mulVec(zs[i], xVec + adj, yVec + adj, q + (i < r));
-	}
-	z.clear();
-//	#pragma omp declare reduction(red:EcT:omp_out *= omp_in) initializer(omp_priv = omp_orig)
-//	#pragma omp parallel for reduction(red:z)
-	for (size_t i = 0; i < cpuN; i++) {
-		z += zs[i];
-	}
-#else
-		(void)cpuN;
-		mulVec(z, xVec, yVec, n);
-#endif
 	}
 	// xVec[i] *= yVec[i]
 	static void mulEach(EcT *xVec, const Fr *yVec, size_t n)
@@ -2020,6 +1993,8 @@ public:
 
 #ifdef MCL_DLL_IMPORT_STATIC
 // the static data members refer to the instances in mcl.dll
+// MCL_COMMA : a comma in the type argument of MCL_EC_STATIC_REF (EcT<Fp, Fr>)
+#define MCL_COMMA ,
 #define MCL_EC_STATIC_REF(type, name, member) \
 	template<class Fp, class Fr> type& EcT<Fp, Fr>::name = *static_cast<type*>(ec::getStaticMember(ec::StaticId<Fp>::id)->member);
 MCL_EC_STATIC_REF(Fp, a_, a)
@@ -2030,13 +2005,14 @@ MCL_EC_STATIC_REF(int, specialB_, specialB)
 MCL_EC_STATIC_REF(int, ioMode_, ioMode)
 MCL_EC_STATIC_REF(bool, verifyOrder_, verifyOrder)
 MCL_EC_STATIC_REF(mpz_class, order_, order)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
 MCL_EC_STATIC_REF(int, mode_, mode)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
-MCL_EC_STATIC_REF(typename EcT<Fp, Fr>::MsmKernelPtr, msmKernel, msmKernel)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MsmKernelPtr, msmKernel, msmKernel)
 #undef MCL_EC_STATIC_REF
+#undef MCL_COMMA
 #elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
 /*
 	The static data members are defined only in the library (src/fp.cpp, MCL_EC_STATIC_INST)

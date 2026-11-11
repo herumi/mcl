@@ -11,10 +11,6 @@
 #include <mcl/curve_type.hpp>
 #include <assert.h>
 
-#ifdef MCL_USE_OMP
-#include <omp.h>
-#endif
-
 #include "compress.hpp"
 #include "glv.hpp"
 #include "msm.hpp"
@@ -203,12 +199,12 @@ MCL_CXX_API int getCurveType()
 	return getCurveParam().curveType;
 }
 
-bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
+bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n, const ec::ParallelFor& par)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG>(_z, _xVec, yVec, n);
+	return mcl::ec::mulVecGLVT<GLV2, AG>(_z, _xVec, yVec, n, false, 0, par);
 }
 
 /*
@@ -1104,7 +1100,10 @@ EXIT:
 	if (!initF) _f *= f;
 }
 
-MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
+namespace local {
+
+// the sequential millerLoopVec (see millerLoopVec)
+inline void millerLoopVecSeq(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
 {
 	const size_t N = 16;
 	size_t remain = fp::min_(N, n);
@@ -1115,42 +1114,100 @@ MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n
 	}
 }
 
-MCL_CXX_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN)
+/*
+	the parallel millerLoopVec : the points are split into C chunks of about n / C (>= minN) and the tasks are the chunk indices [0, C),
+	each thread computes the product of its chunks into fs[tid] (the tasks of a thread are contiguous)
+*/
+struct MillerLoopVecCtx {
+	const G1 *Pvec;
+	const G2 *Qvec;
+	size_t n;
+	size_t C;
+	size_t maxThreads;
+	Fp12 *fs; // [maxThreads]
+	size_t *len; // [maxThreads] the number of the points done by the thread (0 : nothing)
+	size_t chunkBegin(size_t c) const
+	{
+		const size_t q = n / C;
+		const size_t r = n % C;
+		return q * c + fp::min_(c, r);
+	}
+	static void task(size_t begin, size_t end, size_t tid, void *arg)
+	{
+		MillerLoopVecCtx& ctx = *(MillerLoopVecCtx*)arg;
+		assert(tid < ctx.maxThreads && begin < end && end <= ctx.C);
+		if (tid >= ctx.maxThreads || begin >= end || end > ctx.C) return; // the parallel-for violates the contract : the points are left undone (then the caller recomputes sequentially)
+		const size_t pos = ctx.chunkBegin(begin);
+		const size_t m = ctx.chunkBegin(end) - pos;
+		millerLoopVecSeq(ctx.fs[tid], ctx.Pvec + pos, ctx.Qvec + pos, m, true);
+		ctx.len[tid] = m;
+	}
+};
+
+// f = prod millerLoop(Pvec[i], Qvec[i]) by the parallel-for par (sequential if par is not parallel or n is small)
+inline void millerLoopVecPar(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, const ec::ParallelFor& par)
 {
 	if (n == 0) {
 		f = 1;
 		return;
 	}
-#ifdef MCL_USE_OMP
-	const size_t minN = 16;
-	if (cpuN == 0) {
-		cpuN = omp_get_num_procs();
-		if (n < minN * cpuN) {
-			cpuN = (n + minN - 1) / minN;
-		}
-	}
-	if (cpuN <= 1 || n <= cpuN) {
-		millerLoopVec(f, Pvec, Qvec, n, true);
+	const size_t minN = 16; // the N of millerLoopVecSeq
+	const size_t maxThreads = par.maxThreads;
+	if (!par.isParallel() || n < 2 * minN) {
+		millerLoopVecSeq(f, Pvec, Qvec, n, true);
 		return;
 	}
-	Fp12 *fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * cpuN);
-	size_t q = n / cpuN;
-	size_t r = n % cpuN;
-	#pragma omp parallel for
-	for (size_t i = 0; i < cpuN; i++) {
-		size_t adj = q * i + fp::min_(i, r);
-		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r), true);
-	}
-	f = 1;
-//	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
-//	#pragma omp parallel for reduction(red:f)
-	for (size_t i = 0; i < cpuN; i++) {
-		f *= fs[i];
-	}
+	local::MillerLoopVecCtx ctx;
+	ctx.Pvec = Pvec;
+	ctx.Qvec = Qvec;
+	ctx.n = n;
+	ctx.C = fp::min_(maxThreads, n / minN);
+	ctx.maxThreads = maxThreads;
+#ifdef MCL_DONT_USE_MALLOC
+	ctx.fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * maxThreads);
+	ctx.len = (size_t*)CYBOZU_ALLOCA(sizeof(size_t) * maxThreads);
 #else
-	(void)cpuN;
-	millerLoopVec(f, Pvec, Qvec, n, true);
+	mcl::Array<Fp12> fs;
+	mcl::Array<size_t> len;
+	if (!fs.resize(maxThreads) || !len.resize(maxThreads)) {
+		millerLoopVecSeq(f, Pvec, Qvec, n, true);
+		return;
+	}
+	ctx.fs = fs.data();
+	ctx.len = len.data();
 #endif
+	for (size_t i = 0; i < maxThreads; i++) ctx.len[i] = 0;
+	par.run(local::MillerLoopVecCtx::task, &ctx, ctx.C);
+	// all the points must be done exactly once
+	size_t done = 0;
+	for (size_t i = 0; i < maxThreads; i++) done += ctx.len[i];
+	if (done == n) {
+		f = 1;
+		for (size_t i = 0; i < maxThreads; i++) {
+			if (ctx.len[i]) f *= ctx.fs[i];
+		}
+	} else {
+		millerLoopVecSeq(f, Pvec, Qvec, n, true);
+	}
+}
+
+} // mcl::local
+
+MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
+{
+	const ec::ParallelFor par = ec::getParallelForOrThread(1);
+	if (initF) {
+		local::millerLoopVecPar(f, Pvec, Qvec, n, par);
+	} else {
+		Fp12 t;
+		local::millerLoopVecPar(t, Pvec, Qvec, n, par);
+		f *= t;
+	}
+}
+
+MCL_CXX_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN)
+{
+	local::millerLoopVecPar(f, Pvec, Qvec, n, ec::getParallelForOrThread(cpuN));
 }
 
 MCL_CXX_API void verifyOrderG1(bool doVerify)

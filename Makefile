@@ -20,14 +20,24 @@ endif
 
 CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
 CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
+# GG (Grumpkin) requires MCL_USE_GRUMPKIN=1 (and MCL_FP_BIT=256)
+MCL_USE_GRUMPKIN?=0
+ifeq ($(MCL_USE_GRUMPKIN),1)
+  ifneq ($(MCL_FP_BIT),256)
+    $(error MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256)
+  endif
+endif
+CFLAGS+=-DMCL_USE_GRUMPKIN=$(MCL_USE_GRUMPKIN)
 
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp msm_par_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
-TEST_SRC+=grumpkin_test.cpp
+ifeq ($(MCL_USE_GRUMPKIN),1)
+  TEST_SRC+=grumpkin_test.cpp
+endif
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
@@ -200,7 +210,7 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1) and 384 (BLS12-381, BLS12-377, BN254, ...)
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG if MCL_USE_GRUMPKIN=1) and 384 (BLS12-381, BLS12-377, BN254, ...)
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
@@ -213,7 +223,7 @@ ifeq ($(MCL_MSM),1)
   # -mavx512f is not given : the kernels are compiled with the target attribute (MCL_MSM_AVX512_BEGIN / END in msm_avx.cpp),
   # otherwise the template instances shared with the other objects (COMDAT) may use AVX-512 and crash on a CPU without it
   MSM_CFLAGS=-std=c++11
-$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_para.h src/avx512.hpp
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_impl.hpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
 -include $(OBJ_DIR)/$(MSM).d
 src/$(MSM)_para.h: src/gen_msm_para.py src/primetbl.py src/montgomery.py src/gen_glv.py

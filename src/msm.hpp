@@ -28,7 +28,24 @@ void mulEachAVX512(G1 *x, const Fr *y, size_t n);
 void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b);
 #endif
 
+#if MCL_USE_GRUMPKIN == 1
+/*
+	the same for GG (Grumpkin : the base field Fr, the scalar field Fp) by the second kernel (mcl::msm_gg of msm_avx_impl.hpp)
+	curveType = MCL_GRUMPKIN, splitRaw = GLV1T<GG>::splitRaw. the kernels of G1 and GG can be registered at the same time
+*/
+bool initMsmGG(int curveType, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x));
+#endif
+
 } // mcl::msm
+
+#if MCL_USE_GRUMPKIN == 1
+namespace msm_gg {
+
+const ec::MsmKernel* getMsmKernelAVX512();
+void mulEachAVX512(GG *x, const Fp *y, size_t n);
+
+} // mcl::msm_gg
+#endif
 #endif
 
 } // mcl

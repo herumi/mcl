@@ -55,6 +55,19 @@ option(
 	ON
 )
 option(
+	MCL_USE_GRUMPKIN
+	"define the class GG (Grumpkin), requires MCL_FP_BIT=256"
+	OFF
+)
+if(MCL_USE_GRUMPKIN AND NOT MCL_FP_BIT EQUAL 256)
+	message(FATAL_ERROR "MCL_USE_GRUMPKIN=ON requires MCL_FP_BIT=256")
+endif()
+if(MCL_USE_GRUMPKIN)
+	set(MCL_USE_GRUMPKIN_FLAG 1)
+else()
+	set(MCL_USE_GRUMPKIN_FLAG 0)
+endif()
+option(
 	MCL_BUILD_SAMPLE
 	"Build mcl samples"
 	OFF
@@ -180,7 +193,7 @@ endif()
 set_target_properties(mcl_st PROPERTIES
 	OUTPUT_NAME mcl)
 
-mcl_compile_definitions(PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+mcl_compile_definitions(PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_USE_GRUMPKIN=${MCL_USE_GRUMPKIN_FLAG})
 
 # Compiler and linker settings
 if(MCL_WIN_ARM64)
@@ -206,7 +219,7 @@ elseif(MSVC)
 	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 		mcl_compile_definitions(PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8)
 		target_compile_definitions(mcl_st PUBLIC MCL_DONT_EXPORT)
-		set(MCL_COMPILE_OPTIONS /W4 /openmp)
+		set(MCL_COMPILE_OPTIONS /W4)
 	else()
 		mcl_compile_definitions(PUBLIC NOMINMAX)
 		set(MCL_COMPILE_OPTIONS /W4)
@@ -220,6 +233,13 @@ endif()
 if (${MCL_USE_GMP})
 	list(APPEND MCL_COMPILE_OPTIONS -DMCL_USE_GMP=1)
 	mcl_link_libraries(PRIVATE GMP::GMP)
+endif()
+
+# mcl::ec::parallelForThread uses pthread (Windows uses its own threads)
+if(NOT WIN32)
+	set(THREADS_PREFER_PTHREAD_FLAG ON)
+	find_package(Threads REQUIRED)
+	mcl_link_libraries(PUBLIC Threads::Threads)
 endif()
 
 if(MCL_COMPILE_OPTIONS)
@@ -404,8 +424,8 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX /DMCL_FP_BIT=${MCL_FP_BIT} /DMCL_FR_BIT=${MCL_FR_BIT}
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
+		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX /DMCL_FP_BIT=${MCL_FP_BIT} /DMCL_FR_BIT=${MCL_FR_BIT} /DMCL_USE_GRUMPKIN=${MCL_USE_GRUMPKIN_FLAG}
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx_impl.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx_para.h
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_msm_avx.obj
 		SOURCES ${MSM_OBJ})
@@ -418,8 +438,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.o")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT}
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
+		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DMCL_USE_GRUMPKIN=${MCL_USE_GRUMPKIN_FLAG}
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx_impl.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx_para.h
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	# the target name must differ from the output file name for Ninja
 	add_custom_target(gen_msm_avx.o
