@@ -153,7 +153,11 @@ def gen_fp_names(N, isFullBit):
 		('fpDbl_subA_', f'mcl_fpDbl_sub{suf}'),
 	]
 
-def gen_generic_proto(Ntbl):
+# the Fp2 functions exist only for N * unit <= MCL_FP_BIT_LLVM (sizeof(Fp) >= N units; see gen_generic of gen.py)
+def has_fp2(N, unit):
+	return N * unit <= opt.fpbit
+
+def gen_generic_proto(Ntbl, unit):
 	for N in Ntbl:
 		suf = f'{N}L'
 		# the new Fp functions (the others are declared above)
@@ -162,6 +166,8 @@ def gen_generic_proto(Ntbl):
 		print(f'void mcl_fp_mul2NF{suf}({void3u});')
 		print(f'void mcl_fp_sqr{suf}({void3u});')
 		print(f'void mcl_fp_sqrNF{suf}({void3u});')
+		if not has_fp2(N, unit):
+			continue
 		for (slot, s, args) in gen_fp2_tbl:
 			print(f'void mcl_fp2_{s}{suf}({args});')
 		for u in genUs:
@@ -183,8 +189,10 @@ def gen_set_fp(Ntbl, indent):
 			print(f'{indent}	}}')
 		print(f'{indent}	break;')
 
-def gen_set_fp2(Ntbl, indent):
+def gen_set_fp2(Ntbl, indent, unit):
 	for N in Ntbl:
+		if not has_fp2(N, unit):
+			continue
 		suf = f'{N}L'
 		print(f'{indent}case {N}:')
 		for (slot, s, args) in gen_fp2_tbl:
@@ -204,9 +212,9 @@ print('#if defined(MCL_USE_LLVM) && !defined(MCL_WASM32) && !defined(MCL_X64_ASM
 print('// the p-generic functions for the A_ slots (see common.gen_generic_fp / gen_generic_fp2 in src/gen.py)')
 print('extern "C" {')
 print('#if MCL_SIZEOF_UNIT == 4')
-gen_generic_proto(genN32tbl)
+gen_generic_proto(genN32tbl, 32)
 print('#else')
-gen_generic_proto(genN64tbl)
+gen_generic_proto(genN64tbl, 64)
 print('#endif')
 print('}')
 print('// set the A_ slots of Fp (and fpDbl_{mod,add,sub}A_) of op to the p-generic')
@@ -234,9 +242,9 @@ cond = ' || '.join(f'(u == {u} && xi_a == {xi_a})' for (u, xi_a) in genParams)
 print(f'	if (!({cond})) return false;')
 print('	switch (N) {')
 print('#if MCL_SIZEOF_UNIT == 4')
-gen_set_fp2(genN32tbl, '	')
+gen_set_fp2(genN32tbl, '	', 32)
 print('#else')
-gen_set_fp2(genN64tbl, '	')
+gen_set_fp2(genN64tbl, '	', 64)
 print('#endif')
 print('	default: return false;')
 print('	}')

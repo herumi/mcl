@@ -463,7 +463,8 @@ def gen_generic(fpBit):
     addF = {fb: g_fpAdd[(b, fb)] for fb in (True, False)}
     montF = {fb: g_fpMont[(b, fb)] for fb in (True, False)}
     common.gen_generic_fp(unit, N, addF, montF)
-    common.gen_generic_fp2(unit, N, fpBit // unit, params, g_fpMont[(b, False)], g_fpMontRed[(b, False)], g_mulPos, g_extractHigh)
+    if b <= fpBit: # the Fp2 functions need sizeof(Fp) >= N units (e.g. MCL_FP_BIT=256 has no 384-bit Fp2)
+      common.gen_generic_fp2(unit, N, fpBit // unit, params, g_fpMont[(b, False)], g_fpMontRed[(b, False)], g_mulPos, g_extractHigh)
 
 
 # fpBit : MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of gen_generic)
