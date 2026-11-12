@@ -16,8 +16,10 @@
 #include <cybozu/endian.hpp>
 
 // define CYBOZU_USE_WIN_BCRYPT=1 to use Windows bcrypt even on x86/x64
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL && CYBOZU_USE_WIN_BCRYPT != 1
-	#define CYBOZU_AES_NI
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+	#if !defined(CYBOZU_USE_WIN_BCRYPT) || CYBOZU_USE_WIN_BCRYPT != 1
+		#define CYBOZU_AES_NI
+	#endif
 #endif
 #ifdef CYBOZU_AES_NI
 	#include <wmmintrin.h>
@@ -36,15 +38,22 @@
 		#define CYBOZU_USE_APPLE_COMMONCRYPTO 1
 	#endif
 #endif
-#if CYBOZU_USE_APPLE_COMMONCRYPTO == 1
-	#include <CommonCrypto/CommonCryptor.h>
-#endif
 /*
 	use Windows CNG(bcrypt) if AES-NI is not available (e.g. ARM64 Windows)
 	so that OpenSSL is not necessary
 */
 #if !defined(CYBOZU_AES_NI) && defined(_WIN32) && !defined(CYBOZU_USE_WIN_BCRYPT)
 	#define CYBOZU_USE_WIN_BCRYPT 1
+#endif
+// the macros are always defined (0 or 1) after this line (not to be warned by -Wundef)
+#ifndef CYBOZU_USE_WIN_BCRYPT
+	#define CYBOZU_USE_WIN_BCRYPT 0
+#endif
+#ifndef CYBOZU_USE_APPLE_COMMONCRYPTO
+	#define CYBOZU_USE_APPLE_COMMONCRYPTO 0
+#endif
+#if CYBOZU_USE_APPLE_COMMONCRYPTO == 1
+	#include <CommonCrypto/CommonCryptor.h>
 #endif
 #if CYBOZU_USE_WIN_BCRYPT == 1
 	#ifndef WIN32_LEAN_AND_MEAN
