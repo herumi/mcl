@@ -261,12 +261,12 @@ CYBOZU_TEST_AUTO(badParallelFor)
 }
 #endif
 
-// the library parallel-for : the parts cover [0, n) exactly once with tid < min(maxThreads, n)
+// the library parallel-for : the n tasks are taken one by one (begin + 1 == end) by the threads tid < min(maxThreads, n) and cover [0, n) exactly once
 struct CoverCtx {
 	size_t n;
 	size_t maxThreads;
 	std::vector<size_t> count; // [n] how many times i is done
-	std::vector<size_t> tidOfPart; // [maxThreads] 1 + the number of the parts of tid
+	std::vector<size_t> tidOfPart; // [maxThreads] the number of the tasks of tid
 };
 static void coverTask(size_t begin, size_t end, size_t tid, void *arg)
 {
@@ -274,8 +274,14 @@ static void coverTask(size_t begin, size_t end, size_t tid, void *arg)
 	CYBOZU_TEST_ASSERT(begin < end);
 	CYBOZU_TEST_ASSERT(end <= ctx.n);
 	CYBOZU_TEST_ASSERT(tid < ctx.maxThreads);
+	CYBOZU_TEST_ASSERT(tid < ctx.n);
+	if (ctx.maxThreads > 1 && ctx.n > 1) {
+		CYBOZU_TEST_EQUAL(end - begin, 1u); // one task at a time
+	} else {
+		CYBOZU_TEST_EQUAL(end - begin, ctx.n); // sequential : one call for all
+	}
 	for (size_t i = begin; i < end; i++) ctx.count[i]++;
-	ctx.tidOfPart[tid]++;
+	ctx.tidOfPart[tid]++; // tid is used by one thread at a time (the count is not racy)
 }
 CYBOZU_TEST_AUTO(parallelForThread)
 {
@@ -292,12 +298,10 @@ CYBOZU_TEST_AUTO(parallelForThread)
 			ctx.tidOfPart.resize(maxThreads);
 			mcl::ec::parallelForThread(coverTask, &ctx, ctx.n);
 			for (size_t i = 0; i < ctx.n; i++) CYBOZU_TEST_EQUAL(ctx.count[i], 1u);
+			// the tasks are taken dynamically, so a thread may get none ; the total is n (1 call if sequential)
 			size_t parts = 0;
-			for (size_t i = 0; i < maxThreads; i++) {
-				CYBOZU_TEST_ASSERT(ctx.tidOfPart[i] <= 1); // each tid has one part
-				parts += ctx.tidOfPart[i];
-			}
-			const size_t expected = ctx.n < maxThreads ? ctx.n : maxThreads;
+			for (size_t i = 0; i < maxThreads; i++) parts += ctx.tidOfPart[i];
+			const size_t expected = (maxThreads > 1 && ctx.n > 1) ? ctx.n : (ctx.n > 0 ? 1 : 0);
 			CYBOZU_TEST_EQUAL(parts, expected);
 		}
 	}

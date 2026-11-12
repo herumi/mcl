@@ -845,10 +845,16 @@ ParallelFor getParallelForOrThread(size_t)
 
 namespace {
 
+/*
+	the n tasks are taken one by one from the shared counter *next by the threads (cybozu::AtomicAdd),
+	so a slow thread (an efficiency core of a hybrid CPU) takes fewer tasks and the others do not wait for it
+*/
 struct ParallelForThreadArg {
 	ParallelForTask task;
 	void *arg;
-	size_t begin, end, tid;
+	size_t *next; // the shared counter of the next task
+	size_t n;
+	size_t tid;
 	cybozu::thread::ThreadHandle hdl;
 	bool created; // the thread of hdl is created
 };
@@ -860,7 +866,11 @@ void* parallelForThreadEntry(void *p)
 #endif
 {
 	const ParallelForThreadArg& a = *(const ParallelForThreadArg*)p;
-	a.task(a.begin, a.end, a.tid, a.arg);
+	for (;;) {
+		const size_t i = cybozu::AtomicAdd(a.next, size_t(1));
+		if (i >= a.n) break;
+		a.task(i, i + 1, a.tid, a.arg);
+	}
 	return 0;
 }
 
@@ -876,16 +886,15 @@ void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt)
 		task(0, n, 0, arg);
 		return;
 	}
-	const size_t q = n / nt;
-	const size_t r = n % nt;
+	size_t next = 0;
 	for (size_t t = 0; t < nt; t++) {
 		ParallelForThreadArg& a = args[t];
 		a.task = task;
 		a.arg = arg;
-		a.begin = q * t + (t < r ? t : r);
-		a.end = a.begin + q + (t < r ? 1 : 0);
+		a.next = &next;
+		a.n = n;
 		a.tid = t;
-		// the last part runs on the caller
+		// the caller also takes the tasks (as the thread nt - 1 or in place of a thread which could not be created)
 		a.created = t + 1 < nt && cybozu::thread::Begin(a.hdl, parallelForThreadEntry, &a, 0);
 		if (!a.created) parallelForThreadEntry(&a);
 	}
