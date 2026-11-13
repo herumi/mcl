@@ -6,6 +6,7 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
+#include <cybozu/thread.hpp>
 #include <mcl/bn.hpp>
 #include <vector>
 #include <stdio.h>
@@ -432,6 +433,80 @@ CYBOZU_TEST_AUTO(mulVecMT)
 	CYBOZU_TEST_EQUAL(Q0, Q1);
 	CYBOZU_TEST_EQUAL(g_seqCalls, calls);
 	CYBOZU_TEST_ASSERT(mcl::ec::getParallelFor() == 0);
+}
+
+/*
+	the kept work buffers of mulVec (src/msm_slot.hpp) : the results do not depend on the kept buffers (reused, grown, freed by freeMulVecBuffer)
+	and the concurrent calls (more than the number of the slots) do not interfere
+*/
+struct MulVecThread : cybozu::ThreadBase {
+	const G1 *xVec;
+	const Fr *yVec;
+	size_t n;
+	size_t rounds;
+	G1 expect;
+	size_t errN;
+	MulVecThread() : xVec(0), yVec(0), n(0), rounds(0), errN(0) {}
+	void threadEntry()
+	{
+		std::vector<G1> x(xVec, xVec + n);
+		for (size_t i = 0; i < rounds; i++) {
+			G1 Q;
+			G1::mulVecMT(Q, x.data(), yVec, n, 2);
+			if (Q != expect) errN++;
+			if (i == rounds / 2) mcl::ec::freeMulVecBuffer(); // the buffers of the other threads are kept (in use)
+		}
+	}
+};
+
+CYBOZU_TEST_AUTO(mulVecBuffer)
+{
+	G1 P;
+	hashAndMapToG1(P, "abc", 3);
+	cybozu::XorShift rg;
+	mcl::ec::setParallelFor(0, 0);
+	// the same result by the kept buffer of the previous call, by a grown buffer (n larger) and after freeMulVecBuffer
+	const size_t nTbl[] = { 5000, 300, 20000, 5000, 40000, 100 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		std::vector<G1> xVec, xVec2;
+		std::vector<Fr> yVec;
+		setVec(xVec, yVec, P, n, rg);
+		G1 Q0, Q1, Q2;
+		G1::mulVecConstRef(Q0, xVec.data(), yVec.data(), n);
+		xVec2 = xVec;
+		G1::mulVecMT(Q1, xVec2.data(), yVec.data(), n, 4);
+		CYBOZU_TEST_EQUAL(Q0, Q1);
+		mcl::ec::freeMulVecBuffer();
+		xVec2 = xVec;
+		G1::mulVecMT(Q2, xVec2.data(), yVec.data(), n, 4);
+		CYBOZU_TEST_EQUAL(Q0, Q2);
+	}
+	mcl::ec::freeMulVecBuffer();
+	// 12 concurrent calls (more than the 8 slots) of mulVecMT with 2 threads each
+	{
+		const size_t n = 3000;
+		const size_t threadN = 12;
+		std::vector<G1> xVec;
+		std::vector<Fr> yVec;
+		setVec(xVec, yVec, P, n, rg);
+		G1 Q0;
+		G1::mulVecConstRef(Q0, xVec.data(), yVec.data(), n);
+		MulVecThread th[threadN];
+		for (size_t i = 0; i < threadN; i++) {
+			th[i].xVec = xVec.data();
+			th[i].yVec = yVec.data();
+			th[i].n = n;
+			th[i].rounds = 20;
+			th[i].expect = Q0;
+			CYBOZU_TEST_ASSERT(th[i].beginThread());
+		}
+		for (size_t i = 0; i < threadN; i++) {
+			th[i].joinThread();
+			CYBOZU_TEST_EQUAL(th[i].errN, 0u);
+		}
+	}
+	mcl::ec::freeMulVecBuffer();
 }
 
 #ifndef _WIN32

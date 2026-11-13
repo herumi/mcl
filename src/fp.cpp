@@ -822,6 +822,10 @@ ParallelForFunc getParallelFor(size_t *pMaxThreads)
 	if (pMaxThreads) *pMaxThreads = s_parallelFor ? s_parallelForMaxThreads : 1;
 	return s_parallelFor;
 }
+void freeMulVecBuffer()
+{
+	local::msmSlotFreeAll();
+}
 
 #ifdef MCL_DONT_USE_THREAD
 

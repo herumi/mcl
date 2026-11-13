@@ -547,6 +547,8 @@ MCL_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2
 MCL_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
 MCL_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
 MCL_DLL_API void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+// free the work buffers which mulVec keeps for the next call (about the peak work size of the largest mulVec so far) : see api.md
+MCL_DLL_API void mclBn_freeMulVecBuffer(void);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
 MCL_DLL_API int mclBn_getUint64NumToPrecompute(void);

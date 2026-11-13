@@ -657,6 +657,19 @@ T::mulVecMT(T& z, T* x, const Fr *y, size_t n, size_t cpuN = 0);
 - `mulVec` with `cpuN` threads of the library (the number of the processors if `cpuN = 0`). If a parallel-for is registered by `mcl::ec::setParallelFor`, it is used and `cpuN` is ignored. `mulVec` is `mulVecMT` with `cpuN = 1`. The registration is not changed.
 - sequential if `MCL_DONT_USE_THREAD` (wasm, `MCL_STANDALONE`) and none is registered.
 
+### the work buffers of mulVec
+```c
+void mclBn_freeMulVecBuffer(void);
+```
+C++
+```cpp
+void mcl::ec::freeMulVecBuffer();
+```
+
+- `mulVec` keeps its work buffers (the split scalars, the converted points and the bucket tables of the threads) after the call and reuses them in the next call, because the page faults of the first touch of a fresh `malloc` are a bottleneck of the parallel `mulVec` (glibc unmaps a large buffer by `free`, the heap of Windows returns the pages of a large block by `free`). The kept size is about the peak work size of the largest `mulVec` so far (a few tens of MB for 2^17 points).
+- `mulVec` may be called concurrently from up to 8 threads with the kept buffers (the 9th call uses temporary buffers freed at its end). If `mulVec` is called from one thread at a time, only one set of the buffers is kept.
+- `freeMulVecBuffer` frees the kept buffers (except those of a `mulVec` running on another thread). They are allocated again by the next `mulVec`.
+
 ### scalar multiplication of each point
 ```c
 void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);

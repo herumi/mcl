@@ -2,8 +2,8 @@
 #include <assert.h>
 #include <string.h>
 #include <new> // placement new of the per-thread work of mulVecCorePar
-#if defined(__linux__)
-#include <sys/mman.h> // madvise(MADV_HUGEPAGE) of mallocLarge
+#ifndef MCL_GLV_ONLY_FUNC
+#include "msm_slot.hpp" // the kept work buffers of mulVec (mallocLarge, MsmSlot)
 #endif
 #ifdef _MSC_VER
 	#include <intrin.h> // _mm_prefetch, __prefetch
@@ -306,37 +306,7 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 
 namespace local {
 
-/*
-	malloc of a large buffer of mulVec (freed by free) :
-	on Linux the buffer is 2 MiB aligned and madvise(MADV_HUGEPAGE) (effective if /sys/kernel/mm/transparent_hugepage/enabled is always or madvise),
-	because the page faults of the first touch of a fresh mmap (a buffer over the mmap threshold of glibc is unmapped by free and mapped again by the next malloc)
-	are the bottleneck of the parallel mulVec (2^20 points on 56 threads : 100 ms with 4 KiB pages, 75 ms with 2 MiB pages)
-*/
-inline void* mallocLarge(size_t size)
-{
-#if defined(__linux__) && defined(MADV_HUGEPAGE) && !defined(MCL_MSM_NO_HUGEPAGE)
-	const size_t HUGE = size_t(2) << 20;
-	if (size >= HUGE) {
-		const size_t roundSize = (size + HUGE - 1) / HUGE * HUGE;
-		void *p = 0;
-		if (posix_memalign(&p, HUGE, roundSize) == 0) {
-			madvise(p, roundSize, MADV_HUGEPAGE);
-			return p;
-		}
-	}
-#endif
-	return malloc(size);
-}
-
-// the buffer of mallocLarge (freed by the destructor), p = 0 if it fails
-struct LargeBuf {
-	void *p;
-	explicit LargeBuf(size_t size) : p(mallocLarge(size)) {}
-	~LargeBuf() { free(p); }
-private:
-	LargeBuf(const LargeBuf&);
-	void operator=(const LargeBuf&);
-};
+// the large buffers of mulVec are the kept buffers of a slot (MsmSlot in msm_slot.hpp) : mallocLarge and MsmSlotHolder are defined there
 
 // prefetch the cache line of p for reading (PREFETCHT0 on x64, PRFM PLDL1KEEP on AArch64)
 inline void prefetchRead(const void *p)
@@ -560,11 +530,16 @@ struct MsmBatchWork {
 	G *pendQ; // [pendMax] the sums of the pending additions (Jacobi)
 	size_t pendN;
 	size_t pendMax; // the number of the chunk boundaries + 1
-	mcl::Array<uint8_t> buf_;
-	// kernel : the SIMD kernel (0 : the generic one), hasBase : the caller gives the points in the layout of the kernel (base is not allocated)
-	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel, bool hasBase = false)
+	size_t n_; // of prepare
+	bool allocBase_; // of prepare
+	/*
+		the first half of init : set the parameters and return the byte size of the buffer of setBuf (0 if n is too large)
+		kernel : the SIMD kernel (0 : the generic one), hasBase : the caller gives the points in the layout of the kernel (base is not allocated)
+		(the buffer is given by the caller because it comes from the kept buffers of the slot : see msm_slot.hpp)
+	*/
+	size_t prepare(size_t n, size_t tblN, const ec::MsmKernel *kernel, bool hasBase = false)
 	{
-		if (n >= msmIdxMask) return false;
+		if (n >= msmIdxMask) return 0;
 		if (kernel) {
 			kn = *kernel;
 		} else {
@@ -575,18 +550,32 @@ struct MsmBatchWork {
 		chunk = (n < CHUNK) ? n : CHUNK;
 		pendMax = n / chunk + 2;
 		pendN = 0;
+		n_ = n;
+		allocBase_ = kn.cvtBase && !hasBase;
 		const size_t pairN = (chunk > 2 * chainN) ? chunk : 2 * chainN; // the size of ia and ib
 		const size_t align = 64;
 		const size_t sSize = (kn.pointSize * chunk + align - 1) / align * align;
 		const size_t wSize = (kn.workSize + align - 1) / align * align;
-		const bool allocBase = kn.cvtBase && !hasBase;
-		const size_t bSize = allocBase ? (kn.pointSize * n + align - 1) / align * align : 0;
+		const size_t bSize = allocBase_ ? (kn.pointSize * n + align - 1) / align * align : 0;
 		const size_t tSize = (kn.pointSize * (tblN + 4 * chainN) + align - 1) / align * align;
 		const size_t qSize = (sizeof(G) * pendMax + align - 1) / align * align;
 		size_t size = align + sSize + wSize + bSize + tSize + qSize;
 		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * pairN + pendMax) + sizeof(MsmPart) * 2 * (chunk + 1) + tblN;
-		if (!buf_.resize(size)) return false;
-		char *p = (char*)(((uintptr_t)buf_.data() + align - 1) & ~(uintptr_t)(align - 1));
+		return size;
+	}
+	// the second half of init : split the buffer buf of the size returned by prepare into the work arrays
+	void setBuf(void *buf)
+	{
+		const size_t n = n_;
+		const size_t pairN = (chunk > 2 * chainN) ? chunk : 2 * chainN;
+		const size_t align = 64;
+		const size_t sSize = (kn.pointSize * chunk + align - 1) / align * align;
+		const size_t wSize = (kn.workSize + align - 1) / align * align;
+		const bool allocBase = allocBase_;
+		const size_t bSize = allocBase ? (kn.pointSize * n + align - 1) / align * align : 0;
+		const size_t tSize = (kn.pointSize * (tblN + 4 * chainN) + align - 1) / align * align;
+		const size_t qSize = (sizeof(G) * pendMax + align - 1) / align * align;
+		char *p = (char*)(((uintptr_t)buf + align - 1) & ~(uintptr_t)(align - 1));
 		S = p; p += sSize;
 		work = p; p += wSize;
 		base = allocBase ? p : 0; p += bSize;
@@ -601,7 +590,6 @@ struct MsmBatchWork {
 		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (chunk + 1);
 		part[1] = (MsmPart*)p; p += sizeof(MsmPart) * (chunk + 1);
 		filled = (uint8_t*)p;
-		return true;
 	}
 	// the i-th point of tbl
 	char *pt(size_t i) const { return (char*)tbl + i * kn.pointSize; }
@@ -663,7 +651,8 @@ struct MsmBatch {
 	struct Work {
 		ec::MsmKernel kn;
 		void *base;
-		bool init(size_t, size_t, const ec::MsmKernel *, bool = false) { return false; }
+		size_t prepare(size_t, size_t, const ec::MsmKernel *, bool = false) { return 0; }
+		void setBuf(void *) {}
 	};
 	static const ec::MsmKernel* getKernel() { return 0; }
 	static bool isNormalizedVec(const G *, size_t) { return false; }
@@ -978,13 +967,13 @@ size_t msmParChunks(size_t n, size_t maxThreads, size_t& b, size_t bArg, size_t 
 template<class G>
 struct MsmParCtx {
 	typedef typename MsmBatch<G>::Work Work;
-	// the work of a thread (allocated by the thread at its first task)
+	// the work of a thread (set by the thread at its first task from its region of the work buffer workBuf of the slot)
 	struct ThreadWork {
 		Work wk;
-		mcl::Array<G> tbl; // the bucket table of the generic path
+		G *tbl; // the bucket table of the generic path
 		bool ready;
 		bool ok;
-		ThreadWork() : ready(false), ok(false) {}
+		ThreadWork() : tbl(0), ready(false), ok(false) {}
 	};
 	size_t n; // the number of the (split) scalars
 	size_t C; // the number of the chunks
@@ -1005,6 +994,8 @@ struct MsmParCtx {
 	G *res; // [C winN] the sum of each task
 	ThreadWork *works; // [workN]
 	size_t workN;
+	char *workBuf; // [workN * workBytes] the work buffer (the slot) : the thread tid uses [tid * workBytes, (tid + 1) * workBytes)
+	size_t workBytes; // the byte size of the work of a thread (a multiple of 64)
 	uint8_t *ok; // [C winN] 1 if the task is done
 	size_t chunkBegin(size_t c) const { return n * c / C; }
 	// normalize and convert the chunks of the points
@@ -1030,10 +1021,14 @@ struct MsmParCtx {
 		if (!tw.ready) {
 			tw.ready = true;
 			const size_t nMax = (ctx.n + ctx.C - 1) / ctx.C;
+			void *buf = ctx.workBuf + tid * ctx.workBytes;
 			if (ctx.useBatch) {
-				tw.ok = tw.wk.init(nMax, ctx.tblN, ctx.kernel, true);
+				// the size is at most workBytes (the same parameters as the caller computed)
+				tw.ok = tw.wk.prepare(nMax, ctx.tblN, ctx.kernel, true) > 0;
+				if (tw.ok) tw.wk.setBuf(buf);
 			} else {
-				tw.ok = tw.tbl.resize(ctx.tblN);
+				tw.tbl = (G*)buf;
+				tw.ok = true;
 			}
 		}
 		if (!tw.ok) return;
@@ -1044,7 +1039,7 @@ struct MsmParCtx {
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			const void *base = ctx.base ? (const char*)ctx.base + off * ctx.pointSize : 0;
 			const G *xVec = ctx.xVec ? ctx.xVec + off : 0; // xVec = 0 if the caller gives base
-			msmWindow(ctx.res[i], w, ctx.winN, ctx.b, ctx.rem, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.useBatch, &tw.wk, tw.tbl.data());
+			msmWindow(ctx.res[i], w, ctx.winN, ctx.b, ctx.rem, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.useBatch, &tw.wk, tw.tbl);
 			ctx.ok[i] = 1;
 		}
 	}
@@ -1055,9 +1050,10 @@ struct MsmParCtx {
 	the points are split into C chunks and the (chunk, window) pairs are the tasks (each thread has its own bucket table and work),
 	then z = sum_w 2^(b w) sum_c res[c][w].
 	return n if done, 0 if not (the memory allocation fails or the tasks are too few : then the caller runs the sequential one)
+	slot : the buffers of the call (PAR : the context, WORK : the works of the threads), kept after the call (see msm_slot.hpp)
 */
 template<class G>
-size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t bArg, bool doNormalize, size_t maxBitSize, const void *baseArg, const ec::MsmKernel *kernel, bool tryBatch, size_t batchMinN, const ec::ParallelFor& par)
+size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t bArg, bool doNormalize, size_t maxBitSize, const void *baseArg, const ec::MsmKernel *kernel, bool tryBatch, size_t batchMinN, const ec::ParallelFor& par, const MsmSlotHolder& slot)
 {
 	typedef MsmParCtx<G> Ctx;
 	const size_t maxThreads = par.maxThreads;
@@ -1084,13 +1080,29 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 	const size_t baseBytes = needCvt ? (ctx.pointSize * n + align - 1) / align * align : 0;
 	const size_t resBytes = (sizeof(G) * numTasks + align - 1) / align * align;
 	ctx.workN = maxThreads < numTasks ? maxThreads : numTasks;
-	const size_t workBytes = (sizeof(ThreadWork) * ctx.workN + align - 1) / align * align;
-	local::LargeBuf buf(align + baseBytes + resBytes + workBytes + numTasks);
-	if (buf.p == 0) return 0;
-	char *p = (char*)(((uintptr_t)buf.p + align - 1) & ~(uintptr_t)(align - 1));
+	const size_t worksBytes = (sizeof(ThreadWork) * ctx.workN + align - 1) / align * align;
+	// the work of a thread : the work of the batch affine addition or the bucket table of the generic path (the same parameters as windowTask)
+	{
+		const size_t nMax = (n + ctx.C - 1) / ctx.C;
+		size_t bytes;
+		if (tryBatch) {
+			typename Ctx::Work wk;
+			bytes = wk.prepare(nMax, ctx.tblN, kernel, true);
+			if (bytes == 0) return 0;
+		} else {
+			bytes = sizeof(G) * ctx.tblN;
+		}
+		ctx.workBytes = (bytes + align - 1) / align * align;
+	}
+	void *bp = slot.get(MsmSlot::PAR, align + baseBytes + resBytes + worksBytes + numTasks);
+	if (bp == 0) return 0;
+	ctx.workBuf = (char*)slot.get(MsmSlot::WORK, align + ctx.workBytes * ctx.workN);
+	if (ctx.workBuf == 0) return 0;
+	ctx.workBuf = (char*)(((uintptr_t)ctx.workBuf + align - 1) & ~(uintptr_t)(align - 1));
+	char *p = (char*)(((uintptr_t)bp + align - 1) & ~(uintptr_t)(align - 1));
 	ctx.baseW = needCvt ? p : 0; p += baseBytes;
 	ctx.res = (G*)p; p += resBytes;
-	ctx.works = (ThreadWork*)p; p += workBytes;
+	ctx.works = (ThreadWork*)p; p += worksBytes;
 	ctx.ok = (uint8_t*)p;
 	memset(ctx.ok, 0, numTasks);
 	for (size_t i = 0; i < ctx.workN; i++) new(&ctx.works[i]) ThreadWork();
@@ -1135,9 +1147,10 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 	maxBitSize : the max bit size of yVec[i] (yUnitSize * UnitBitSize if 0)
 	baseArg : xVec converted to the layout of the SIMD kernel by the caller (then xVec is not used, the batch affine addition with the kernel is required
 	and 0 is returned if its work buffer can not be allocated)
+	slotArg : the slot of the kept work buffers of the outer call (mulVecGLVlargeCore), 0 to take one here (see msm_slot.hpp)
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, const ec::ParallelFor& par, size_t maxBitSize = 0, const void *baseArg = 0)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, const ec::ParallelFor& par, size_t maxBitSize = 0, const void *baseArg = 0, local::MsmSlot *slotArg = 0)
 {
 	if (n == 0) {
 		z.clear();
@@ -1166,27 +1179,36 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		}
 	}
 
+	// the slot of the kept work buffers (taken here if the caller does not give one)
+	local::MsmSlotHolder slot(slotArg);
+
 	// the parallel version if par is parallel and n is large enough
 	if (par.isParallel() && n >= 2 * MCL_MSM_PAR_MIN_CHUNK) {
-		const size_t done = local::mulVecCorePar<G>(z, xVec, yVec, yUnitSize, next, n, bArg, doNormalize, maxBitSize, baseArg, kernel, tryBatch, batchMinN, par);
+		const size_t done = local::mulVecCorePar<G>(z, xVec, yVec, yUnitSize, next, n, bArg, doNormalize, maxBitSize, baseArg, kernel, tryBatch, batchMinN, par, slot);
 		if (done) return done;
 	}
 
 	tblN = size_t(1) << b;
 	// the batch affine addition has its own bucket table (wk.tbl in the layout of the kernel), so tbl is allocated only for the generic path
 	typename local::MsmBatch<G>::Work wk;
-	const bool useBatch = local::MsmBatch<G>::enabled && n >= batchMinN && wk.init(n, tblN, kernel, baseArg != 0);
+	wk.base = 0; // read below only if useBatch
+	bool useBatch = false;
+	if (local::MsmBatch<G>::enabled && n >= batchMinN) {
+		const size_t bytes = wk.prepare(n, tblN, kernel, baseArg != 0);
+		void *bp = bytes ? slot.get(local::MsmSlot::WORK, bytes) : 0;
+		if (bp) {
+			wk.setBuf(bp);
+			useBatch = true;
+		}
+	}
 	if (baseArg && !useBatch) return 0; // the caller gives only the converted points
-#ifndef MCL_DONT_USE_MALLOC
-	mcl::Array<G> tbl_; // the table on the heap if not on the stack
-#endif
 	if (!useBatch) {
 		// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
 		const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
 		(void)useStack;
 #ifndef MCL_DONT_USE_MALLOC
-		// if n or the table is large then try to use malloc
-		if (!useStack && tbl_.resize(tblN)) tbl = tbl_.data();
+		// if n or the table is large then try to use the kept buffer (malloc)
+		if (!useStack) tbl = (G*)slot.get(local::MsmSlot::WORK, sizeof(G) * tblN);
 #endif
 		if (tbl == 0) {
 			// n is small or malloc fails so use stack
@@ -1226,16 +1248,16 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, const ec::ParallelFor& par, size_t maxBitSize = 0)
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, const ec::ParallelFor& par, size_t maxBitSize = 0, local::MsmSlot *slot = 0)
 {
-	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize, par, maxBitSize);
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize, par, maxBitSize, 0, slot);
 	if (done == n) return;
 	do {
 		xVec += done;
 		yVec += next * done;
 		n -= done;
 		G t;
-		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize, par, maxBitSize);
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize, par, maxBitSize, 0, slot);
 		z += t;
 	} while (done < n);
 }
@@ -1462,6 +1484,8 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 	Unit y[F::maxSize];
 
 	const size_t ypByteSize = sizeof(Unit) * next * splitN * n;
+	// the slot of the kept work buffers of this call (OUTER here, PAR and WORK in mulVecCore / mulVecCorePar) : see msm_slot.hpp
+	local::MsmSlotHolder slot(0);
 	// the fixed-width split (no mpz) if available
 	const local::SplitRawFunc splitRaw = (splitN == 2) ? local::getSplitRaw((const GLV*)0) : 0;
 	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
@@ -1485,9 +1509,9 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 		}
 		const size_t tmpByteSize = normalized ? 0 : (sizeof(G) * n + align - 1) / align * align;
 		const size_t negByteSize = (n + align - 1) / align * align;
-		local::LargeBuf buf(align + baseByteSize + tmpByteSize + negByteSize + ypByteSize + maxBitByteSize);
-		if (buf.p == 0) return 0;
-		char *p = (char*)(((uintptr_t)buf.p + align - 1) & ~(uintptr_t)(align - 1));
+		void *bp = slot.get(local::MsmSlot::OUTER, align + baseByteSize + tmpByteSize + negByteSize + ypByteSize + maxBitByteSize);
+		if (bp == 0) return 0;
+		char *p = (char*)(((uintptr_t)bp + align - 1) & ~(uintptr_t)(align - 1));
 		void *base = p; p += baseByteSize;
 		G *tmp = (G*)p; p += tmpByteSize;
 		uint8_t *neg = (uint8_t*)p; p += negByteSize;
@@ -1508,13 +1532,13 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 		local::MsmCvtGLVCtx<G> ctx = { kernel, base, xVec, neg, n, C, done };
 		if (!ctx.run(par)) return -1;
 		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
-		return mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, base) == n * splitN ? 1 : 0;
+		return mulVecCore(z, (G*)0, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, base, slot.s) == n * splitN ? 1 : 0;
 	}
 
 	const size_t tblByteSize = sizeof(G) * splitN * n;
-	local::LargeBuf buf(tblByteSize + ypByteSize + maxBitByteSize);
-	if (buf.p == 0) return 0;
-	G *tbl = (G*)buf.p;
+	void *bp = slot.get(local::MsmSlot::OUTER, tblByteSize + ypByteSize + maxBitByteSize);
+	if (bp == 0) return 0;
+	G *tbl = (G*)bp;
 
 	Unit *yp = (Unit *)(tbl + splitN * n);
 	size_t *maxBit = (size_t*)((char*)yp + ypByteSize);
@@ -1549,7 +1573,7 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 		z.clear();
 	} else {
 		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
-		mulVecLong(z, tbl, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize);
+		mulVecLong(z, tbl, yp, yUnitSize, next, n * splitN, bucket, false, par, maxBitSize, slot.s);
 	}
 	return 1;
 }
@@ -1558,7 +1582,7 @@ template<class GLV, class G>
 bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket, const ec::ParallelFor& par)
 {
 	int r = mulVecGLVlargeCore<GLV, G>(z, xVec, yVec, n, bucket, par);
-	// the buffers of the parallel run are released before the sequential retry
+	// the slot of the parallel run is released (its buffers are kept) before the sequential retry
 	if (r < 0) r = mulVecGLVlargeCore<GLV, G>(z, xVec, yVec, n, bucket, ec::ParallelFor::seq());
 	return r > 0;
 }

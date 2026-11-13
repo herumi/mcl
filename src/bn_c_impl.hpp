@@ -646,6 +646,10 @@ void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSi
 {
 	G2::mulVecMT(*cast(z), cast(x), cast(y), n, cpuN);
 }
+void mclBn_freeMulVecBuffer(void)
+{
+	mcl::ec::freeMulVecBuffer();
+}
 int mclBn_getUint64NumToPrecompute(void)
 {
 	return int(getPrecomputedQcoeffSize() * sizeof(Fp6) / sizeof(uint64_t));

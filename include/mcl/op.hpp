@@ -411,6 +411,12 @@ MCL_CXX_API ParallelForFunc getParallelFor(size_t *pMaxThreads = 0);
 // the threads of the OS (the maxThreads of setParallelFor / nt threads)
 MCL_CXX_API void parallelForThread(ParallelForTask task, void *arg, size_t n);
 MCL_CXX_API void parallelForThreadN(ParallelForTask task, void *arg, size_t n, size_t nt);
+/*
+	free the work buffers which mulVec keeps for the next call (the split scalars, the converted points and the bucket tables of the threads :
+	about the peak work size of the largest mulVec so far, see src/msm_slot.hpp). they are allocated again by the next mulVec.
+	the buffers of a mulVec running on another thread are not freed (they are kept by that call).
+*/
+MCL_CXX_API void freeMulVecBuffer();
 
 // the parallel-for to use (f = 0 or maxThreads <= 1 : sequential), passed to the library by mulVecMT etc.
 struct ParallelFor {
