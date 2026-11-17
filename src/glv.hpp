@@ -334,6 +334,84 @@ inline void prefetchPoint(const G *base, uint32_t i)
 }
 
 /*
+	the lambda formula of the batch affine addition (st = 0 of addAffineBatch) :
+	r = A + B (A = base[a & msmIdxMask], B = base[b & msmIdxMask], the sign bit of a is applied to A.y)
+	lambda = num * d (d = 1/(B.x - A.x) or 1/(2 A.y)), x3 = lambda^2 - A.x - B.x, y3 = lambda (A.x - x3) - A.y
+	all the inputs are read before r is written (see the overlap condition of addAffineBatch)
+*/
+template<class G>
+inline void addAffineLambda(G& r, const G& A, const G& B, uint32_t a, const typename G::Fp& num, const typename G::Fp& d, const typename G::Fp& one)
+{
+	typedef typename G::Fp F;
+	F lambda, x3, t;
+	F::mul(lambda, num, d);
+	F::sqr(x3, lambda);
+	x3 -= A.x;
+	x3 -= B.x; // = lambda^2 - 2 A.x if doubling
+	F::sub(t, A.x, x3);
+	t *= lambda;
+	if (a & msmSign) t += A.y; else t -= A.y; // y3 = lambda (x1 - x3) - y1
+	r.x = x3;
+	r.y = t;
+	r.z = one;
+}
+
+/*
+	addAffineLambda of two pairs with the operations interleaved :
+	the chain lambda -> x3 -> y3 of a pair is latency bound (mul, sqr, mul are dependent), so two independent chains
+	are interleaved to fill the pipeline (BN254 on x64 : the pair addition is 11-13% faster than two addAffineLambda
+	and mulVec is 5-8% faster ; 3 or 4 pairs with arrays and loops are slower than this hand-written version)
+	all the inputs of both pairs are read before r0 and r1 are written
+*/
+template<class G>
+inline void addAffineLambda2(G& r0, const G& A0, const G& B0, uint32_t a0, const typename G::Fp& num0, const typename G::Fp& d0,
+	G& r1, const G& A1, const G& B1, uint32_t a1, const typename G::Fp& num1, const typename G::Fp& d1, const typename G::Fp& one)
+{
+	typedef typename G::Fp F;
+	F l0, l1, x0, x1, t0, t1;
+	F::mul(l0, num0, d0);
+	F::mul(l1, num1, d1);
+	F::sqr(x0, l0);
+	F::sqr(x1, l1);
+	x0 -= A0.x;
+	x1 -= A1.x;
+	x0 -= B0.x;
+	x1 -= B1.x;
+	F::sub(t0, A0.x, x0);
+	F::sub(t1, A1.x, x1);
+	t0 *= l0;
+	t1 *= l1;
+	if (a0 & msmSign) t0 += A0.y; else t0 -= A0.y;
+	if (a1 & msmSign) t1 += A1.y; else t1 -= A1.y;
+	r0.x = x0;
+	r0.y = t0;
+	r0.z = one;
+	r1.x = x1;
+	r1.y = t1;
+	r1.z = one;
+}
+
+// the special cases of the batch affine addition (st = 1 : r = P(a), 2 : r = P(b), 3 : r = 0)
+template<class G>
+inline void addAffineSpecial(G& r, const G *base, uint32_t a, uint32_t b, uint8_t st, const typename G::Fp& one)
+{
+	typedef typename G::Fp F;
+	const uint32_t src = (st == 1) ? a : (st == 2) ? b : msmNone;
+	if (src == msmNone || base[src & msmIdxMask].z.isZero()) {
+		r.clear();
+		return;
+	}
+	const G& A = base[src & msmIdxMask];
+	if (src & msmSign) {
+		F::neg(r.y, A.y);
+	} else {
+		r.y = A.y;
+	}
+	r.x = A.x;
+	r.z = one;
+}
+
+/*
 	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m)
 	where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask] and P(msmNone) = 0
 	base[*] must be affine (z = 1) or zero (z = 0), then R[j] is affine or zero
@@ -408,40 +486,40 @@ void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib,
 			}
 		}
 		mcl::local::invVecWork<false>(d, d, mm, prod); // d[j] = 1/d[j] (d[j] != 0)
-		// compute R
-		for (size_t j = 0; j < mm; j++) {
+		/*
+			compute R : two pairs at once (addAffineLambda2) if both are the lambda formula (almost always),
+			otherwise one by one (the order of the writes R[j0], R[j0 + 1], ... is kept, see the overlap condition)
+		*/
+		size_t j = 0;
+		for (; j + 2 <= mm; j += 2) {
+			const uint32_t a0 = ia[j0 + j];
+			const uint32_t b0 = ib[j0 + j];
+			const uint32_t a1 = ia[j0 + j + 1];
+			const uint32_t b1 = ib[j0 + j + 1];
+			if ((st[j] | st[j + 1]) == 0) {
+				addAffineLambda2(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j],
+					R[j0 + j + 1], base[a1 & msmIdxMask], base[b1 & msmIdxMask], a1, num[j + 1], d[j + 1], one);
+				continue;
+			}
+			if (st[j] == 0) {
+				addAffineLambda(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j], one);
+			} else {
+				addAffineSpecial(R[j0 + j], base, a0, b0, st[j], one);
+			}
+			if (st[j + 1] == 0) {
+				addAffineLambda(R[j0 + j + 1], base[a1 & msmIdxMask], base[b1 & msmIdxMask], a1, num[j + 1], d[j + 1], one);
+			} else {
+				addAffineSpecial(R[j0 + j + 1], base, a1, b1, st[j + 1], one);
+			}
+		}
+		if (j < mm) {
 			const uint32_t a = ia[j0 + j];
 			const uint32_t bb = ib[j0 + j];
-			G& r = R[j0 + j];
 			if (st[j] == 0) {
-				const G& A = base[a & msmIdxMask];
-				const G& B = base[bb & msmIdxMask];
-				F lambda, x3, t;
-				F::mul(lambda, num[j], d[j]);
-				F::sqr(x3, lambda);
-				x3 -= A.x;
-				x3 -= B.x; // = lambda^2 - 2 A.x if doubling
-				F::sub(t, A.x, x3);
-				t *= lambda;
-				if (a & msmSign) t += A.y; else t -= A.y; // y3 = lambda (x1 - x3) - y1
-				r.x = x3;
-				r.y = t;
-				r.z = one;
-				continue;
-			}
-			const uint32_t src = (st[j] == 1) ? a : (st[j] == 2) ? bb : msmNone;
-			if (src == msmNone || base[src & msmIdxMask].z.isZero()) {
-				r.clear();
-				continue;
-			}
-			const G& A = base[src & msmIdxMask];
-			if (src & msmSign) {
-				F::neg(r.y, A.y);
+				addAffineLambda(R[j0 + j], base[a & msmIdxMask], base[bb & msmIdxMask], a, num[j], d[j], one);
 			} else {
-				r.y = A.y;
+				addAffineSpecial(R[j0 + j], base, a, bb, st[j], one);
 			}
-			r.x = A.x;
-			r.z = one;
 		}
 	}
 }
