@@ -1249,6 +1249,16 @@ void mulVecTest()
 
 	mclBnG1_mulVec(&z1, x1Vec, yVec, N);
 	mclBnG2_mulVec(&z2, x2Vec, yVec, N);
+	{
+		// the same result after the kept work buffers of mulVec are freed
+		mclBnG1 t1;
+		mclBnG2 t2;
+		mclBn_freeMulVecBuffer();
+		mclBnG1_mulVec(&t1, x1Vec, yVec, N);
+		mclBnG2_mulVec(&t2, x2Vec, yVec, N);
+		CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&t1, &z1));
+		CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&t2, &z2));
+	}
 	mclBnGT_powVec(&zt, xtVec, yVec, N);
 	mclBnG1_mulEach(x1Vec2, yVec, N);
 

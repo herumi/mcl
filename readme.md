@@ -10,9 +10,16 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)). `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default ; OpenMP is no longer used (`MCL_USE_OMP` is removed).
-- Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)` ; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
-  - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
+- v4.44
+  - `mulVec` keeps its work buffers and reuses them in the next call to reduce page faults (effective mainly on Windows).
+    - `mcl::ec::freeMulVecBuffer()` / `mclBn_freeMulVecBuffer()` frees them (see [api.md](api.md#the-work-buffers-of-mulvec)).
+  - `parallelForThread` takes the tasks dynamically, so that a slow thread does not make the others wait.
+  - Add `Fp::setArrayRaw`. `mklib.bat` supports `-256` and `-grumpkin`.
+- v4.43
+  - `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)).
+  - `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default; OpenMP is no longer used (`MCL_USE_OMP` is removed).
+  - Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)`; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
+    - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
 - Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 about 1.5-2.3x (w/ AVX-512 IFMA), 1.3-1.7x (w/o AVX-512), and 1.2-1.8x (Apple M4).
 - Improve the performance of hashAndMapTo{G1,G2} by using SHA-NI for SHA-256.
 - Improve the performance of finalExp by about 12% and pairing by about 8%.
@@ -226,7 +233,7 @@ make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
 
 `mklib.bat` builds the library and `mk.bat` builds a test or sample with it.
 ```
-mklib [dll] [clang=(0|1|2)]
+mklib [dll] [clang=(0|1|2)] [-256] [-grumpkin]
 mk (-s|-d) <source file>
 ```
 - `dll`: build `bin\mcl.dll` (and `bin\mcl.lib` for import) instead of the static library `lib\mcl.lib`.
@@ -235,6 +242,9 @@ mk (-s|-d) <source file>
 - `clang=2`: also build `src\fp.cpp` and `src\msm_avx.cpp` with clang-cl instead of cl, with the same optimization options as Makefile on x64 (`CLANG_CFLAGS` in `setvar.bat`). Some functions such as `Fr::mulUnit` become faster.
   `mklib` leaves `USE_CLANG=2` in the environment, and then `mk` also uses clang-cl.
   A program that links the library built with `clang=2` requires `clang_rt.builtins-x86_64.lib` (`CLANG_RT_LIB` in `setvar.bat`, found via `clang -print-resource-dir`); `mk` adds it if `USE_CLANG=2`.
+- `-256`: build with `MCL_FP_BIT=256` (BN254, secp256k1, ...) into `obj256\` and `lib\mcl256.lib` (`bin\mcl256.dll` and `bin\mcl256.lib` with `dll`) instead of `obj\` and `lib\mcl.lib` (`MCL_FP_BIT=384`), so that both libraries can coexist.
+- `-grumpkin`: also define `MCL_USE_GRUMPKIN=1` (the curve `GG`, Grumpkin). It requires `-256`.
+  `mklib` leaves `MCL_FP_BIT` and `MCL_USE_GRUMPKIN` in the environment, and then `mk` compiles with the same flags and links `lib\mcl256.lib` (`bin\mcl256.lib`).
 - `mk -s` links `lib\mcl.lib` and `mk -d` links `bin\mcl.lib` with `/DMCL_DLL`. The executable is put in `bin\`.
 
 Open a console window, and
@@ -250,6 +260,10 @@ mk -s test\bls12_test.cpp && bin\bls12_test.exe
 mklib dll
 mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
 mk -d test\bls12_test.cpp && bin\bls12_test.exe
+
+# static library of MCL_FP_BIT=256 with Grumpkin (lib\mcl256.lib)
+mklib -256 -grumpkin
+mk -s test\grumpkin_test.cpp && bin\grumpkin_test.exe
 ```
 A C++ client of `mcl.dll` must be compiled with `/DMCL_DLL` (`mk -d` does it); the static data of Fp, Fr, G1, and G2 then refers to the instances in the DLL.
 (not maintained)

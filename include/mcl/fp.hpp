@@ -341,6 +341,18 @@ public:
 		toMont();
 	}
 	/*
+		set x[0..N) as the internal representation without Montgomery conversion where N = getUnitSize()
+		return false and do nothing if x >= p (no exception version because this must be used carefully)
+		The value is x R^-1 mod p if isMont() where R = 2^(N * sizeof(Unit) * 8), so it depends on the size of Unit
+		unless the bit size of p rounded up to 32 and to 64 are the same (e.g., BN254, BLS12-381).
+	*/
+	bool setArrayRaw(const Unit *x)
+	{
+		if (bint::cmpGeN(x, op_.p, op_.N)) return false;
+		bint::copyN(v_, x, op_.N);
+		return true;
+	}
+	/*
 		treat x as little endian
 		x &= (1 << bitLen) = 1
 		x &= (1 << (bitLen - 1)) - 1 if x >= p

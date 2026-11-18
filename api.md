@@ -641,7 +641,7 @@ The rule : the functions use the parallel-for registered by `setParallelFor` if 
 - `setParallelFor(f, maxThreads)` registers `f` (`f = 0` or `maxThreads <= 1` : sequential, `maxThreads = 0` is treated as 1). It is a global setting and not thread-safe : call it before `mulVec` etc. run on other threads (typically once after `initPairing`).
 - `f` is implemented by the caller (a thread pool, std::thread, ...) or is `parallelForThread`. `setParallelFor(0, 1)` removes the registration. Register one when you have your own thread pool (so that the library does not create threads of its own), when you want `mulVec` / `powVec` / `millerLoopVec` to be parallel without changing the call sites, or when the MT functions are called frequently with small inputs (the threads of `parallelForThread` are created at each call).
 - `getParallelFor` returns the registered function (0 if none) and its `maxThreads`.
-- `parallelForThread` is the `ParallelForFunc` of the library by the threads of the OS (pthread or the Windows threads) : `nt = min(maxThreads, n)` parts with the `maxThreads` of `setParallelFor`, `nt - 1` threads are created at each call and the last part runs on the caller, then all are joined (a part whose thread can not be created runs on the caller). `parallelForThreadN` is the same with `nt` given. They are sequential if `MCL_DONT_USE_THREAD` is defined (always for wasm and `MCL_STANDALONE`).
+- `parallelForThread` is the `ParallelForFunc` of the library by the threads of the OS (pthread or the Windows threads) : `nt = min(maxThreads, n)` threads with the `maxThreads` of `setParallelFor`, `nt - 1` threads are created at each call and the caller works as the last one, then all are joined (the caller works in place of a thread which can not be created). The threads take the `n` tasks one by one (`task(i, i + 1, tid, arg)`) from a shared counter (cybozu::AtomicAdd) instead of equal shares decided in advance, so a slow thread (an efficiency core of a hybrid CPU) takes fewer tasks and the others do not wait for it. If `nt <= 1`, `task(0, n, 0, arg)` runs on the caller. `parallelForThreadN` is the same with `nt` given. They are sequential if `MCL_DONT_USE_THREAD` is defined (always for wasm and `MCL_STANDALONE`).
 - `mcl::ec::ParallelFor` (the pair of `f` and `maxThreads`) and `getParallelForOrThread(cpuN)` are how the library passes the chosen parallel-for to the MSM backends ; they are not needed by the caller.
 
 ### multi-threaded multi-scalar multiplication
@@ -656,6 +656,19 @@ T::mulVecMT(T& z, T* x, const Fr *y, size_t n, size_t cpuN = 0);
 
 - `mulVec` with `cpuN` threads of the library (the number of the processors if `cpuN = 0`). If a parallel-for is registered by `mcl::ec::setParallelFor`, it is used and `cpuN` is ignored. `mulVec` is `mulVecMT` with `cpuN = 1`. The registration is not changed.
 - sequential if `MCL_DONT_USE_THREAD` (wasm, `MCL_STANDALONE`) and none is registered.
+
+### the work buffers of mulVec
+```c
+void mclBn_freeMulVecBuffer(void);
+```
+C++
+```cpp
+void mcl::ec::freeMulVecBuffer();
+```
+
+- `mulVec` keeps its work buffers (the split scalars, the converted points and the bucket tables of the threads) after the call and reuses them in the next call, because the page faults of the first touch of a fresh `malloc` are a bottleneck of the parallel `mulVec` (glibc unmaps a large buffer by `free`, the heap of Windows returns the pages of a large block by `free`). The kept size is about the peak work size of the largest `mulVec` so far (a few tens of MB for 2^17 points).
+- `mulVec` may be called concurrently from up to 8 threads with the kept buffers (the 9th call uses temporary buffers freed at its end). If `mulVec` is called from one thread at a time, only one set of the buffers is kept.
+- `freeMulVecBuffer` frees the kept buffers (except those of a `mulVec` running on another thread). They are allocated again by the next `mulVec`.
 
 ### scalar multiplication of each point
 ```c
