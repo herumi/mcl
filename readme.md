@@ -10,9 +10,16 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)). `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default ; OpenMP is no longer used (`MCL_USE_OMP` is removed).
-- Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)` ; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
-  - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
+- v4.44
+  - `mulVec` keeps its work buffers and reuses them in the next call to reduce page faults (effective mainly on Windows).
+    - `mcl::ec::freeMulVecBuffer()` / `mclBn_freeMulVecBuffer()` frees them (see [api.md](api.md#the-work-buffers-of-mulvec)).
+  - `parallelForThread` takes the tasks dynamically, so that a slow thread does not make the others wait.
+  - Add `Fp::setArrayRaw`. `mklib.bat` supports `-256` and `-grumpkin`.
+- v4.43
+  - `mulVec` (MSM) runs in parallel by a parallel-for registered with `mcl::ec::setParallelFor` (see [api.md](api.md#multi-scalar-multiplication)).
+  - `mulVecMT` and `millerLoopVecMT` use the threads of the OS by default; OpenMP is no longer used (`MCL_USE_OMP` is removed).
+  - Add the Grumpkin curve (class `GG`). `initGrumpkin()` after `initPairing(BN_SNARK1)`; add / mul / mulVec (MSM) / serialization (no pairing, no hash-to-curve).
+    - Available only with `MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`).
 - Improve the performance of MSM ({G1,G2}::mulVec) since v4.30 about 1.5-2.3x (w/ AVX-512 IFMA), 1.3-1.7x (w/o AVX-512), and 1.2-1.8x (Apple M4).
 - Improve the performance of hashAndMapTo{G1,G2} by using SHA-NI for SHA-256.
 - Improve the performance of finalExp by about 12% and pairing by about 8%.

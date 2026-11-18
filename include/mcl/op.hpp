@@ -15,7 +15,7 @@
 
 namespace mcl {
 
-static const int version = 0x4430; /* 0xABCD = A.BC.D */
+static const int version = 0x4440; /* 0xABCD = A.BC.D */
 
 /*
 	specifies available string format mode for X::setIoMode()
