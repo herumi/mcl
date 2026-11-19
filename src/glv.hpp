@@ -322,14 +322,40 @@ inline void prefetchRead(const void *p)
 #endif
 }
 
-// prefetch the cache lines of the point base[i & msmIdxMask] (sizeof(G) bytes, not aligned to a cache line)
+/*
+	the layouts of a point of the generic kernels of the batch affine addition (T of addAffineBatch) :
+	MsmPtG<G> : G itself (affine (z = 1) or zero (z = 0))
+	MsmPtXY<G> : (x, y) only (2/3 of G : 64 bytes for a 256-bit Fp, so a point is one cache line and z is not read).
+	  the zero point is (0, 0) (the all-zero bytes), so the curve must not have the point (0, 0) (b != 0).
+	  a point of order 2 (y = 0, x != 0) is not the zero point, so it is handled correctly.
+*/
 template<class G>
-inline void prefetchPoint(const G *base, uint32_t i)
+struct MsmPtG {
+	typedef typename G::Fp F;
+	typedef G Pt;
+	static bool isZero(const Pt& P) { return P.z.isZero(); }
+	static void setOne(Pt& P, const F& one) { P.z = one; }
+	static void clear(Pt& P) { P.clear(); }
+};
+template<class G>
+struct MsmPtXY {
+	typedef typename G::Fp F;
+	struct Pt {
+		F x, y;
+	};
+	static bool isZero(const Pt& P) { return P.y.isZero() && P.x.isZero(); }
+	static void setOne(Pt&, const F&) {}
+	static void clear(Pt& P) { P.x.clear(); P.y.clear(); }
+};
+
+// prefetch the cache lines of the point base[i & msmIdxMask] (sizeof(Pt) bytes, not aligned to a cache line)
+template<class Pt>
+inline void prefetchPoint(const Pt *base, uint32_t i)
 {
 	if (i == msmNone) return;
 	const size_t L = MCL_CACHE_LINE_SIZE;
 	const uintptr_t p = (uintptr_t)&base[i & msmIdxMask];
-	const uintptr_t last = (p + sizeof(G) - 1) & ~(L - 1);
+	const uintptr_t last = (p + sizeof(Pt) - 1) & ~(L - 1);
 	for (uintptr_t q = p & ~(L - 1); q <= last; q += L) prefetchRead((const void*)q);
 }
 
@@ -338,11 +364,12 @@ inline void prefetchPoint(const G *base, uint32_t i)
 	r = A + B (A = base[a & msmIdxMask], B = base[b & msmIdxMask], the sign bit of a is applied to A.y)
 	lambda = num * d (d = 1/(B.x - A.x) or 1/(2 A.y)), x3 = lambda^2 - A.x - B.x, y3 = lambda (A.x - x3) - A.y
 	all the inputs are read before r is written (see the overlap condition of addAffineBatch)
+	T : the layout of a point (MsmPtG or MsmPtXY)
 */
-template<class G>
-inline void addAffineLambda(G& r, const G& A, const G& B, uint32_t a, const typename G::Fp& num, const typename G::Fp& d, const typename G::Fp& one)
+template<class T>
+inline void addAffineLambda(typename T::Pt& r, const typename T::Pt& A, const typename T::Pt& B, uint32_t a, const typename T::F& num, const typename T::F& d, const typename T::F& one)
 {
-	typedef typename G::Fp F;
+	typedef typename T::F F;
 	F lambda, x3, t;
 	F::mul(lambda, num, d);
 	F::sqr(x3, lambda);
@@ -353,7 +380,7 @@ inline void addAffineLambda(G& r, const G& A, const G& B, uint32_t a, const type
 	if (a & msmSign) t += A.y; else t -= A.y; // y3 = lambda (x1 - x3) - y1
 	r.x = x3;
 	r.y = t;
-	r.z = one;
+	T::setOne(r, one);
 }
 
 /*
@@ -363,11 +390,11 @@ inline void addAffineLambda(G& r, const G& A, const G& B, uint32_t a, const type
 	and mulVec is 5-8% faster ; 3 or 4 pairs with arrays and loops are slower than this hand-written version)
 	all the inputs of both pairs are read before r0 and r1 are written
 */
-template<class G>
-inline void addAffineLambda2(G& r0, const G& A0, const G& B0, uint32_t a0, const typename G::Fp& num0, const typename G::Fp& d0,
-	G& r1, const G& A1, const G& B1, uint32_t a1, const typename G::Fp& num1, const typename G::Fp& d1, const typename G::Fp& one)
+template<class T>
+inline void addAffineLambda2(typename T::Pt& r0, const typename T::Pt& A0, const typename T::Pt& B0, uint32_t a0, const typename T::F& num0, const typename T::F& d0,
+	typename T::Pt& r1, const typename T::Pt& A1, const typename T::Pt& B1, uint32_t a1, const typename T::F& num1, const typename T::F& d1, const typename T::F& one)
 {
-	typedef typename G::Fp F;
+	typedef typename T::F F;
 	F l0, l1, x0, x1, t0, t1;
 	F::mul(l0, num0, d0);
 	F::mul(l1, num1, d1);
@@ -385,46 +412,49 @@ inline void addAffineLambda2(G& r0, const G& A0, const G& B0, uint32_t a0, const
 	if (a1 & msmSign) t1 += A1.y; else t1 -= A1.y;
 	r0.x = x0;
 	r0.y = t0;
-	r0.z = one;
+	T::setOne(r0, one);
 	r1.x = x1;
 	r1.y = t1;
-	r1.z = one;
+	T::setOne(r1, one);
 }
 
 // the special cases of the batch affine addition (st = 1 : r = P(a), 2 : r = P(b), 3 : r = 0)
-template<class G>
-inline void addAffineSpecial(G& r, const G *base, uint32_t a, uint32_t b, uint8_t st, const typename G::Fp& one)
+template<class T>
+inline void addAffineSpecial(typename T::Pt& r, const typename T::Pt *base, uint32_t a, uint32_t b, uint8_t st, const typename T::F& one)
 {
-	typedef typename G::Fp F;
+	typedef typename T::F F;
+	typedef typename T::Pt Pt;
 	const uint32_t src = (st == 1) ? a : (st == 2) ? b : msmNone;
-	if (src == msmNone || base[src & msmIdxMask].z.isZero()) {
-		r.clear();
+	if (src == msmNone || T::isZero(base[src & msmIdxMask])) {
+		T::clear(r);
 		return;
 	}
-	const G& A = base[src & msmIdxMask];
+	const Pt& A = base[src & msmIdxMask];
 	if (src & msmSign) {
 		F::neg(r.y, A.y);
 	} else {
 		r.y = A.y;
 	}
 	r.x = A.x;
-	r.z = one;
+	T::setOne(r, one);
 }
 
 /*
 	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m)
 	where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask] and P(msmNone) = 0
-	base[*] must be affine (z = 1) or zero (z = 0), then R[j] is affine or zero
+	T : the layout of a point (MsmPtG<G> or MsmPtXY<G>)
+	base[*] must be affine or zero, then R[j] is affine or zero
 	R may overlap base if &R[j] <= &base[ia[j] & msmIdxMask], &base[ib[j] & msmIdxMask] for all j
 	(the inputs of the j-th pair are read before R[j] is written and R[0], R[1], ... are written in this order)
 	work : Fp[3 * MCL_MSM_BATCH_SUB]
 	cost : 5M + 1S + inv/MCL_MSM_BATCH_SUB per pair
 	prefetch : software prefetch of the points MCL_MSM_PREFETCH_DIST pairs ahead (for a large base)
 */
-template<bool prefetch, class G>
-void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
+template<bool prefetch, class T, class G>
+void addAffineBatch(typename T::Pt *R, const typename T::Pt *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
 {
 	typedef typename G::Fp F;
+	typedef typename T::Pt Pt;
 	const size_t SUB = MCL_MSM_BATCH_SUB;
 	F *d = work; // the denominator of lambda, then its inverse
 	F *num = work + SUB; // the numerator of lambda
@@ -445,18 +475,18 @@ void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib,
 			}
 			const uint32_t a = ia[j0 + j];
 			const uint32_t bb = ib[j0 + j];
-			if (bb == msmNone || base[bb & msmIdxMask].z.isZero()) {
+			if (bb == msmNone || T::isZero(base[bb & msmIdxMask])) {
 				st[j] = 1;
 				d[j] = one;
 				continue;
 			}
-			if (a == msmNone || base[a & msmIdxMask].z.isZero()) {
+			if (a == msmNone || T::isZero(base[a & msmIdxMask])) {
 				st[j] = 2;
 				d[j] = one;
 				continue;
 			}
-			const G& A = base[a & msmIdxMask];
-			const G& B = base[bb & msmIdxMask];
+			const Pt& A = base[a & msmIdxMask];
+			const Pt& B = base[bb & msmIdxMask];
 			F::sub(d[j], B.x, A.x);
 			F ya, yb;
 			if (a & msmSign) F::neg(ya, A.y); else ya = A.y;
@@ -497,28 +527,28 @@ void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib,
 			const uint32_t a1 = ia[j0 + j + 1];
 			const uint32_t b1 = ib[j0 + j + 1];
 			if ((st[j] | st[j + 1]) == 0) {
-				addAffineLambda2(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j],
+				addAffineLambda2<T>(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j],
 					R[j0 + j + 1], base[a1 & msmIdxMask], base[b1 & msmIdxMask], a1, num[j + 1], d[j + 1], one);
 				continue;
 			}
 			if (st[j] == 0) {
-				addAffineLambda(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j], one);
+				addAffineLambda<T>(R[j0 + j], base[a0 & msmIdxMask], base[b0 & msmIdxMask], a0, num[j], d[j], one);
 			} else {
-				addAffineSpecial(R[j0 + j], base, a0, b0, st[j], one);
+				addAffineSpecial<T>(R[j0 + j], base, a0, b0, st[j], one);
 			}
 			if (st[j + 1] == 0) {
-				addAffineLambda(R[j0 + j + 1], base[a1 & msmIdxMask], base[b1 & msmIdxMask], a1, num[j + 1], d[j + 1], one);
+				addAffineLambda<T>(R[j0 + j + 1], base[a1 & msmIdxMask], base[b1 & msmIdxMask], a1, num[j + 1], d[j + 1], one);
 			} else {
-				addAffineSpecial(R[j0 + j + 1], base, a1, b1, st[j + 1], one);
+				addAffineSpecial<T>(R[j0 + j + 1], base, a1, b1, st[j + 1], one);
 			}
 		}
 		if (j < mm) {
 			const uint32_t a = ia[j0 + j];
 			const uint32_t bb = ib[j0 + j];
 			if (st[j] == 0) {
-				addAffineLambda(R[j0 + j], base[a & msmIdxMask], base[bb & msmIdxMask], a, num[j], d[j], one);
+				addAffineLambda<T>(R[j0 + j], base[a & msmIdxMask], base[bb & msmIdxMask], a, num[j], d[j], one);
 			} else {
-				addAffineSpecial(R[j0 + j], base, a, bb, st[j], one);
+				addAffineSpecial<T>(R[j0 + j], base, a, bb, st[j], one);
 			}
 		}
 	}
@@ -548,13 +578,14 @@ void msmAddToBucket(G& tbl, const G *base, uint32_t i)
 /*
 	the generic kernel (ec::MsmKernel) of the batch affine addition :
 	the layout of a point is G (affine or zero) and the additions are done by addAffineBatch and msmAddToBucket
+	(used only if the curve has the point (0, 0), otherwise MsmXYKernel)
 */
 template<class G>
 struct MsmGenericKernel {
 	template<bool prefetch>
 	static void addPairs(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work)
 	{
-		addAffineBatch<prefetch>((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
+		addAffineBatch<prefetch, MsmPtG<G>, G>((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
 	}
 	static void addToBucket(void *tbl, const void *base, uint32_t i)
 	{
@@ -571,6 +602,96 @@ struct MsmGenericKernel {
 		kn.getBucketSize = 0;
 		kn.batchMinN = 0;
 		kn.cvtBaseGLV = 0;
+	}
+};
+
+/*
+	the generic kernel with the layout (x, y) (MsmPtXY) :
+	the points are 2/3 of G (one cache line for a 256-bit Fp), so the random reads of the level 0, the work array S and the bucket table touch less memory.
+	the zero point, the doubling and A = -B are handled in the same way as MsmGenericKernel.
+	xVec is converted once by cvtBase (or by cvtBaseGLV with the GLV endomorphism and the signs : the fused path of mulVecGLVlarge).
+*/
+template<class G>
+struct MsmXYKernel {
+	typedef typename G::Fp F;
+	typedef MsmPtXY<G> T;
+	typedef typename T::Pt Pt;
+	template<bool prefetch>
+	static void addPairs(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work)
+	{
+		addAffineBatch<prefetch, T, G>((Pt*)R, (const Pt*)base, ia, ib, m, (F*)work);
+	}
+	static void addToBucket(void *_tbl, const void *base, uint32_t i)
+	{
+		G& tbl = *(G*)_tbl;
+		const Pt& P = ((const Pt*)base)[i & msmIdxMask];
+		if (T::isZero(P)) return;
+		if (tbl.isZero()) {
+			tbl.x = P.x;
+			if (i & msmSign) F::neg(tbl.y, P.y); else tbl.y = P.y;
+			tbl.z = 1;
+			return;
+		}
+		G Q;
+		Q.x = P.x;
+		Q.y = P.y;
+		Q.z = 1;
+		if (i & msmSign) {
+			tbl -= Q;
+		} else {
+			tbl += Q;
+		}
+	}
+	static void setPt(Pt& d, const G& P)
+	{
+		if (P.z.isZero()) {
+			T::clear(d);
+		} else {
+			d.x = P.x;
+			d.y = P.y;
+		}
+	}
+	static void cvtBase(void *dst, const void *xVec, size_t n)
+	{
+		Pt *d = (Pt*)dst;
+		const G *x = (const G*)xVec;
+		for (size_t i = 0; i < n; i++) setPt(d[i], x[i]);
+	}
+	// see ec::MsmKernel::cvtBaseGLV (called only for the GLV of GLV1T<G>)
+	static void cvtBaseGLV(void *dst, const void *xVec, size_t n, const uint8_t *neg)
+	{
+		Pt *d = (Pt*)dst;
+		const G *x = (const G*)xVec;
+		const F& rw = GLV1T<G>::rw;
+		for (size_t i = 0; i < n; i++) {
+			const G& P = x[i];
+			Pt& d0 = d[i];
+			Pt& d1 = d[n + i];
+			if (P.z.isZero()) {
+				T::clear(d0);
+				T::clear(d1);
+				continue;
+			}
+			d0.x = P.x;
+			F::mul(d1.x, P.x, rw);
+			F negY;
+			F::neg(negY, P.y);
+			d0.y = (neg[i] & 1) ? negY : P.y;
+			d1.y = (neg[i] & 2) ? negY : P.y;
+		}
+	}
+	static size_t getBucketSize(size_t n, size_t maxBitSize, size_t)
+	{
+		return glvGetBucketSizeByCost(n, maxBitSize, sizeof(Pt), msmCostParamBatch());
+	}
+	// n : the number of the points of the base (the software prefetch is used if the base is large)
+	static const ec::MsmKernel* get(size_t n)
+	{
+		static const ec::MsmKernel kn[2] = {
+			{ sizeof(Pt), sizeof(F) * 3 * MCL_MSM_BATCH_SUB, cvtBase, addPairs<false>, addToBucket, getBucketSize, 0, cvtBaseGLV },
+			{ sizeof(Pt), sizeof(F) * 3 * MCL_MSM_BATCH_SUB, cvtBase, addPairs<true>, addToBucket, getBucketSize, 0, cvtBaseGLV },
+		};
+		return &kn[n * sizeof(Pt) >= MCL_MSM_PREFETCH_MIN_BYTES ? 1 : 0];
 	}
 };
 
@@ -732,14 +853,29 @@ struct MsmBatch {
 		size_t prepare(size_t, size_t, const ec::MsmKernel *, bool = false) { return 0; }
 		void setBuf(void *) {}
 	};
-	static const ec::MsmKernel* getKernel() { return 0; }
+	static const ec::MsmKernel* getKernel(size_t) { return 0; }
 	static bool isNormalizedVec(const G *, size_t) { return false; }
 };
 template<class Fp, class Fr>
 struct MsmBatch<EcT<Fp, Fr> > {
 	static const bool enabled = true;
 	typedef MsmBatchWork<EcT<Fp, Fr> > Work;
-	static const ec::MsmKernel* getKernel() { return EcT<Fp, Fr>::msmKernel; }
+	/*
+		the kernel for n (split) scalars : the SIMD kernel if set, otherwise the generic kernel of the layout (x, y),
+		0 (MsmGenericKernel, the layout of G) if the curve has the point (0, 0)
+	*/
+	static const ec::MsmKernel* getKernel(size_t n)
+	{
+		typedef EcT<Fp, Fr> G;
+		if (G::msmKernel) return G::msmKernel;
+#ifdef MCL_MSM_NO_XY_KERNEL
+		(void)n;
+		return 0;
+#else
+		if (G::b_.isZero()) return 0;
+		return MsmXYKernel<G>::get(n);
+#endif
+	}
 	// all the points are affine or zero
 	static bool isNormalizedVec(const EcT<Fp, Fr> *xVec, size_t n)
 	{
@@ -1243,7 +1379,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
 	G *tbl = 0;
 	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own cost model of the window size
-	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
+	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel(n);
 	// the batch affine addition is used for n >= batchMinN if wk.init succeeds (see below)
 	const size_t batchMinN = local::msmBatchMinN(kernel);
 	assert(baseArg == 0 || (kernel && n >= batchMinN));
@@ -1572,7 +1708,7 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 		so the copy of 2 n G (normalizeVec, mulLambda and neg) and its conversion (cvtBase in mulVecCore) are not needed
 		(xVec is normalized to a copy of n G if it has a non-affine point)
 	*/
-	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
+	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel(n * splitN);
 	// the split (and cvtBaseGLV) are done in C chunks by the parallel-for par if parallel
 	const size_t C = splitRaw ? local::msmSplitChunks(n, par) : 1;
 	const size_t maxBitByteSize = sizeof(size_t) * C;
