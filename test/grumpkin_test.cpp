@@ -183,6 +183,88 @@ CYBOZU_TEST_AUTO(mulVec)
 	}
 }
 
+void setRandom(G1& P)
+{
+	Fr s;
+	s.setByCSPRNG(g_rg);
+	hashAndMapToG1(P, "foldVec", 7);
+	G1::mul(P, P, s);
+}
+
+// z[i] = sum_{t<n} yVec[t] xVec[t * stride + i]
+template<class G>
+void foldVecTest()
+{
+	typedef typename G::Fr F;
+	const size_t maxN = 18; // > mcl::fp::maxMulVecNGLV : the generic one
+	const size_t stride = 300;
+	std::vector<G> base(maxN * stride), xVec, z(stride), ok(stride);
+	for (size_t i = 0; i < base.size(); i++) setRandom(base[i]);
+	G::normalizeVec(base.data(), base.data(), base.size());
+	// the special points
+	base[0 * stride + 0].clear();
+	base[1 * stride + 1] = base[0 * stride + 1]; // the same point
+	G::neg(base[1 * stride + 2], base[0 * stride + 2]); // the negative
+	for (size_t t = 0; t < maxN; t++) base[t * stride + 3].clear(); // the output is zero
+	for (size_t t = 0; t < maxN; t++) base[t * stride + 4] = base[4]; // all the same
+	for (size_t t = 0; t < maxN; t++) base[t * stride + 5] = (t & 1) ? base[stride + 5] : base[5];
+	std::vector<F> yVec(maxN);
+	const size_t nTbl[] = { 1, 2, 3, 4, 8, 15, 16, 17, 18 };
+	const size_t mTbl[] = { 1, 6, 31, 32, 33, 255, 256, 257, 300 };
+	for (int mode = 0; mode < 5; mode++) {
+		for (size_t t = 0; t < maxN; t++) yVec[t].setByCSPRNG(g_rg);
+		switch (mode) {
+		case 1: for (size_t t = 0; t < maxN; t++) yVec[t] = 1; break;
+		case 2: for (size_t t = 0; t < maxN; t++) yVec[t] = 0; break;
+		case 3: yVec[0] = -1; yVec[1] = 2; yVec[2] = 0; yVec[3] = yVec[4]; break;
+		case 4: yVec[0] = 1; yVec[1] = yVec[0]; yVec[2] = -yVec[3]; break; // the same and the opposite scalars
+		default: break;
+		}
+		xVec = base;
+		if (mode == 3) {
+			// a non-normalized point : the generic one
+			G::dbl(xVec[40], xVec[40]);
+			G::dbl(xVec[stride + 290], xVec[stride + 290]);
+		}
+		for (size_t ni = 0; ni < CYBOZU_NUM_OF_ARRAY(nTbl); ni++) {
+			const size_t n = nTbl[ni];
+			for (size_t i = 0; i < stride; i++) {
+				ok[i].clear();
+				for (size_t t = 0; t < n; t++) {
+					G T;
+					G::mul(T, xVec[t * stride + i], yVec[t]);
+					ok[i] += T;
+				}
+			}
+			for (size_t mi = 0; mi < CYBOZU_NUM_OF_ARRAY(mTbl); mi++) {
+				const size_t m = mTbl[mi];
+				const size_t off = stride - m; // the tail of each row
+				for (size_t i = 0; i < m; i++) z[i] = xVec[0];
+				G::foldVec(z.data(), xVec.data() + off, yVec.data(), n, m, stride);
+				bool same = true;
+				for (size_t i = 0; i < m; i++) {
+					if (z[i] != ok[off + i] || !z[i].isNormalized()) same = false;
+				}
+				CYBOZU_TEST_ASSERT(same);
+				if (!same) printf("foldVec mode=%d n=%d m=%d\n", mode, (int)n, (int)m);
+			}
+		}
+	}
+}
+
+CYBOZU_TEST_AUTO(foldVec)
+{
+	CYBOZU_TEST_ASSERT(G1::foldVecOpti != 0);
+	CYBOZU_TEST_ASSERT(GG::foldVecOpti != 0);
+	foldVecTest<G1>();
+	foldVecTest<GG>();
+	// without the batch affine version
+	G1::FoldVecOptiFunc f = G1::foldVecOpti;
+	G1::setFoldVecOpti(0);
+	foldVecTest<G1>();
+	G1::setFoldVecOpti(f);
+}
+
 CYBOZU_TEST_AUTO(serialize)
 {
 	GG P;

@@ -139,7 +139,8 @@ namespace mcl {
 	template Ec::IsValidOrderFastFunc Ec::isValidOrderFast; \
 	template int Ec::mode_; \
 	template Ec::MulEachOptiFunc Ec::mulEachOpti; \
-	template Ec::MsmKernelPtr Ec::msmKernel;
+	template Ec::MsmKernelPtr Ec::msmKernel; \
+	template Ec::FoldVecOptiFunc Ec::foldVecOpti;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
 #if MCL_USE_GRUMPKIN == 1
@@ -724,6 +725,7 @@ void initG1onlyGLV(int curveType)
 	typedef GLV1T<G1> GLV1;
 	if (!GLV1::useParamTbl(curveType)) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
+	G1::setFoldVecOpti(mcl::ec::foldVecGLV1T<G1>);
 #if MCL_MSM == 1
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
 		mcl::msm::initMsm(curveType, GLV1::splitRaw); // false if the curve is not in src/msm_avx_para.h
@@ -780,6 +782,7 @@ void initGrumpkin(bool *pb)
 	*pb = GLVGG::useParamTbl(MCL_GRUMPKIN);
 	if (!*pb) return;
 	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
+	GG::setFoldVecOpti(mcl::ec::foldVecGLV1T<GG>);
 #if MCL_MSM == 1
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
 		mcl::msm::initMsmGG(MCL_GRUMPKIN, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)

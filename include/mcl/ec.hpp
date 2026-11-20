@@ -1044,6 +1044,7 @@ struct StaticMember {
 	void *mulEachOpti;
 	void *msmKernel;
 	void *isValidOrderFast;
+	void *foldVecOpti;
 };
 enum StaticIdType {
 	StaticIdG1 = 0,
@@ -1074,6 +1075,7 @@ public:
 	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b, const ec::ParallelFor& par);
 	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b, const ec::ParallelFor& par);
 	typedef void (*MulEachOptiFunc)(EcT *xVec, const Fr *yVec, size_t n);
+	typedef bool (*FoldVecOptiFunc)(EcT *z, const EcT *xVec, const void *yVec, size_t yn, size_t zn, size_t stride);
 	typedef bool (*IsValidOrderFastFunc)(const EcT& x);
 	typedef const ec::MsmKernel* MsmKernelPtr;
 	MCL_DLL_STATIC(int) mode_;
@@ -1094,6 +1096,7 @@ public:
 	MCL_DLL_STATIC(MulEachOptiFunc) mulEachOpti;
 	MCL_DLL_STATIC(MsmKernelPtr) msmKernel; // the SIMD kernel of the batch affine addition of mulVec (0 if none)
 	MCL_DLL_STATIC(IsValidOrderFastFunc) isValidOrderFast;
+	MCL_DLL_STATIC(FoldVecOptiFunc) foldVecOpti; // the batch affine version of foldVec (0 if none)
 	// set the pointers to the static data members (used by getStaticMember in the library)
 	static void setStaticMember(ec::StaticMember& sm)
 	{
@@ -1111,6 +1114,7 @@ public:
 		sm.mulEachOpti = &mulEachOpti;
 		sm.msmKernel = &msmKernel;
 		sm.isValidOrderFast = &isValidOrderFast;
+		sm.foldVecOpti = &foldVecOpti;
 	}
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1184,6 +1188,7 @@ public:
 		mulEachOpti = 0;
 		msmKernel = 0;
 		isValidOrderFast = 0;
+		foldVecOpti = 0;
 		mode_ = mode;
 	}
 	static inline int getMode() { return mode_; }
@@ -1216,6 +1221,10 @@ public:
 	static void setMulEachOpti(void f(EcT *xVec, const Fr *yVec, size_t yn))
 	{
 		mulEachOpti = f;
+	}
+	static void setFoldVecOpti(FoldVecOptiFunc f)
+	{
+		foldVecOpti = f;
 	}
 	// kn must be alive while it is used (0 : use the generic batch affine addition)
 	static void setMsmKernel(const ec::MsmKernel *kn)
@@ -1928,6 +1937,43 @@ public:
 		}
 		z = r;
 	}
+	/*
+		z[i] = sum_{t<yn} yVec[t] xVec[t * stride + i] for i in [0, zn)
+		(the linear combination of the yn vectors of zn points xVec + t * stride (t < yn) with the common scalars yVec)
+		z[i] is affine or zero. z must not overlap xVec.
+		The scalars are common to all i, so the batch affine addition is used over i if foldVecOpti is set
+		and xVec is normalized (see foldVecGLV1T in src/glv.hpp : yn <= 16 and zn >= 32). Otherwise zn calls of mulVecConstRef.
+		single thread (the caller may split [0, zn) : foldVec(z + begin, xVec + begin, yVec, yn, end - begin, stride))
+	*/
+	static void foldVec(EcT *z, const EcT *xVec, const Fr *yVec, size_t yn, size_t zn, size_t stride)
+	{
+		if (foldVecOpti && foldVecOpti(z, xVec, yVec, yn, zn, stride)) return;
+		// one mulVecConstRef of yn points per output (blocks of N points if the allocation fails or MCL_DONT_USE_MALLOC)
+		const size_t N = 16;
+		EcT buf[N];
+		EcT *t = buf;
+		size_t cap = N;
+#ifndef MCL_DONT_USE_MALLOC
+		mcl::Array<EcT> arr;
+		if (yn > N && arr.resize(yn)) {
+			t = arr.data();
+			cap = yn;
+		}
+#endif
+		for (size_t i = 0; i < zn; i++) {
+			EcT r;
+			r.clear();
+			for (size_t pos = 0; pos < yn; pos += cap) {
+				const size_t c = (yn - pos < cap) ? yn - pos : cap;
+				for (size_t j = 0; j < c; j++) t[j] = xVec[(pos + j) * stride + i];
+				EcT s;
+				mulVecConstRef(s, t, yVec + pos, c);
+				r += s;
+			}
+			z[i] = r;
+		}
+		normalizeVec(z, z, zn);
+	}
 	// xVec[i] *= yVec[i]
 	static void mulEach(EcT *xVec, const Fr *yVec, size_t n)
 	{
@@ -2011,6 +2057,7 @@ MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::IsValidOrderFastFunc, isValidOr
 MCL_EC_STATIC_REF(int, mode_, mode)
 MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
 MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::MsmKernelPtr, msmKernel, msmKernel)
+MCL_EC_STATIC_REF(typename EcT<Fp MCL_COMMA Fr>::FoldVecOptiFunc, foldVecOpti, foldVecOpti)
 #undef MCL_EC_STATIC_REF
 #undef MCL_COMMA
 #elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
@@ -2036,6 +2083,7 @@ template<class Fp, class Fr> typename EcT<Fp, Fr>::IsValidOrderFastFunc EcT<Fp, 
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
 template<class Fp, class Fr> typename EcT<Fp, Fr>::MulEachOptiFunc EcT<Fp, Fr>::mulEachOpti;
 template<class Fp, class Fr> typename EcT<Fp, Fr>::MsmKernelPtr EcT<Fp, Fr>::msmKernel;
+template<class Fp, class Fr> typename EcT<Fp, Fr>::FoldVecOptiFunc EcT<Fp, Fr>::foldVecOpti;
 #endif
 
 // set the GLV method (and the AVX-512 MSM if available) of G1 for the curve of src/glv_param.hpp (secp256k1, Grumpkin) ; implemented in fp.cpp
@@ -2070,6 +2118,7 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Ja
 		if (!*pb) return;
 	}
 	Ec::setMulVecGLV(0);
+	Ec::setFoldVecOpti(0);
 	if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN) {
 		initG1onlyGLV(curveType);
 	}

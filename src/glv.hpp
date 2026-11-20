@@ -1963,6 +1963,157 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime,
 	return false;
 }
 
+#ifndef MCL_MSM_FOLD_W
+	// the window size of the NAF of foldVecGLV1T (2^(w-2) points of the table per split scalar and per output)
+	#define MCL_MSM_FOLD_W 5
+#endif
+#ifndef MCL_MSM_FOLD_CHUNK
+	// the number of the outputs of a chunk of foldVecGLV1T (one inversion per chunk and per addition,
+	// the work area is (1 + yn (2^(w-1) + 1)) * MCL_MSM_FOLD_CHUNK points of (x, y) : 2.2 MiB for yn = 8 and a 256-bit Fp)
+	// Xeon w9-3495X (BN254, yn = 8, w = 5, us per output) : 64 : 53.8, 128 : 50.1, 256 : 47.3, 512 : 47.4 (w = 4 : 53.6, w = 6 : 51.5 for 128)
+	#define MCL_MSM_FOLD_CHUNK 256
+#endif
+#ifndef MCL_MSM_FOLD_MIN_M
+	// foldVecGLV1T is used if the number of the outputs >= MCL_MSM_FOLD_MIN_M (the inversion is shared by the outputs of a chunk)
+	#define MCL_MSM_FOLD_MIN_M 32
+#endif
+
+/*
+	z[i] = sum_{t<yn} yVec[t] xVec[t * stride + i] for i in [0, zn) (EcT::foldVec)
+	return false if not supported (then the caller uses the generic one) :
+	yn = 0 or yn > maxMulVecNGLV, zn < MCL_MSM_FOLD_MIN_M, a point of xVec is not affine, the curve has the point (0, 0) or the allocation fails
+	G : EcT with the GLV of GLV1T<G> (yVec[t] = a + b lambda)
+
+	The scalars are common to all the outputs, so the NAF digits and the sequence of the doublings and the additions
+	of the NAF method (mulVecGLVsmall) are the same for all i. The outputs of a chunk (L <= MCL_MSM_FOLD_CHUNK) are
+	computed together in the affine coordinates by addAffineBatch (5M + 1S + inv/L per addition instead of 7M + 4S of J+A).
+	pts[] in the layout (x, y) (the zero point is (0, 0)) :
+	  [0, L) : the accumulators
+	  L (1 + j 2 yn + s) + i : (2j + 1) Q(s, i) (j < 2^(w-2)) where Q(t, i) = xVec[t stride + i], Q(yn + t, i) = lambda Q(t, i) (t < yn)
+	  L (1 + 2 yn 2^(w-2) + t) + i : 2 Q(t, i)
+	the zero point, the doubling and A = -B are handled by addAffineBatch.
+*/
+template<class G>
+bool foldVecGLV1T(G *z, const G *xVec, const void *yVec, size_t yn, size_t zn, size_t stride)
+{
+#ifdef MCL_DONT_USE_MALLOC
+	(void)z; (void)xVec; (void)yVec; (void)yn; (void)zn; (void)stride;
+	return false;
+#else
+	typedef GLV1T<G> GLV;
+	typedef typename G::Fr F;
+	typedef typename G::Fp Fp;
+	typedef local::MsmPtXY<G> T;
+	typedef typename T::Pt Pt;
+	const int w = MCL_MSM_FOLD_W;
+	const size_t tblSize = size_t(1) << (w - 2);
+	const size_t maxN = mcl::fp::maxMulVecNGLV;
+	if (yn == 0 || yn > maxN || zn < MCL_MSM_FOLD_MIN_M) return false;
+	if (G::b_.isZero()) return false;
+	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / 2 + 2> NafArray;
+	NafArray *naf = (NafArray*)CYBOZU_ALLOCA(sizeof(NafArray) * yn * 2);
+	size_t maxBit = 0;
+	{
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
+		mpz_class u[2];
+		Unit y[F::maxSize];
+		for (size_t t = 0; t < yn; t++) {
+			getUnitAt(y, yVec, t);
+			GLV::split(u, y);
+			for (int k = 0; k < 2; k++) {
+				NafArray& v = naf[k * yn + t];
+				bool b;
+				gmp::getNAFwidth(&b, v, u[k], w);
+				assert(b); (void)b;
+				if (v.size() > maxBit) maxBit = v.size();
+			}
+		}
+	}
+	const size_t B = (zn < size_t(MCL_MSM_FOLD_CHUNK)) ? zn : size_t(MCL_MSM_FOLD_CHUNK);
+	const size_t ptN = (1 + 2 * yn * tblSize + yn) * B;
+	const size_t idxN = yn * B;
+	const size_t workN = 3 * MCL_MSM_BATCH_SUB;
+	mcl::Array<Pt> ptsArr;
+	mcl::Array<Fp> workArr;
+	mcl::Array<uint32_t> idxArr;
+	if (!ptsArr.resize(ptN) || !workArr.resize(workN) || !idxArr.resize(idxN * 2)) return false;
+	Pt *pts = ptsArr.data();
+	Fp *work = workArr.data();
+	uint32_t *ia = idxArr.data();
+	uint32_t *ib = ia + idxN;
+	const Fp& rw = GLV::rw;
+	bool ok = true;
+	for (size_t begin = 0; begin < zn && ok; begin += B) {
+		const size_t L = (zn - begin < B) ? zn - begin : B;
+		const size_t dblOff = L * (1 + 2 * yn * tblSize);
+		// Q(t, i)
+		for (size_t t = 0; t < yn && ok; t++) {
+			const G *src = xVec + t * stride + begin;
+			Pt *dst = pts + L * (1 + t);
+			for (size_t i = 0; i < L; i++) {
+				const G& P = src[i];
+				if (P.z.isZero()) {
+					T::clear(dst[i]);
+				} else if (P.z.isOne()) {
+					dst[i].x = P.x;
+					dst[i].y = P.y;
+				} else {
+					ok = false;
+					break;
+				}
+			}
+		}
+		if (!ok) break;
+		// 2 Q(t, i)
+		for (size_t k = 0; k < yn * L; k++) ia[k] = uint32_t(L + k);
+		local::addAffineBatch<false, T, G>(pts + dblOff, pts, ia, ia, yn * L, work);
+		// (2j + 1) Q(t, i) = (2j - 1) Q(t, i) + 2 Q(t, i)
+		for (size_t k = 0; k < yn * L; k++) ib[k] = uint32_t(dblOff + k);
+		for (size_t j = 1; j < tblSize; j++) {
+			for (size_t k = 0; k < yn * L; k++) ia[k] = uint32_t(L * (1 + (j - 1) * 2 * yn) + k);
+			local::addAffineBatch<false, T, G>(pts + L * (1 + j * 2 * yn), pts, ia, ib, yn * L, work);
+		}
+		// lambda (x, y) = (rw x, y)
+		for (size_t j = 0; j < tblSize; j++) {
+			const Pt *src = pts + L * (1 + j * 2 * yn);
+			Pt *dst = pts + L * (1 + j * 2 * yn + yn);
+			for (size_t k = 0; k < yn * L; k++) {
+				Fp::mul(dst[k].x, src[k].x, rw);
+				dst[k].y = src[k].y;
+			}
+		}
+		memset((void*)pts, 0, sizeof(Pt) * L);
+		for (size_t i = 0; i < L; i++) ia[i] = uint32_t(i);
+		bool started = false;
+		for (size_t bit = maxBit; bit-- > 0;) {
+			if (started) local::addAffineBatch<false, T, G>(pts, pts, ia, ia, L, work);
+			for (size_t s = 0; s < 2 * yn; s++) {
+				const NafArray& v = naf[s];
+				if (bit >= v.size()) continue;
+				const int d = v[bit];
+				if (d == 0) continue;
+				const size_t j = size_t(((d < 0) ? -d : d) - 1) >> 1;
+				const uint32_t off = uint32_t(L * (1 + j * 2 * yn + s)) | ((d < 0) ? local::msmSign : 0);
+				for (size_t i = 0; i < L; i++) ib[i] = off + uint32_t(i);
+				local::addAffineBatch<false, T, G>(pts, pts, ia, ib, L, work);
+				started = true;
+			}
+		}
+		for (size_t i = 0; i < L; i++) {
+			G& o = z[begin + i];
+			if (T::isZero(pts[i])) {
+				o.clear();
+			} else {
+				o.x = pts[i].x;
+				o.y = pts[i].y;
+				o.z = 1;
+			}
+		}
+	}
+	return ok;
+#endif
+}
+
 #endif
 
 } // mcl::ec

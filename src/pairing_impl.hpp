@@ -1260,6 +1260,7 @@ MCL_CXX_API void init(bool *pb, const mcl::CurveParam& cp)
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
+	G1::setFoldVecOpti(mcl::ec::foldVecGLV1T<G1>);
 #if MCL_MSM == 1
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
 		mcl::msm::initMsm(cp.curveType, GLV1::splitRaw);
@@ -1288,6 +1289,7 @@ MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para)
 {
 	G1::setMulVecGLV(0);
 	G2::setMulVecGLV(0);
+	G1::setFoldVecOpti(0);
 	Fp12::setPowVecGLV(0);
 	s_nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
