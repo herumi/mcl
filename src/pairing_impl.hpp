@@ -97,6 +97,14 @@ struct Param {
 
 	void init(bool *pb, const mcl::CurveParam& cp)
 	{
+#if MCL_USE_GRUMPKIN == 1
+		// return before changing the parameters
+		// compare with the constant because mcl::BN_SNARK1 of this file may not be initialized yet if this is called from a constructor of a static variable
+		if (cp.curveType != MCL_BN_SNARK1) {
+			*pb = false;
+			return;
+		}
+#endif
 		this->cp = cp;
 		isBLS12 = (cp.curveType == MCL_BLS12_381 || cp.curveType == MCL_BLS12_377 || cp.curveType == MCL_BLS12_461);
 #ifdef MCL_STATIC_CODE
@@ -1287,6 +1295,13 @@ MCL_CXX_API void initPairing(bool *pb, const mcl::CurveParam& cp)
 
 MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para)
 {
+#if MCL_USE_GRUMPKIN == 1
+	// return before changing the settings of G1
+	if (para.curveType != MCL_GRUMPKIN) {
+		*pb = false;
+		return;
+	}
+#endif
 	G1::setMulVecGLV(0);
 	G2::setMulVecGLV(0);
 	G1::setFoldVecOpti(0);

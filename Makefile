@@ -77,6 +77,9 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
+ifeq ($(MCL_USE_GRUMPKIN),1)
+  TEST_SRC:=$(filter fp_test.cpp grumpkin_test.cpp bn_test.cpp glv_test.cpp msm_par_test.cpp fp_util_test.cpp gmp_test.cpp paillier_test.cpp vint_test.cpp conversion_test.cpp array_test.cpp bint_test.cpp invmod_test.cpp static_init_test.cpp,$(TEST_SRC))
+endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
 #SAMPLE_SRC+=large.cpp # rebuild of bint is necessary
 

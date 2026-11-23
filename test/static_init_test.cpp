@@ -18,7 +18,11 @@ static struct Init {
 		// must be nonzero
 		CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));
 		puts("initPairing");
+#if MCL_USE_GRUMPKIN == 1
+		mcl::bn::initPairing(mcl::BN_SNARK1);
+#else
 		mcl::bn::initPairing();
+#endif
 		CYBOZU_TEST_ASSERT(Fr::getOp().N > 0);
 		CYBOZU_TEST_ASSERT(Fp::getOp().N > 0);
 	}

@@ -10,6 +10,8 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- v4.45
+  - `MCL_USE_GRUMPKIN=1` fixes the curve to BN\_SNARK1 and Grumpkin. The initialization of another curve or modulus (e.g., `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`) fails and does not change the current state (see [api.md](api.md#parameter-settings-and-supported-curves)).
 - v4.44
   - `mulVec` keeps its work buffers and reuses them in the next call to reduce page faults (effective mainly on Windows).
     - `mcl::ec::freeMulVecBuffer()` / `mclBn_freeMulVecBuffer()` frees them (see [api.md](api.md#the-work-buffers-of-mulvec)).

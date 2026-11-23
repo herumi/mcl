@@ -333,6 +333,14 @@ CYBOZU_TEST_AUTO(glv)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("name=%s\n", tbl[i].name);
 		const mcl::CurveParam& cp = tbl[i].param;
+#if MCL_USE_GRUMPKIN == 1
+		if (cp != mcl::BN_SNARK1) {
+			bool b;
+			initPairing(&b, cp);
+			CYBOZU_TEST_ASSERT(!b);
+			continue;
+		}
+#endif
 		initPairing(cp);
 		G1 P;
 		G2 Q;

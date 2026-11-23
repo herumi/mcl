@@ -1303,9 +1303,11 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		int curveType;
 		const char *name;
 	} tbl[] = {
+#if MCL_USE_GRUMPKIN != 1
 		{ MCL_BN254, "BN254" },
-		{ MCL_BN_SNARK1, "BN_SNARK1" },
 		{ MCL_SECP256K1, "secp256k1" },
+#endif
+		{ MCL_BN_SNARK1, "BN_SNARK1" },
 		{ MCL_GRUMPKIN, "Grumpkin" }, // G1 as Grumpkin by initCurve<G1> (the class GG uses the second kernel)
 #if MCL_FP_BIT == 384
 		{ MCL_BLS12_381, "BLS12_381" },
@@ -1436,7 +1438,10 @@ int main(int argc, char *argv[])
 	if (de == 0) {
 		de = d;
 	}
-#if MCL_FP_BIT == 256
+#if MCL_USE_GRUMPKIN == 1
+	puts("BN_SNARK1");
+	mcl::initPairing(mcl::BN_SNARK1);
+#elif MCL_FP_BIT == 256
 	puts("BN254");
 	mcl::initPairing(mcl::BN254);
 #else

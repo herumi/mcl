@@ -339,18 +339,71 @@ CYBOZU_TEST_AUTO(bench)
 	}
 }
 
-// initGrumpkin fails if Fp / Fr are initialized for another curve and does not break them (keep this test last)
+// the initialization of another curve / modulus fails and does not break the current state
 CYBOZU_TEST_AUTO(otherCurve)
 {
-	initPairing(mcl::BN254);
+	initPairing(mcl::BN_SNARK1);
+	initGrumpkin();
 	const mpz_class p = Fp::getOp().mp;
 	const mpz_class r = Fr::getOp().mp;
+	G1 P;
+	G2 Q;
+	hashAndMapToG1(P, "abc");
+	hashAndMapToG2(Q, "abc");
+	Fp12 e1;
+	pairing(e1, P, Q);
 	bool b;
-	initGrumpkin(&b);
+	initPairing(&b, mcl::BN254);
 	CYBOZU_TEST_ASSERT(!b);
+	initPairing(&b); // the default parameter is BN254
+	CYBOZU_TEST_ASSERT(!b);
+	initG1only(&b, mcl::ecparam::secp256k1);
+	CYBOZU_TEST_ASSERT(!b);
+	mcl::initCurve<G1>(&b, MCL_SECP256K1);
+	CYBOZU_TEST_ASSERT(!b);
+	mcl::initCurve<G1>(&b, MCL_NIST_P256);
+	CYBOZU_TEST_ASSERT(!b);
+	const char *otherTbl[] = {
+		"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // the p of BN254
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // the p of secp256k1
+		"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed", // 2^255 - 19
+		"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49", // the p of BN_SNARK1 + 2
+		"65537",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(otherTbl); i++) {
+		Fp::init(&b, otherTbl[i]);
+		CYBOZU_TEST_ASSERT(!b);
+		Fr::init(&b, otherTbl[i]);
+		CYBOZU_TEST_ASSERT(!b);
+	}
+	// the state is not broken
 	CYBOZU_TEST_EQUAL(Fp::getOp().mp, p);
 	CYBOZU_TEST_EQUAL(Fr::getOp().mp, r);
-	G1 P;
-	hashAndMapToG1(P, "abc");
+	CYBOZU_TEST_EQUAL(getCurveType(), MCL_BN_SNARK1);
 	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(Q.isValid());
+	{
+		Fr a;
+		a.setByCSPRNG(g_rg);
+		G1 aP;
+		G1::mul(aP, P, a);
+		Fp12 e2, e3;
+		pairing(e2, P, Q);
+		CYBOZU_TEST_EQUAL(e1, e2);
+		pairing(e2, aP, Q);
+		Fp12::pow(e3, e1, a);
+		CYBOZU_TEST_EQUAL(e2, e3);
+	}
+	{
+		// the order of GG is the p of BN_SNARK1
+		GG R;
+		GG::mul(R, getGGbasePoint(), Fp(-1));
+		R += getGGbasePoint();
+		CYBOZU_TEST_ASSERT(R.isZero());
+	}
+	// the moduli of the fixed curve are accepted again
+	initPairing(&b, mcl::BN_SNARK1);
+	CYBOZU_TEST_ASSERT(b);
+	initGrumpkin(&b);
+	CYBOZU_TEST_ASSERT(b);
 }

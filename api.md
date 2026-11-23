@@ -142,6 +142,11 @@ MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|supported curves
 384|256|48|32|+MCL_BLS12_381, MCL_BLS12_377
 384|384|48|48|+MCL_BN381_1
 
+`MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`) defines the class `GG` (Grumpkin, the 2-cycle with BN\_SNARK1) and fixes the curve to BN\_SNARK1 and Grumpkin.
+- Only the `p` and the `r` of BN\_SNARK1 are accepted as the modulus of `Fp` / `Fr` (and the other `FpT`).
+- The initialization of another curve or modulus fails (`*pb = false`, a nonzero return value or an exception) and does not change the current state: `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`, `mclBn_init(MCL_BN254, ...)`, ...
+- The default argument of `initPairing` is still `BN254`, so call `initPairing(mcl::BN_SNARK1)` and then `initGrumpkin()`.
+
 ## Thread safety
 All functions except initialization and global setting changes are thread-safe.
 `mcl::ec::setParallelFor` is a global setting : call it before `mulVec` / `millerLoopVec` run on other threads (typically once after `initPairing`).

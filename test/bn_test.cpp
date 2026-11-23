@@ -441,6 +441,14 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
+#if MCL_USE_GRUMPKIN == 1
+		if (ts.cp != mcl::BN_SNARK1) {
+			bool b;
+			initPairing(&b, ts.cp);
+			CYBOZU_TEST_ASSERT(!b);
+			continue;
+		}
+#endif
 		initPairing(ts.cp);
 #if MCL_MSM
 		if (ts.cp == mcl::BN254 || ts.cp == mcl::BN_SNARK1) {

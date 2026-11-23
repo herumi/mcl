@@ -491,6 +491,21 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
+#if MCL_USE_GRUMPKIN == 1
+// return true if x is the p or the r of BN_SNARK1
+static bool isFixedCurveModulus(const mpz_class& x)
+{
+	const char *tbl[] = { ecparam::grumpkin.n, ecparam::grumpkin.p };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		bool b;
+		mpz_class m;
+		gmp::setStr(&b, m, tbl[i]);
+		if (b && x == m) return true;
+	}
+	return false;
+}
+#endif
+
 bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 {
 	// The following check is performed to verify that there is no inconsistency
@@ -502,6 +517,10 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 	default: break;
 	}
 	if (_p <= 0) return false;
+#if MCL_USE_GRUMPKIN == 1
+	// reject the other moduli before clear() so that the current state is not broken
+	if (!isFixedCurveModulus(_p)) return false;
+#endif
 	clear();
 	const size_t maxBitSize = sizeofF * 8;
 	maxN = roundUp(maxBitSize, UnitBitSize);
