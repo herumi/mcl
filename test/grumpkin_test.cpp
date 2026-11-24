@@ -54,6 +54,19 @@ CYBOZU_TEST_AUTO(init)
 	// the base field of GG is Fr and the scalar field is Fp
 	CYBOZU_TEST_EQUAL(sizeof(GG), sizeof(Fr) * 3);
 	CYBOZU_TEST_EQUAL(GG::getSerializedByteSize(), Fr::getByteSize());
+	{
+		const G1& P = getG1basePoint();
+		CYBOZU_TEST_ASSERT(!P.isZero());
+		CYBOZU_TEST_ASSERT(P.isValid());
+		CYBOZU_TEST_ASSERT(P.isNormalized());
+#if MCL_USE_GRUMPKIN == 1
+		CYBOZU_TEST_EQUAL(P.x, 1);
+		CYBOZU_TEST_EQUAL(P.y, 2);
+#else
+		CYBOZU_TEST_EQUAL(P.x, -1);
+		CYBOZU_TEST_EQUAL(P.y, 1);
+#endif
+	}
 	const GG& G = getGGbasePoint();
 	CYBOZU_TEST_ASSERT(!G.isZero());
 	CYBOZU_TEST_ASSERT(G.isValid());

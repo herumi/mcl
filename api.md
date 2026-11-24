@@ -152,6 +152,7 @@ MCL_USE_GRUMPKIN|MCL_FP_BIT|MCL_FR_BIT|pairing curve|GG
 2|384|384|BN382|Grumpkin382 (`MCL_GRUMPKIN382`) : y^2 = x^3 + 2, the generator is (-1, 1)
 
 - `initGrumpkin()` initializes both the pairing and `GG` (it calls `initPairing` of the fixed curve). `getGGbasePoint()` returns the generator.
+- `getG1basePoint()` returns the generator of G1 after `initPairing` / `initGrumpkin` : (1, 2) for BN\_SNARK1 and (-1, 1) for BN382 (it is zero after `initPairing` if `MCL_USE_GRUMPKIN=0`).
 - `initGrumpkin` passes the `MCL_USE_GRUMPKIN` of the caller as the default argument `mode`. It fails without changing anything if `mode` is not equal to the `MCL_USE_GRUMPKIN` of the library, so don't specify `mode` explicitly.
 - Only the `p` and the `r` of the fixed curve are accepted as the modulus of `Fp` / `Fr` (and the other `FpT`).
 - The initialization of another curve or modulus fails (`*pb = false`, a nonzero return value or an exception) and does not change the current state: `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`, `mclBn_init(MCL_BN254, ...)`, ...

@@ -182,7 +182,15 @@ struct Param {
 		}
 		GLV1::init(z, isBLS12, cp.curveType);
 		GLV2::init(z, isBLS12);
+#if MCL_USE_GRUMPKIN == 1
+		basePoint.set(pb, Fp(1), Fp(2)); // the generator of alt_bn128
+		if (!*pb) return;
+#elif MCL_USE_GRUMPKIN == 2
+		basePoint.set(pb, Fp(-1), Fp(1));
+		if (!*pb) return;
+#else
 		basePoint.clear();
+#endif
 		G1::setOrder(r);
 		G2::setOrder(r);
 		*pb = true;
