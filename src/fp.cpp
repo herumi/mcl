@@ -114,14 +114,25 @@ uint32_t getCpuType()
 	#pragma warning(disable : 4127)
 #endif
 
-// define Fp, Fr, G1, GG (GG only if MCL_USE_GRUMPKIN=1)
+// define Fp, Fr, G1, GG (GG only if MCL_USE_GRUMPKIN != 0)
 #include <mcl/g1_def.hpp>
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 #include <mcl/gg_def.hpp>
 #endif
 #include "fp_tower_impl.hpp"
 
 namespace mcl {
+
+// the curves fixed by MCL_USE_GRUMPKIN : the pairing curve and its 2-cycle partner (GG)
+#if MCL_USE_GRUMPKIN == 1
+	#define MCL_FIXED_BN_TYPE MCL_BN_SNARK1
+	#define MCL_FIXED_GG_TYPE MCL_GRUMPKIN
+	#define MCL_FIXED_GG_PARAM ecparam::grumpkin
+#elif MCL_USE_GRUMPKIN == 2
+	#define MCL_FIXED_BN_TYPE MCL_BN382
+	#define MCL_FIXED_GG_TYPE MCL_GRUMPKIN382
+	#define MCL_FIXED_GG_PARAM ecparam::grumpkin382
+#endif
 
 #if defined(_MSC_VER) && !defined(MCL_DLL_IMPORT_STATIC)
 // the static data members of G1 and G2 are defined only here (see EcT in ec.hpp)
@@ -143,7 +154,7 @@ namespace mcl {
 	template Ec::FoldVecOptiFunc Ec::foldVecOpti;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 MCL_EC_STATIC_INST(GG, Fr)
 #endif
 #undef MCL_EC_STATIC_INST
@@ -491,11 +502,11 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-#if MCL_USE_GRUMPKIN == 1
-// return true if x is the p or the r of BN_SNARK1
+#if MCL_USE_GRUMPKIN != 0
+// return true if x is the p or the r of the fixed curve
 static bool isFixedCurveModulus(const mpz_class& x)
 {
-	const char *tbl[] = { ecparam::grumpkin.n, ecparam::grumpkin.p };
+	const char *tbl[] = { MCL_FIXED_GG_PARAM.n, MCL_FIXED_GG_PARAM.p };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		bool b;
 		mpz_class m;
@@ -517,7 +528,7 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 	default: break;
 	}
 	if (_p <= 0) return false;
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 	// reject the other moduli before clear() so that the current state is not broken
 	if (!isFixedCurveModulus(_p)) return false;
 #endif
@@ -752,39 +763,32 @@ void initG1onlyGLV(int curveType)
 #endif
 }
 
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 
 namespace {
 
 GG s_ggBasePoint;
 
-/*
-	init F (Fp or Fr) with the modulus mstr if F is not initialized (op.mp == 0) ; return false if F is initialized for another modulus
-*/
-template<class F>
-bool initFieldIfNot(bool *pb, const char *mstr)
-{
-	mpz_class m;
-	gmp::setStr(pb, m, mstr);
-	if (!*pb) return false;
-	const mpz_class& cur = F::getOp().mp;
-	if (cur == 0) {
-		F::init(pb, m);
-		return *pb;
-	}
-	*pb = (cur == m);
-	return *pb;
-}
-
 } // anonymous namespace
 
-void initGrumpkin(bool *pb)
+void initGrumpkin(bool *pb, int mode)
 {
-	const EcParam& para = ecparam::grumpkin;
+	// mode is the MCL_USE_GRUMPKIN of the caller : return before changing anything if it differs from that of the library
+	if (mode != MCL_USE_GRUMPKIN) {
+		*pb = false;
+		return;
+	}
+	// not mcl::BN_SNARK1 / mcl::BN382 because they may not be initialized yet if this is called from a constructor of a static variable
+#if MCL_USE_GRUMPKIN == 1
+	const CurveParam cp("4965661367192848881", 3, 9, false, MCL_BN_SNARK1);
+#else
+	const CurveParam cp("-0x400011000000000000000001", 2, 1, false, MCL_BN382);
+#endif
+	initPairing(pb, cp);
+	if (!*pb) return;
+	const EcParam& para = MCL_FIXED_GG_PARAM;
 	s_ggBasePoint.clear();
-	// the base field of GG is Fr (the r of BN_SNARK1) and the scalar field is Fp (the p of BN_SNARK1)
-	if (!initFieldIfNot<Fr>(pb, para.p)) return;
-	if (!initFieldIfNot<Fp>(pb, para.n)) return;
+	// the base field of GG is Fr (the r of the BN curve) and the scalar field is Fp (the p of the BN curve)
 	GG::init(pb, para.a, para.b, ec::Jacobi);
 	if (!*pb) return;
 	{
@@ -798,11 +802,11 @@ void initGrumpkin(bool *pb)
 	}
 	// #E = p is prime (cofactor 1), so every point on the curve is in the group : no setOrder
 	typedef GLV1T<GG> GLVGG;
-	*pb = GLVGG::useParamTbl(MCL_GRUMPKIN);
+	*pb = GLVGG::useParamTbl(MCL_FIXED_GG_TYPE);
 	if (!*pb) return;
 	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
 	GG::setFoldVecOpti(mcl::ec::foldVecGLV1T<GG>);
-#if MCL_MSM == 1
+#if MCL_MSM == 1 && MCL_USE_GRUMPKIN == 1 // no kernel for Grumpkin382
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
 		mcl::msm::initMsmGG(MCL_GRUMPKIN, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)
 	}
@@ -814,7 +818,7 @@ const GG& getGGbasePoint()
 	return s_ggBasePoint;
 }
 
-#endif // MCL_USE_GRUMPKIN == 1
+#endif // MCL_USE_GRUMPKIN != 0
 
 // the GLV function of Fp12::pow / Fp12::powVec (see fp_tower.hpp)
 static Fp12PowVecGLVFunc s_fp12PowVecGLV = 0;
@@ -960,14 +964,14 @@ const StaticMember* getStaticMember(int id)
 	struct Table {
 		StaticMember g1;
 		StaticMember g2;
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 		StaticMember gg;
 #endif
 		Table()
 		{
 			G1::setStaticMember(g1);
 			G2::setStaticMember(g2);
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 			GG::setStaticMember(gg);
 #endif
 		}
@@ -976,7 +980,7 @@ const StaticMember* getStaticMember(int id)
 	switch (id) {
 	case StaticIdG1: return &tbl.g1;
 	case StaticIdG2: return &tbl.g2;
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 	case StaticIdGG: return &tbl.gg;
 #endif
 	default: return 0;

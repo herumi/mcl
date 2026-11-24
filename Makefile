@@ -20,11 +20,19 @@ endif
 
 CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
 CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
-# GG (Grumpkin) requires MCL_USE_GRUMPKIN=1 (and MCL_FP_BIT=256)
+# GG requires MCL_USE_GRUMPKIN=1 (Grumpkin, MCL_FP_BIT=MCL_FR_BIT=256) or 2 (Grumpkin382, MCL_FP_BIT=MCL_FR_BIT=384)
 MCL_USE_GRUMPKIN?=0
+ifeq ($(filter 0 1 2,$(MCL_USE_GRUMPKIN)),)
+  $(error MCL_USE_GRUMPKIN must be 0, 1 or 2)
+endif
 ifeq ($(MCL_USE_GRUMPKIN),1)
-  ifneq ($(MCL_FP_BIT),256)
-    $(error MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256)
+  ifneq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
+    $(error MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256 and MCL_FR_BIT=256)
+  endif
+endif
+ifeq ($(MCL_USE_GRUMPKIN),2)
+  ifneq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_384)
+    $(error MCL_USE_GRUMPKIN=2 requires MCL_FP_BIT=384 and MCL_FR_BIT=384)
   endif
 endif
 CFLAGS+=-DMCL_USE_GRUMPKIN=$(MCL_USE_GRUMPKIN)
@@ -35,7 +43,7 @@ TEST_SRC=fp_test.cpp ec_test.cpp msm_par_test.cpp fp_util_test.cpp window_method
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
-ifeq ($(MCL_USE_GRUMPKIN),1)
+ifneq ($(MCL_USE_GRUMPKIN),0)
   TEST_SRC+=grumpkin_test.cpp
 endif
 TEST_SRC+=mul_test.cpp
@@ -77,7 +85,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-ifeq ($(MCL_USE_GRUMPKIN),1)
+ifneq ($(MCL_USE_GRUMPKIN),0)
   TEST_SRC:=$(filter fp_test.cpp grumpkin_test.cpp bn_test.cpp glv_test.cpp msm_par_test.cpp fp_util_test.cpp gmp_test.cpp paillier_test.cpp vint_test.cpp conversion_test.cpp array_test.cpp bint_test.cpp invmod_test.cpp static_init_test.cpp,$(TEST_SRC))
 endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
@@ -416,7 +424,9 @@ SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
-ifeq ($(MCL_MSM),1)
+# no msm_test if MCL_USE_GRUMPKIN=2 : BN382 and Grumpkin382 have no AVX-512 kernel
+ifeq ($(MCL_MSM)_$(MCL_USE_GRUMPKIN),1_2)
+else ifeq ($(MCL_MSM),1)
   TEST_EXE+=$(EXE_DIR)/msm_test.exe # src/msm_avx.cpp with -DMCL_MSM_TEST (mulEachCurves tests every curve of the AVX-512 MSM)
 endif
 test_ci: $(TEST_EXE)
@@ -476,7 +486,7 @@ test_static:
 	bin/pairing_static.exe
 
 $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -DMCL_MSM_TEST
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -DMCL_MSM_TEST -MMD -MP -MF $(OBJ_DIR)/msm_test.d
 MSM_TEST_OBJ=$(OBJ_DIR)/$(MSM)_test.o $(filter-out $(OBJ_DIR)/msm_avx.o,$(LIB_OBJ))
 $(EXE_DIR)/msm_test.exe: $(MSM_TEST_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(MSM_TEST_OBJ) $(LDFLAGS)

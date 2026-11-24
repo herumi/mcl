@@ -12,6 +12,8 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 # News
 - v4.45
   - `MCL_USE_GRUMPKIN=1` fixes the curve to BN\_SNARK1 and Grumpkin. The initialization of another curve or modulus (e.g., `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`) fails and does not change the current state (see [api.md](api.md#parameter-settings-and-supported-curves)).
+  - `MCL_USE_GRUMPKIN=2` (`MCL_FP_BIT=MCL_FR_BIT=384`) fixes the curve to BN382 (`MCL_BN382` = `MCL_BN381_1`) and Grumpkin382, the 2-cycle partner of BN382.
+  - `initGrumpkin()` calls `initPairing` of the fixed curve, and fails if the `MCL_USE_GRUMPKIN` of the caller is not equal to that of the library.
 - v4.44
   - `mulVec` keeps its work buffers and reuses them in the next call to reduce page faults (effective mainly on Windows).
     - `mcl::ec::freeMulVecBuffer()` / `mclBn_freeMulVecBuffer()` frees them (see [api.md](api.md#the-work-buffers-of-mulvec)).
@@ -62,11 +64,12 @@ and regenerate the low-level functions by `make update_all_asm` (requires LLVM) 
 - BN curve : p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
   - BN254 : a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
   - BN\_SNARK1 : a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-  - BN381\_1 : a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
+  - BN382 (= BN381\_1) : a BN curve over the 382-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
   - BN462 : a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
 - BLS12\_381
 - BLS12\_377
 - Grumpkin : y^2 = x^3 - 17 over the Fr of BN\_SNARK1 (the 2-cycle with BN\_SNARK1, class `GG`, the group operations only, requires `MCL_USE_GRUMPKIN=1` and `MCL_FP_BIT=256`)
+- Grumpkin382 : y^2 = x^3 + 2 over the Fr of BN382 (the 2-cycle with BN382, class `GG`, the group operations only, requires `MCL_USE_GRUMPKIN=2` and `MCL_FP_BIT=MCL_FR_BIT=384`)
 
 # BLS signature
 See [bls](https://github.com/herumi/bls) if you want mcl for BLS-signature.
@@ -235,7 +238,7 @@ make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
 
 `mklib.bat` builds the library and `mk.bat` builds a test or sample with it.
 ```
-mklib [dll] [clang=(0|1|2)] [-256] [-grumpkin]
+mklib [dll] [clang=(0|1|2)] [-256] [-grumpkin] [-grumpkin382]
 mk (-s|-d) <source file>
 ```
 - `dll`: build `bin\mcl.dll` (and `bin\mcl.lib` for import) instead of the static library `lib\mcl.lib`.
@@ -247,6 +250,7 @@ mk (-s|-d) <source file>
 - `-256`: build with `MCL_FP_BIT=256` (BN254, secp256k1, ...) into `obj256\` and `lib\mcl256.lib` (`bin\mcl256.dll` and `bin\mcl256.lib` with `dll`) instead of `obj\` and `lib\mcl.lib` (`MCL_FP_BIT=384`), so that both libraries can coexist.
 - `-grumpkin`: also define `MCL_USE_GRUMPKIN=1` (the curve `GG`, Grumpkin). It requires `-256`.
   `mklib` leaves `MCL_FP_BIT` and `MCL_USE_GRUMPKIN` in the environment, and then `mk` compiles with the same flags and links `lib\mcl256.lib` (`bin\mcl256.lib`).
+- `-grumpkin382`: define `MCL_USE_GRUMPKIN=2` (the curve `GG`, Grumpkin382) and `MCL_FR_BIT=384`, and build into `obj384\` and `lib\mcl384.lib`. It can not be used with `-256`.
 - `mk -s` links `lib\mcl.lib` and `mk -d` links `bin\mcl.lib` with `/DMCL_DLL`. The executable is put in `bin\`.
 
 Open a console window, and

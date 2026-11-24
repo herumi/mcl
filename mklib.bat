@@ -1,14 +1,16 @@
 @echo off
-rem usage: mklib.bat [dll] [clang=(0|1|2)] [-256] [-grumpkin]
+rem usage: mklib.bat [dll] [clang=(0|1|2)] [-256] [-grumpkin] [-grumpkin382]
 rem clang=1 (default) requires clang++ to build src\base64.ll (MCL_USE_LLVM=1)
 rem clang=2 also builds src\fp.cpp and src\msm_avx.cpp with clang-cl (CLANG_CFLAGS in setvar.bat)
 rem clang=0 builds without clang++
 rem -256 builds with MCL_FP_BIT=256 (BN254, secp256k1, ...) into obj256\ and lib\mcl256.lib (bin\mcl256.dll) instead of obj\ and lib\mcl.lib (MCL_FP_BIT=384)
 rem -grumpkin adds MCL_USE_GRUMPKIN=1 (the curve GG, Grumpkin) ; requires -256
-rem USE_CLANG, MCL_FP_BIT and MCL_USE_GRUMPKIN remain in the environment so that a following mk.bat uses the same compiler and flags
+rem -grumpkin382 adds MCL_USE_GRUMPKIN=2 (the curve GG, Grumpkin382) with MCL_FP_BIT=MCL_FR_BIT=384 into obj384\ and lib\mcl384.lib ; not with -256
+rem USE_CLANG, MCL_FP_BIT, MCL_FR_BIT and MCL_USE_GRUMPKIN remain in the environment so that a following mk.bat uses the same compiler and flags
 set USE_DLL=0
 set USE_CLANG=1
 set MCL_FP_BIT=384
+set MCL_FR_BIT=256
 set MCL_USE_GRUMPKIN=0
 rem cmd splits "clang=0" into two arguments "clang" and "0"
 :parse_args
@@ -16,6 +18,7 @@ if "%1"=="" goto :end_parse_args
 if "%1"=="dll" set USE_DLL=1
 if "%1"=="-256" set MCL_FP_BIT=256
 if "%1"=="-grumpkin" set MCL_USE_GRUMPKIN=1
+if "%1"=="-grumpkin382" set MCL_USE_GRUMPKIN=2
 if "%1"=="clang" (
   if "%2"=="0" set USE_CLANG=0
   if "%2"=="2" set USE_CLANG=2
@@ -28,6 +31,11 @@ if "%MCL_USE_GRUMPKIN%"=="1" if not "%MCL_FP_BIT%"=="256" (
   echo -grumpkin requires -256
   exit /b 1
 )
+if "%MCL_USE_GRUMPKIN%"=="2" if not "%MCL_FP_BIT%"=="384" (
+  echo -grumpkin382 can not be used with -256
+  exit /b 1
+)
+if "%MCL_USE_GRUMPKIN%"=="2" set MCL_FR_BIT=384
 call "%~dp0setvar.bat"
 set OBJ_DIR=obj%MCL_SUF%
 set LIB_NAME=mcl%MCL_SUF%
@@ -59,7 +67,7 @@ if "%USE_CLANG%"=="2" (
 
 echo CXX=%CXX%
 echo CFLAGS=%LOCAL_CFLAGS%
-echo MCL_FP_BIT=%MCL_FP_BIT% MCL_USE_GRUMPKIN=%MCL_USE_GRUMPKIN% OBJ_DIR=%OBJ_DIR% LIB_NAME=%LIB_NAME%
+echo MCL_FP_BIT=%MCL_FP_BIT% MCL_FR_BIT=%MCL_FR_BIT% MCL_USE_GRUMPKIN=%MCL_USE_GRUMPKIN% OBJ_DIR=%OBJ_DIR% LIB_NAME=%LIB_NAME%
 
 ml64 /c /Fo%OBJ_DIR%\bint-x64-win.obj src\asm\bint-x64-win.asm
 rem nasm -f win64 -o %OBJ_DIR%\bint-x64-win.obj src\asm\bint-x64-win.asm

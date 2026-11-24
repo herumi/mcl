@@ -95,6 +95,21 @@ const struct mcl::EcParam grumpkin = {
 	254,
 	MCL_GRUMPKIN
 };
+/*
+	Grumpkin382 : y^2 = x^3 + 2 over Fp where p = the r of BN382, #E(Fp) = the p of BN382 (prime, cofactor 1)
+	the 2-cycle with BN382. the generator is (-1, 1)
+*/
+const struct mcl::EcParam grumpkin382 = {
+	"grumpkin382",
+	"0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d",
+	"0",
+	"2",
+	"0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000c",
+	"1",
+	"0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013",
+	382,
+	MCL_GRUMPKIN382
+};
 const struct mcl::EcParam secp384r1 = {
 	"secp384r1",
 	"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
@@ -195,6 +210,7 @@ static inline const mcl::EcParam* getEcParam(const std::string& name)
 		&ecparam::NIST_P384,
 		&ecparam::NIST_P521,
 		&ecparam::grumpkin,
+		&ecparam::grumpkin382,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (name == tbl[i]->name) return tbl[i];
@@ -217,6 +233,7 @@ inline const mcl::EcParam* getEcParam(int curve)
 	case MCL_SECP160K1: return &ecparam::secp160k1;
 	case MCL_P160_1: return &ecparam::p160_1;
 	case MCL_GRUMPKIN: return &ecparam::grumpkin;
+	case MCL_GRUMPKIN382: return &ecparam::grumpkin382;
 	default: return 0;
 	}
 }

@@ -8,7 +8,7 @@
 */
 #include <mcl/g1_def.hpp>
 #include <mcl/g2_def.hpp>
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 #include <mcl/gg_def.hpp>
 #endif
 #include <mcl/curve_type.hpp>
@@ -106,15 +106,16 @@ MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para);
 
 MCL_CXX_API const G1& getG1basePoint();
 
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 /*
-	init GG (Grumpkin : y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1)
-	Fp and Fr must be those of BN_SNARK1 (initPairing(BN_SNARK1)) or not initialized yet (then they are initialized here)
-	*pb = false if Fp or Fr is initialized for another curve (G1 / G2 of the curve are not broken)
+	init the pairing (initPairing is called here) and GG, the 2-cycle partner of the BN curve
+	MCL_USE_GRUMPKIN=1 : BN_SNARK1 and Grumpkin (y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1)
+	MCL_USE_GRUMPKIN=2 : BN382 and Grumpkin382 (y^2 = x^3 + 2 over the Fr of BN382, the order is the p of BN382)
+	mode : don't specify it (the MCL_USE_GRUMPKIN of the caller is passed)
+	*pb = false and nothing is changed if mode is not equal to the MCL_USE_GRUMPKIN of the library
 	GG has only the group operations (add / mul / mulVec / serialization) : no pairing, no hash-to-curve
-	GG is available only if MCL_USE_GRUMPKIN=1 (requires MCL_FP_BIT=256, see gg_def.hpp)
 */
-MCL_CXX_API void initGrumpkin(bool *pb);
+MCL_CXX_API void initGrumpkin(bool *pb, int mode = MCL_USE_GRUMPKIN);
 MCL_CXX_API const GG& getGGbasePoint();
 #endif
 
@@ -169,11 +170,11 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254)
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 
-#if MCL_USE_GRUMPKIN == 1
-inline void initGrumpkin()
+#if MCL_USE_GRUMPKIN != 0
+inline void initGrumpkin(int mode = MCL_USE_GRUMPKIN)
 {
 	bool b;
-	initGrumpkin(&b);
+	initGrumpkin(&b, mode);
 	if (!b) throw cybozu::Exception("bn:initGrumpkin");
 }
 #endif

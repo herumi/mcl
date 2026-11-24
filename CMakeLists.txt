@@ -54,18 +54,21 @@ option(
 	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++ (Win64: clang++ found in PATH or Visual Studio)"
 	ON
 )
-option(
-	MCL_USE_GRUMPKIN
-	"define the class GG (Grumpkin), requires MCL_FP_BIT=256"
-	OFF
-)
-if(MCL_USE_GRUMPKIN AND NOT MCL_FP_BIT EQUAL 256)
-	message(FATAL_ERROR "MCL_USE_GRUMPKIN=ON requires MCL_FP_BIT=256")
-endif()
-if(MCL_USE_GRUMPKIN)
+set(MCL_USE_GRUMPKIN 0 CACHE STRING "define the class GG and fix the curve : 0 (off), 1 (BN_SNARK1 and Grumpkin, MCL_FP_BIT=MCL_FR_BIT=256), 2 (BN382 and Grumpkin382, MCL_FP_BIT=MCL_FR_BIT=384)")
+set_property(CACHE MCL_USE_GRUMPKIN PROPERTY STRINGS 0 1 2)
+# ON / OFF are accepted as 1 / 0
+if(MCL_USE_GRUMPKIN STREQUAL "2")
+	set(MCL_USE_GRUMPKIN_FLAG 2)
+elseif(MCL_USE_GRUMPKIN)
 	set(MCL_USE_GRUMPKIN_FLAG 1)
 else()
 	set(MCL_USE_GRUMPKIN_FLAG 0)
+endif()
+if(MCL_USE_GRUMPKIN_FLAG EQUAL 1 AND NOT (MCL_FP_BIT EQUAL 256 AND MCL_FR_BIT EQUAL 256))
+	message(FATAL_ERROR "MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256 and MCL_FR_BIT=256")
+endif()
+if(MCL_USE_GRUMPKIN_FLAG EQUAL 2 AND NOT (MCL_FP_BIT EQUAL 384 AND MCL_FR_BIT EQUAL 384))
+	message(FATAL_ERROR "MCL_USE_GRUMPKIN=2 requires MCL_FP_BIT=384 and MCL_FR_BIT=384")
 endif()
 option(
 	MCL_BUILD_SAMPLE

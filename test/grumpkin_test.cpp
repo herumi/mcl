@@ -1,6 +1,8 @@
 /*
-	Grumpkin (class GG) : y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1
-	the 2-cycle with BN_SNARK1 : G1 / G2 / GT of BN_SNARK1 and GG are used at the same time
+	the class GG : the 2-cycle partner of the BN curve fixed by MCL_USE_GRUMPKIN
+	1 : Grumpkin : y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1
+	2 : Grumpkin382 : y^2 = x^3 + 2 over the Fr of BN382, the order is the p of BN382
+	G1 / G2 / GT of the BN curve and GG are used at the same time
 */
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
@@ -12,6 +14,16 @@ using namespace mcl;
 
 cybozu::XorShift g_rg;
 
+#if MCL_USE_GRUMPKIN == 1
+const int g_bnType = MCL_BN_SNARK1;
+const int g_ggType = MCL_GRUMPKIN;
+const int g_otherMode = 2;
+#else
+const int g_bnType = MCL_BN382;
+const int g_ggType = MCL_GRUMPKIN382;
+const int g_otherMode = 1;
+#endif
+
 // the random points are multiples of the base point
 void setRandom(GG& P)
 {
@@ -22,8 +34,23 @@ void setRandom(GG& P)
 
 CYBOZU_TEST_AUTO(init)
 {
-	initPairing(mcl::BN_SNARK1);
+	// initGrumpkin fails without changing anything if the mode is not the MCL_USE_GRUMPKIN of the library
+	{
+		const int modeTbl[] = { g_otherMode, 0, -1, 3 };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(modeTbl); i++) {
+			bool b = true;
+			initGrumpkin(&b, modeTbl[i]);
+			CYBOZU_TEST_ASSERT(!b);
+			CYBOZU_TEST_EXCEPTION(initGrumpkin(modeTbl[i]), cybozu::Exception);
+			CYBOZU_TEST_EQUAL(Fp::getOp().mp, 0);
+			CYBOZU_TEST_EQUAL(Fr::getOp().mp, 0);
+		}
+	}
+	// initGrumpkin calls initPairing
 	initGrumpkin();
+	CYBOZU_TEST_EQUAL(getCurveType(), g_bnType);
+	CYBOZU_TEST_EQUAL(Fp::getOp().mp, mpz_class(getEcParam(g_ggType)->n));
+	CYBOZU_TEST_EQUAL(Fr::getOp().mp, mpz_class(getEcParam(g_ggType)->p));
 	// the base field of GG is Fr and the scalar field is Fp
 	CYBOZU_TEST_EQUAL(sizeof(GG), sizeof(Fr) * 3);
 	CYBOZU_TEST_EQUAL(GG::getSerializedByteSize(), Fr::getByteSize());
@@ -31,12 +58,22 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_ASSERT(!G.isZero());
 	CYBOZU_TEST_ASSERT(G.isValid());
 	CYBOZU_TEST_ASSERT(G.isNormalized());
+#if MCL_USE_GRUMPKIN == 1
 	CYBOZU_TEST_EQUAL(G.x, 1);
 	CYBOZU_TEST_EQUAL(G.y, Fr("0x2cf135e7506a45d632d270d45f1181294833fc48d823f272c"));
 	// y^2 = x^3 - 17
 	Fr t;
 	Fr::sqr(t, G.y);
 	CYBOZU_TEST_EQUAL(t, Fr(1) - 17);
+#else
+	// (-1, 1) on y^2 = x^3 + 2
+	CYBOZU_TEST_EQUAL(G.x, -1);
+	CYBOZU_TEST_EQUAL(G.y, 1);
+	CYBOZU_TEST_EQUAL(Fp::getBitSize(), 382u);
+	CYBOZU_TEST_EQUAL(Fr::getBitSize(), 382u);
+	CYBOZU_TEST_EQUAL(int(MCL_BN382), int(MCL_BN381_1));
+	CYBOZU_TEST_ASSERT(mcl::BN382 == mcl::BN381_1);
+#endif
 	// the order is p (= the modulus of Fp)
 	const mpz_class& p = Fp::getOp().mp;
 	GG Q;
@@ -52,20 +89,20 @@ CYBOZU_TEST_AUTO(init)
 	Q = G * s;
 	CYBOZU_TEST_EQUAL(Q, -G);
 	// the parameters of EcParam
-	const mcl::EcParam *para = getEcParam(MCL_GRUMPKIN);
+	const mcl::EcParam *para = getEcParam(g_ggType);
 	CYBOZU_TEST_ASSERT(para);
 	CYBOZU_TEST_EQUAL(mpz_class(para->p), Fr::getOp().mp);
 	CYBOZU_TEST_EQUAL(mpz_class(para->n), Fp::getOp().mp);
 }
 
-// the pairing of BN_SNARK1 is not broken by initGrumpkin
-// the AVX-512 IFMA kernels of G1 (BN_SNARK1) and GG are registered at the same time (the two instances of src/msm_avx_impl.hpp)
+// MCL_USE_GRUMPKIN=1 : the AVX-512 IFMA kernels of G1 (BN_SNARK1) and GG are registered at the same time (the two instances of src/msm_avx_impl.hpp)
+// MCL_USE_GRUMPKIN=2 : no kernel
 CYBOZU_TEST_AUTO(msmKernel)
 {
 	const bool ifma = (mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA) != 0;
 	printf("AVX-512 IFMA=%d G1::msmKernel=%d GG::msmKernel=%d G1::mulEachOpti=%d GG::mulEachOpti=%d\n",
 		ifma, G1::msmKernel != 0, GG::msmKernel != 0, G1::mulEachOpti != 0, GG::mulEachOpti != 0);
-#if MCL_MSM == 1
+#if MCL_MSM == 1 && MCL_USE_GRUMPKIN == 1
 	CYBOZU_TEST_EQUAL(G1::msmKernel != 0, ifma);
 	CYBOZU_TEST_EQUAL(GG::msmKernel != 0, ifma);
 	CYBOZU_TEST_EQUAL(GG::mulEachOpti != 0, ifma);
@@ -75,6 +112,10 @@ CYBOZU_TEST_AUTO(msmKernel)
 	}
 #else
 	CYBOZU_TEST_ASSERT(GG::msmKernel == 0);
+	CYBOZU_TEST_ASSERT(GG::mulEachOpti == 0);
+#endif
+#if MCL_USE_GRUMPKIN == 2
+	CYBOZU_TEST_ASSERT(G1::msmKernel == 0);
 #endif
 }
 
@@ -326,7 +367,7 @@ CYBOZU_TEST_AUTO(bench)
 		}
 		printf("n=%zd ", n);
 		CYBOZU_BENCH_C("GG::mulVec", 3, GG::mulVec, Q, xVec.data(), yVec.data(), n);
-		// G1 of BN_SNARK1 for comparison (the same cost if the kernels of both are available)
+		// G1 of the BN curve for comparison (the same cost if the kernels of both are available)
 		std::vector<G1> xVec1(n);
 		std::vector<Fr> yVec1(n);
 		for (size_t j = 0; j < n; j++) {
@@ -342,7 +383,6 @@ CYBOZU_TEST_AUTO(bench)
 // the initialization of another curve / modulus fails and does not break the current state
 CYBOZU_TEST_AUTO(otherCurve)
 {
-	initPairing(mcl::BN_SNARK1);
 	initGrumpkin();
 	const mpz_class p = Fp::getOp().mp;
 	const mpz_class r = Fr::getOp().mp;
@@ -357,6 +397,25 @@ CYBOZU_TEST_AUTO(otherCurve)
 	CYBOZU_TEST_ASSERT(!b);
 	initPairing(&b); // the default parameter is BN254
 	CYBOZU_TEST_ASSERT(!b);
+	{
+		// the other pairing curves (BN_SNARK1 for BN382, BN382 for BN_SNARK1, ...)
+		const int typeTbl[] = { MCL_BN254, MCL_BN382, MCL_BN381_2, MCL_BN_SNARK1, MCL_BLS12_381, MCL_BLS12_377 };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(typeTbl); i++) {
+			if (typeTbl[i] == g_bnType) continue;
+			initPairing(&b, *mcl::getCurveParam(typeTbl[i]));
+			CYBOZU_TEST_ASSERT(!b);
+		}
+		// the partner of the other mode
+		const int otherGG = (g_ggType == MCL_GRUMPKIN) ? MCL_GRUMPKIN382 : MCL_GRUMPKIN;
+		initG1only(&b, *getEcParam(otherGG));
+		CYBOZU_TEST_ASSERT(!b);
+		mcl::initCurve<G1>(&b, otherGG);
+		CYBOZU_TEST_ASSERT(!b);
+		initG1only(&b, mcl::ecparam::secp384r1);
+		CYBOZU_TEST_ASSERT(!b);
+		initGrumpkin(&b, g_otherMode);
+		CYBOZU_TEST_ASSERT(!b);
+	}
 	initG1only(&b, mcl::ecparam::secp256k1);
 	CYBOZU_TEST_ASSERT(!b);
 	mcl::initCurve<G1>(&b, MCL_SECP256K1);
@@ -368,6 +427,14 @@ CYBOZU_TEST_AUTO(otherCurve)
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // the p of secp256k1
 		"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed", // 2^255 - 19
 		"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49", // the p of BN_SNARK1 + 2
+#if MCL_USE_GRUMPKIN == 1
+		"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd45", // the p of BN_SNARK1 - 2
+#else
+		"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47", // the p of BN_SNARK1
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // the p of BLS12-381
+		"0x24009015183f94892d996cc179c6d1666f82cefbe47879bba6e58dbe43002a0609480097801382be004e000000000013", // the p of BN381_2
+		"0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000015", // the p of BN382 + 2
+#endif
 		"65537",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(otherTbl); i++) {
@@ -379,7 +446,7 @@ CYBOZU_TEST_AUTO(otherCurve)
 	// the state is not broken
 	CYBOZU_TEST_EQUAL(Fp::getOp().mp, p);
 	CYBOZU_TEST_EQUAL(Fr::getOp().mp, r);
-	CYBOZU_TEST_EQUAL(getCurveType(), MCL_BN_SNARK1);
+	CYBOZU_TEST_EQUAL(getCurveType(), g_bnType);
 	CYBOZU_TEST_ASSERT(P.isValid());
 	CYBOZU_TEST_ASSERT(Q.isValid());
 	{
@@ -395,15 +462,51 @@ CYBOZU_TEST_AUTO(otherCurve)
 		CYBOZU_TEST_EQUAL(e2, e3);
 	}
 	{
-		// the order of GG is the p of BN_SNARK1
+		// the order of GG is the p of the BN curve
 		GG R;
 		GG::mul(R, getGGbasePoint(), Fp(-1));
 		R += getGGbasePoint();
 		CYBOZU_TEST_ASSERT(R.isZero());
 	}
 	// the moduli of the fixed curve are accepted again
-	initPairing(&b, mcl::BN_SNARK1);
+	initPairing(&b, *mcl::getCurveParam(g_bnType));
 	CYBOZU_TEST_ASSERT(b);
 	initGrumpkin(&b);
 	CYBOZU_TEST_ASSERT(b);
+	{
+		GG R;
+		GG::mul(R, getGGbasePoint(), Fp(-1));
+		R += getGGbasePoint();
+		CYBOZU_TEST_ASSERT(R.isZero());
+	}
+	// G1 as the partner curve by initCurve<G1> exchanges Fp and Fr ; initGrumpkin restores them by initPairing
+	{
+		G1 P0;
+		mcl::initCurve<G1>(&b, g_ggType, &P0);
+		CYBOZU_TEST_ASSERT(b);
+		CYBOZU_TEST_EQUAL(Fp::getOp().mp, r);
+		CYBOZU_TEST_EQUAL(Fr::getOp().mp, p);
+		G1 P1, P2;
+		Fr s;
+		s.setByCSPRNG(g_rg);
+		G1::mul(P1, P0, s); // GLV
+		G1::mulGeneric(P2, P0, s.getMpz());
+		CYBOZU_TEST_EQUAL(P1, P2);
+		initGrumpkin(&b);
+		CYBOZU_TEST_ASSERT(b);
+		CYBOZU_TEST_EQUAL(Fp::getOp().mp, p);
+		CYBOZU_TEST_EQUAL(Fr::getOp().mp, r);
+		CYBOZU_TEST_EQUAL(getCurveType(), g_bnType);
+		G1 P3;
+		G2 Q3;
+		hashAndMapToG1(P3, "abc");
+		hashAndMapToG2(Q3, "abc");
+		Fp12 e2;
+		pairing(e2, P3, Q3);
+		CYBOZU_TEST_EQUAL(e1, e2);
+		GG R;
+		GG::mul(R, getGGbasePoint(), Fp(-1));
+		R += getGGbasePoint();
+		CYBOZU_TEST_ASSERT(R.isZero());
+	}
 }

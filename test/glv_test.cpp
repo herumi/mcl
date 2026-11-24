@@ -327,14 +327,17 @@ CYBOZU_TEST_AUTO(glv)
 		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BLS12_381, "BLS12_381" },
 #endif
+#if MCL_FR_BIT >= 384
+		{ mcl::BN382, "BN382" }, // glv1ParamWideTbl
+#endif
 		{ mcl::BN254, "BN254" },
 		{ mcl::BN_SNARK1, "BN_SNARK1" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("name=%s\n", tbl[i].name);
 		const mcl::CurveParam& cp = tbl[i].param;
-#if MCL_USE_GRUMPKIN == 1
-		if (cp != mcl::BN_SNARK1) {
+#if MCL_USE_GRUMPKIN != 0
+		if (cp.curveType != ((MCL_USE_GRUMPKIN == 1) ? MCL_BN_SNARK1 : MCL_BN382)) {
 			bool b;
 			initPairing(&b, cp);
 			CYBOZU_TEST_ASSERT(!b);

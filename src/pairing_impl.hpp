@@ -97,10 +97,10 @@ struct Param {
 
 	void init(bool *pb, const mcl::CurveParam& cp)
 	{
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 		// return before changing the parameters
 		// compare with the constant because mcl::BN_SNARK1 of this file may not be initialized yet if this is called from a constructor of a static variable
-		if (cp.curveType != MCL_BN_SNARK1) {
+		if (cp.curveType != MCL_FIXED_BN_TYPE) {
 			*pb = false;
 			return;
 		}
@@ -1295,9 +1295,9 @@ MCL_CXX_API void initPairing(bool *pb, const mcl::CurveParam& cp)
 
 MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para)
 {
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN != 0
 	// return before changing the settings of G1
-	if (para.curveType != MCL_GRUMPKIN) {
+	if (para.curveType != MCL_FIXED_GG_TYPE) {
 		*pb = false;
 		return;
 	}

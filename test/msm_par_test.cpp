@@ -79,7 +79,9 @@ static void parallelForThread(mcl::ec::ParallelForTask task, void *arg, size_t n
 
 CYBOZU_TEST_AUTO(init)
 {
-#if MCL_FP_BIT >= 384
+#if MCL_USE_GRUMPKIN == 2
+	initPairing(mcl::BN382);
+#elif MCL_FP_BIT >= 384
 	initPairing(mcl::BLS12_381);
 #else
 	initPairing(mcl::BN_SNARK1);

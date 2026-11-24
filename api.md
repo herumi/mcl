@@ -140,12 +140,23 @@ MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|supported curves
 -|-|-|-|-
 256|256|32|32|MCL_BN254, MCL_BN_SNARK1
 384|256|48|32|+MCL_BLS12_381, MCL_BLS12_377
-384|384|48|48|+MCL_BN381_1
+384|384|48|48|+MCL_BN382 (= MCL_BN381_1)
 
-`MCL_USE_GRUMPKIN=1` (requires `MCL_FP_BIT=256`) defines the class `GG` (Grumpkin, the 2-cycle with BN\_SNARK1) and fixes the curve to BN\_SNARK1 and Grumpkin.
-- Only the `p` and the `r` of BN\_SNARK1 are accepted as the modulus of `Fp` / `Fr` (and the other `FpT`).
+`MCL_BN382` is the BN curve with z = -(2^94 + 2^76 + 2^72 + 1); `p` and `r` are 382 bits. `MCL_BN381_1` is the old name of the same value.
+
+`MCL_USE_GRUMPKIN` defines the class `GG` (the 2-cycle partner of a BN curve : the base field is `Fr` and the scalar field is `Fp`) and fixes the curve.
+
+MCL_USE_GRUMPKIN|MCL_FP_BIT|MCL_FR_BIT|pairing curve|GG
+-|-|-|-|-
+1|256|256|BN\_SNARK1|Grumpkin (`MCL_GRUMPKIN`) : y^2 = x^3 - 17, the generator is (1, sqrt(-16))
+2|384|384|BN382|Grumpkin382 (`MCL_GRUMPKIN382`) : y^2 = x^3 + 2, the generator is (-1, 1)
+
+- `initGrumpkin()` initializes both the pairing and `GG` (it calls `initPairing` of the fixed curve). `getGGbasePoint()` returns the generator.
+- `initGrumpkin` passes the `MCL_USE_GRUMPKIN` of the caller as the default argument `mode`. It fails without changing anything if `mode` is not equal to the `MCL_USE_GRUMPKIN` of the library, so don't specify `mode` explicitly.
+- Only the `p` and the `r` of the fixed curve are accepted as the modulus of `Fp` / `Fr` (and the other `FpT`).
 - The initialization of another curve or modulus fails (`*pb = false`, a nonzero return value or an exception) and does not change the current state: `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`, `mclBn_init(MCL_BN254, ...)`, ...
-- The default argument of `initPairing` is still `BN254`, so call `initPairing(mcl::BN_SNARK1)` and then `initGrumpkin()`.
+- The default argument of `initPairing` is still `BN254`, so `initPairing()` fails. Use `initGrumpkin()`.
+- `GG` has only the group operations (add / mul / mulVec / foldVec / serialization). BN382 and Grumpkin382 have no AVX-512 kernel of MSM.
 
 ## Thread safety
 All functions except initialization and global setting changes are thread-safe.
@@ -178,7 +189,7 @@ The curve parameters are defined in `mcl/curve_type.hpp`.
 - mcl::BN_SNARK1
 - mcl::BLS12_381
 - mcl::BLS12_377
-- mcl::BN381_1
+- mcl::BN382 (= mcl::BN381_1)
 
 ## Global setting
 

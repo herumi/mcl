@@ -16,9 +16,13 @@
 using namespace mcl;
 using namespace mcl::fp;
 
+// the p and the r of the curve fixed by MCL_USE_GRUMPKIN
 #if MCL_USE_GRUMPKIN == 1
-static const char *g_snark1_p = "0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47";
-static const char *g_snark1_r = "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001";
+static const char *g_fixed_p = "0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47";
+static const char *g_fixed_r = "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001";
+#elif MCL_USE_GRUMPKIN == 2
+static const char *g_fixed_p = "0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013";
+static const char *g_fixed_r = "0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d";
 #endif
 
 CYBOZU_TEST_AUTO(sizeof)
@@ -552,8 +556,8 @@ void setArrayModTest()
 
 CYBOZU_TEST_AUTO(set64bit)
 {
-#if MCL_USE_GRUMPKIN == 1
-	Fp::init(g_snark1_p);
+#if MCL_USE_GRUMPKIN != 0
+	Fp::init(g_fixed_p);
 #else
 	Fp::init("3138550867693340381917894711603833208051177722232017256453");
 #endif
@@ -1003,9 +1007,9 @@ void mainTest()
 {
 	printf("MCL_FP_BIT=%d\n", MCL_FP_BIT);
 	const char *tbl[] = {
-#if MCL_USE_GRUMPKIN == 1
-		g_snark1_p,
-		g_snark1_r,
+#if MCL_USE_GRUMPKIN != 0
+		g_fixed_p,
+		g_fixed_r,
 #else
 		// N = 3
 		"0x30000000000000000000000000000000000000000000002b",

@@ -447,7 +447,7 @@ struct Test {
 			Fp y;
 			if (Fp::squareRoot(y, x)) {
 				CYBOZU_TEST_EQUAL(y*y, x);
-				CYBOZU_TEST_EQUAL(ret, 1);
+				CYBOZU_TEST_EQUAL(ret, x.isZero() ? 0 : 1); // x = 0 after gx = -1 (grumpkin382)
 			} else {
 				CYBOZU_TEST_EQUAL(ret, -1);
 			}
@@ -873,6 +873,7 @@ CYBOZU_TEST_AUTO(all)
 		const struct mcl::EcParam para6[] = {
 //			mcl::ecparam::secp384r1,
 			mcl::ecparam::NIST_P384,
+			mcl::ecparam::grumpkin382, // the GLV method by initG1onlyGLV (glv1ParamWideTbl)
 		};
 		test_sub(para6, CYBOZU_NUM_OF_ARRAY(para6));
 	}

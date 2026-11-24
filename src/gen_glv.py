@@ -20,6 +20,11 @@ glvCurves = [
   ('secp256k1', 'generic', None, 7),
   ('Grumpkin', 'generic', None, -17),
 ]
+# r > 256 bits : the split by mpz (GLV1T::split without splitRaw), |a|, |b| < 2^193
+glvCurvesWide = [
+  ('BN382', 'BN', -0x400011000000000000000001, 2),
+  ('Grumpkin382', 'generic', None, 2),
+]
 
 def sqrtMod(a, p):
   # Tonelli-Shanks, return None if a is not a square
@@ -110,13 +115,16 @@ def glvBasis(r, lam):
   v2 = v2a if v2a[0]**2 + v2a[1]**2 <= v2b[0]**2 + v2b[1]**2 else v2b
   return [list(v1), list(v2)]
 
-def makeParam(name, kind, z, b):
+def makeParam(name, kind, z, b, wide=False):
   cv = curveTbl[name]
   p, r = cv.p, cv.r
   prm = Param()
   prm.name = name
   prm.curveType = cv.c
   prm.isBLS12 = kind == 'BLS12'
+  prm.wide = wide
+  assert not (wide and prm.isBLS12)
+  halfBit = 192 if wide else 128
   isBLS12 = prm.isBLS12
   if isBLS12:
     assert r == z**4 - z**2 + 1
@@ -151,10 +159,10 @@ def makeParam(name, kind, z, b):
         B = glvBasis(r, lam)
         det = B[0][0] * B[1][1] - B[0][1] * B[1][0]
         sgn = 1 if det > 0 else -1
-        if abs(B[1][1]) < (1 << 128) and abs(B[0][1]) < (1 << 128):
+        if abs(B[1][1]) < (1 << halfBit) and abs(B[0][1]) < (1 << halfBit):
           break
       else:
-        raise Exception(f'{name}: no basis with c0, c1 < 2^128')
+        raise Exception(f'{name}: no basis with c0, c1 < 2^{halfBit}')
     det = B[0][0] * B[1][1] - B[0][1] * B[1][0]
     assert abs(det) == r
     # (t, b0) = x (1, 0) B^{-1} = x (B11, -B01) / det : t = (x c0) / r, b0 = (x c1) / r
@@ -169,7 +177,8 @@ def makeParam(name, kind, z, b):
       c1 = -c1
     assert abs(B[0][0] * B[1][1] - B[0][1] * B[1][0]) == r
     # t = (x v0 + 2^(s-1)) >> s with v0 = floor(c0 2^s / r) : s = 256 + 64 (the error of the rounding < 2^-64, aligned to the Unit)
-    s = 256 + 64
+    # wide : t = (x v0) >> s (floor) with s = the bit size of r (the same as GLV1T::split by mpz)
+    s = r.bit_length() if wide else 256 + 64
     v0 = (c0 << s) // r
     v1 = (c1 << s) // r
     cofactor = 1
@@ -201,7 +210,7 @@ def split(prm, x):
     t = ((x >> (prm.s - 128)) * prm.v0) >> 128
     b0 = 0
   else:
-    half = 1 << (prm.s - 1)
+    half = 0 if prm.wide else 1 << (prm.s - 1)
     t = (x * prm.v0 + half) >> prm.s
     b0 = (x * prm.v1 + half) >> prm.s
   B = prm.B
@@ -232,6 +241,19 @@ def verify(prm):
     aMax = xHmax * ((1 << s) - v0 * L) + ((1 << (s - 128)) - 1) * H + L * H - L # a 2^128 <= aMax
     assert aMax < 2 * L * H, prm.name
     assert r // L + 2 < H, prm.name
+  elif prm.wide:
+    # t = t* - e0, b0 = b0* - e1 with the exact t* = x c0 / r, b0* = x c1 / r and the errors e0, e1 in [0, 2)
+    # (v0 = c0 2^s / r - f with f in [0, 1) and x < r < 2^s), so |a| < 2 (|B00| + |B10|), |b| < 2 (|B01| + |B11|)
+    # the NAF of a, b must fit in sizeof(Fr) * 8 / 2 + 2 = 194 digits (mulVecGLVsmall, foldVecGLV1T) : |a|, |b| < 2^193
+    s = prm.s
+    assert r.bit_length() == s and 256 < s <= 384, prm.name
+    H = 1 << 193
+    assert 0 <= prm.v0 < (1 << 256) and 0 <= prm.v1 < (1 << 256), prm.name
+    for i in range(2):
+      for j in range(2):
+        assert abs(B[i][j]) < (1 << 256), prm.name
+    assert 2 * (abs(B[0][0]) + abs(B[1][0])) <= H, prm.name
+    assert 2 * (abs(B[0][1]) + abs(B[1][1])) <= H, prm.name
   else:
     # t = t* - e0, b0 = b0* - e1 with the exact t* = x c0 / r, b0* = x c1 / r and the errors
     # e0, e1 in [-1/2, 1/2 + d), d = (r - 1) / 2^s, so a = e0 B00 + e1 B10, b = -(e0 B01 + e1 B11)
@@ -250,7 +272,7 @@ def verify(prm):
     tMax = (((r - 1) * prm.v0 + (1 << (s - 1))) >> s)
     b0Max = (((r - 1) * prm.v1 + (1 << (s - 1))) >> s)
     assert tMax < H and b0Max < H, prm.name
-  xs = [0, 1, 2, r - 1, r - 2] + [1 << k for k in range(1, 254)] + [(r - 1) >> k for k in range(1, 254)]
+  xs = [0, 1, 2, r - 1, r - 2] + [1 << k for k in range(1, r.bit_length())] + [(r - 1) >> k for k in range(1, r.bit_length())]
   rng = random.Random(1)
   xs += [rng.randrange(r) for _ in range(100000)]
   for x in xs:
@@ -261,6 +283,8 @@ def verify(prm):
     if prm.isBLS12:
       assert 0 <= a < B[0][0] and 0 <= b, (prm.name, hex(x))
     assert abs(a) < H and abs(b) < H, (prm.name, hex(x))
+    if prm.wide:
+      assert a.bit_length() <= 192 and b.bit_length() <= 192, (prm.name, hex(x)) # the measured size (one bit less than the bound)
 
 def putParamBN(prm):
   B = prm.B
@@ -281,6 +305,25 @@ def putParamBN(prm):
   print(f'\t\t{neg},')
   print('\t},')
 
+def putParamWide(prm):
+  B = prm.B
+  neg = 0
+  for i in range(2):
+    for j in range(2):
+      if B[i][j] < 0:
+        neg |= 1 << (i * 2 + j)
+  print('\t{')
+  print(f'\t\t// {prm.name}')
+  print(f'\t\t{prm.curveType}, "{prm.rw:x}", {prm.s},')
+  print(f'\t\t{hexArray(toArray(prm.v0, 4))},')
+  print(f'\t\t{hexArray(toArray(prm.v1, 4))},')
+  print('\t\t{')
+  for i in range(2):
+    print(f'\t\t\t{{ {hexArray(toArray(abs(B[i][0]), 4))}, {hexArray(toArray(abs(B[i][1]), 4))} }},')
+  print('\t\t},')
+  print(f'\t\t{neg},')
+  print('\t},')
+
 def putParamBLS12(prm):
   print('\t{')
   print(f'\t\t// {prm.name}')
@@ -291,7 +334,8 @@ def putParamBLS12(prm):
 
 def main():
   prms = [makeParam(*e) for e in glvCurves]
-  for prm in prms:
+  prmsWide = [makeParam(*e, wide=True) for e in glvCurvesWide]
+  for prm in prms + prmsWide:
     verify(prm)
   print('''// generated by src/gen_glv.py (do not edit)
 /*
@@ -331,6 +375,25 @@ static const GLV1ParamBLS12 glv1ParamBLS12Tbl[] = {''')
   for prm in prms:
     if prm.isBLS12:
       putParamBLS12(prm)
+  print('''};
+/*
+	the curves with r > 256 bits (GLV1T::split by mpz, no splitRaw) : t = (x v0) >> shift, b0 = (x v1) >> shift (floor, shift = the bit size of r)
+	a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11)
+	B[i][j] is the absolute value and the bit (i * 2 + j) of Bneg is set if B[i][j] < 0
+	|a|, |b| < 2^193 for all x in [0, r)
+*/
+struct GLV1ParamWide {
+	int curveType;
+	const char *rw; // hex
+	uint32_t shift;
+	uint64_t v0[4];
+	uint64_t v1[4];
+	uint64_t B[2][2][4];
+	uint32_t Bneg;
+};
+static const GLV1ParamWide glv1ParamWideTbl[] = {''')
+  for prm in prmsWide:
+    putParamWide(prm)
   print('};')
 
 if __name__ == '__main__':

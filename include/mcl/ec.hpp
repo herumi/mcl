@@ -1051,7 +1051,7 @@ enum StaticIdType {
 	StaticIdG2 = 1,
 	StaticIdGG = 2
 };
-// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG, only if MCL_USE_GRUMPKIN=1 ; otherwise 0)
+// return the pointers to the static data members of G1 (id = StaticIdG1), G2 (id = StaticIdG2) or GG (id = StaticIdGG, only if MCL_USE_GRUMPKIN != 0 ; otherwise 0)
 MCL_CXX_API const StaticMember* getStaticMember(int id);
 // StaticId<Fp>::id is defined in g1_def.hpp (Fp), g2_def.hpp (Fp2) and gg_def.hpp (Fr)
 template<class Fp> struct StaticId;
@@ -2119,7 +2119,7 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Ja
 	}
 	Ec::setMulVecGLV(0);
 	Ec::setFoldVecOpti(0);
-	if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN) {
+	if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN || curveType == MCL_GRUMPKIN382) {
 		initG1onlyGLV(curveType);
 	}
 }

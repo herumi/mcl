@@ -41,6 +41,7 @@ const CurveParam BN254("-0x4080000000000001", 2, 1, false, MCL_BN254); // -(2^62
 const CurveParam BN_P256("-0x6882f5c030b0a801", 3, 1, true, MCL_BN_P256); // BN P256 defined in TCG Algorithm Registry Family "2.0", Revision 1.32
 // provisional(experimental) param with maxBitSize = 384
 const CurveParam BN381_1("-0x400011000000000000000001", 2, 1, false, MCL_BN381_1); // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam BN382("-0x400011000000000000000001", 2, 1, false, MCL_BN382); // the same as BN381_1 (p and r are 382 bits)
 const CurveParam BN381_2("-0x400040090001000000000001", 2, 1, false, MCL_BN381_2); // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
 const CurveParam BN462("0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462); // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
 const CurveParam BN_SNARK1("4965661367192848881", 3, 9, false, MCL_BN_SNARK1);

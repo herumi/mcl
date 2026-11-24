@@ -60,13 +60,21 @@
 	#define MCL_FR_BIT 256
 #endif
 /*
-	MCL_USE_GRUMPKIN=1 : define the class GG (Grumpkin)
+	MCL_USE_GRUMPKIN : define the class GG (the 2-cycle partner of a BN curve) and fix the curve
+	1 : BN_SNARK1 and Grumpkin (MCL_FP_BIT = MCL_FR_BIT = 256)
+	2 : BN382 and Grumpkin382 (MCL_FP_BIT = MCL_FR_BIT = 384)
 */
 #ifndef MCL_USE_GRUMPKIN
 	#define MCL_USE_GRUMPKIN 0
 #endif
-#if MCL_USE_GRUMPKIN == 1 && MCL_FP_BIT != 256
-	#error "MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256"
+#if MCL_USE_GRUMPKIN < 0 || MCL_USE_GRUMPKIN > 2
+	#error "MCL_USE_GRUMPKIN must be 0, 1 or 2"
+#endif
+#if MCL_USE_GRUMPKIN == 1 && (MCL_FP_BIT != 256 || MCL_FR_BIT != 256)
+	#error "MCL_USE_GRUMPKIN=1 requires MCL_FP_BIT=256 and MCL_FR_BIT=256"
+#endif
+#if MCL_USE_GRUMPKIN == 2 && (MCL_FP_BIT != 384 || MCL_FR_BIT != 384)
+	#error "MCL_USE_GRUMPKIN=2 requires MCL_FP_BIT=384 and MCL_FR_BIT=384"
 #endif
 /*
 	the max bit size of MCL_FP_BIT and MCL_FR_BIT (= the bit size of the generated mul/sqr functions, see MCL_BINT_MUL_N)

@@ -18,8 +18,10 @@ static struct Init {
 		// must be nonzero
 		CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));
 		puts("initPairing");
-#if MCL_USE_GRUMPKIN == 1
-		mcl::bn::initPairing(mcl::BN_SNARK1);
+#if MCL_USE_GRUMPKIN != 0
+		// initGrumpkin calls initPairing of the fixed curve
+		mcl::initGrumpkin();
+		CYBOZU_TEST_ASSERT(!mcl::getGGbasePoint().isZero());
 #else
 		mcl::bn::initPairing();
 #endif

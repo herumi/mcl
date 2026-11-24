@@ -441,8 +441,9 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
-#if MCL_USE_GRUMPKIN == 1
-		if (ts.cp != mcl::BN_SNARK1) {
+#if MCL_USE_GRUMPKIN != 0
+		// MCL_USE_GRUMPKIN=2 (BN382) : all the curves of g_testSetTbl fail
+		if (MCL_USE_GRUMPKIN != 1 || ts.cp != mcl::BN_SNARK1) {
 			bool b;
 			initPairing(&b, ts.cp);
 			CYBOZU_TEST_ASSERT(!b);

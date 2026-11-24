@@ -9,7 +9,8 @@
 
 enum {
 	MCL_BN254 = 0,
-	MCL_BN381_1 = 1, // deprecated
+	MCL_BN381_1 = 1, // deprecated (use MCL_BN382)
+	MCL_BN382 = MCL_BN381_1, // z = -(2^94 + 2^76 + 2^72 + 1), p and r are 382 bits (not MCL_BN381_2)
 	MCL_BN381_2 = 2, // deprecated
 	MCL_BN462 = 3, // deprecated
 	MCL_BN_SNARK1 = 4,
@@ -35,7 +36,8 @@ enum {
 	MCL_SECP160K1 = 108, // deprecated
 	MCL_P160_1 = 109, // deprecated
 	MCL_GRUMPKIN = 110, // y^2 = x^3 - 17 over the Fr of BN_SNARK1, the order is the p of BN_SNARK1 (the 2-cycle with BN_SNARK1, class GG)
-	MCL_EC_END = MCL_GRUMPKIN + 1,
+	MCL_GRUMPKIN382 = 111, // y^2 = x^3 + 2 over the Fr of BN382, the order is the p of BN382 (the 2-cycle with BN382, class GG)
+	MCL_EC_END = MCL_GRUMPKIN382 + 1,
 	MCL_NIST_P384 = MCL_SECP384R1,// deprecated
 	MCL_NIST_P521 = MCL_SECP521R1 // deprecated
 };
