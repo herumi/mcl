@@ -29,6 +29,7 @@ typedef MCL_MSM_G1 G1; // the group
 // the fixed-width GLV split of G1 (set by initMsm, see GLV1T::splitRaw in src/glv.hpp)
 typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
 static SplitRawFunc g_splitRaw;
+static const size_t glvRawN = MCL_GLV_RAW_BIT / 64; // the number of 64-bit limbs of a, b of g_splitRaw
 
 static const size_t S = sizeof(Unit)*8-1; // 63
 static const size_t W = 52;
@@ -1403,7 +1404,7 @@ struct EcMT {
 		return kandb(v1, v2);
 	}
 	template<size_t bitLen, size_t w>
-	static void makeNAFtbl(V *idxTbl, VM *negTbl, const V a[2])
+	static void makeNAFtbl(V *idxTbl, VM *negTbl, const V *a) // a[glvRawN]
 	{
 		const Vec mask = vpbroadcastq((1<<w)-1);
 		const Vec Fu = vpbroadcastq(1<<w);
@@ -1413,7 +1414,7 @@ struct EcMT {
 		V CF = vzero<V>();
 		const size_t n = (bitLen+w-1)/w;
 		for (size_t i = 0; i < n; i++) {
-			V idx = getUnitAt(a, 2, pos);
+			V idx = getUnitAt(a, glvRawN, pos);
 			idx = vpandq(idx, mask);
 			idx = vpaddq(idx, CF);
 			V masked = vpandq(idx, mask);
@@ -1456,23 +1457,25 @@ struct EcMT {
 			for (size_t i = 0; i < tblN; i++) {
 				mulLambda(tbl2[i], tbl1[i]);
 			}
-			V a[2], b[2];
+			V a[glvRawN], b[glvRawN];
 			Unit *pa = (Unit*)a;
 			Unit *pb = (Unit*)b;
 			V negA, negB; // 1 if a (b) of the lane is negative
 			Unit *pna = (Unit*)&negA;
 			Unit *pnb = (Unit*)&negB;
 			for (size_t i = 0; i < m; i++) {
-				Unit buf[4];
+				Unit buf[MCL_MSM_FR_BIT / 64];
 				fr.fromMont(buf, y[k*m+i].v);
-				Unit aa[2], bb[2];
-				const uint32_t neg = g_splitRaw(aa, bb, buf); // y = a + b lambda, |a|, |b| < 2^128
-				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
-				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
+				Unit aa[glvRawN], bb[glvRawN];
+				const uint32_t neg = g_splitRaw(aa, bb, buf); // y = a + b lambda, |a|, |b| < 2^MCL_GLV_RAW_BIT
+				for (size_t j = 0; j < glvRawN; j++) {
+					pa[i+m*j] = aa[j];
+					pb[i+m*j] = bb[j];
+				}
 				pna[i] = neg & 1;
 				pnb[i] = (neg >> 1) & 1;
 			}
-			const size_t bitLen = 128;
+			const size_t bitLen = MCL_GLV_RAW_BIT;
 			const size_t nw = (bitLen + w-1)/w;
 			V aTbl[nw], bTbl[nw];
 			VM aNegTbl[nw], bNegTbl[nw];
@@ -1787,7 +1790,8 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 	}
 
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * e, 64);
-	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
+	const size_t yn = MCL_MSM_FR_BIT / 64; // the number of 64-bit limbs of the scalar
+	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * yn, 64);
 
 	for (size_t i = 0; i < d; i++) {
 		xVec[i].template setG1A<mixed>(x+i*m);
@@ -1797,14 +1801,14 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 	Unit *const py = (Unit*)yVec;
 	for (size_t i = 0; i < d; i++) {
 		for (size_t j = 0; j < m; j++) {
-			Unit ya[4];
+			Unit ya[MCL_MSM_FR_BIT / 64] = {}; // fromMont sets Fr::getOp().N limbs
 			fr.fromMont(ya, y[i*m+j].v);
-			for (size_t k = 0; k < 4; k++) {
-				py[(i*4+k)*m+j] = ya[k];
+			for (size_t k = 0; k < yn; k++) {
+				py[(i*yn+k)*m+j] = ya[k];
 			}
 		}
 	}
-	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, bucket);
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, yn * 64 / e, bucket);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);

@@ -221,7 +221,7 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
-# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG if MCL_USE_GRUMPKIN=1) and 384 (BLS12-381, BLS12-377, BN254, ...)
+# msm_avx.cpp supports MCL_FP_BIT=256 (BN254, BN_SNARK1, secp256k1, Grumpkin and GG if MCL_USE_GRUMPKIN=1) and 384 (BLS12-381, BLS12-377, BN254, ..., BN382 and GG (Grumpkin382) if MCL_USE_GRUMPKIN=2)
 ifeq ($(filter 256 384,$(MCL_FP_BIT)),)
   override MCL_MSM=0
 endif
@@ -424,9 +424,7 @@ SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
-# no msm_test if MCL_USE_GRUMPKIN=2 : BN382 and Grumpkin382 have no AVX-512 kernel
-ifeq ($(MCL_MSM)_$(MCL_USE_GRUMPKIN),1_2)
-else ifeq ($(MCL_MSM),1)
+ifeq ($(MCL_MSM),1)
   TEST_EXE+=$(EXE_DIR)/msm_test.exe # src/msm_avx.cpp with -DMCL_MSM_TEST (mulEachCurves tests every curve of the AVX-512 MSM)
 endif
 test_ci: $(TEST_EXE)
@@ -485,7 +483,7 @@ test_static:
 	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_FP_BIT=384 -DMCL_STATIC_CODE
 	bin/pairing_static.exe
 
-$(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
+$(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp src/$(MSM)_impl.hpp src/$(MSM)_para.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) $(MSM_CFLAGS) $(CFLAGS_USER) -DMCL_MSM_TEST -MMD -MP -MF $(OBJ_DIR)/msm_test.d
 MSM_TEST_OBJ=$(OBJ_DIR)/$(MSM)_test.o $(filter-out $(OBJ_DIR)/msm_avx.o,$(LIB_OBJ))
 $(EXE_DIR)/msm_test.exe: $(MSM_TEST_OBJ) $(MCL_LIB)

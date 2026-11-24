@@ -156,7 +156,8 @@ MCL_USE_GRUMPKIN|MCL_FP_BIT|MCL_FR_BIT|pairing curve|GG
 - Only the `p` and the `r` of the fixed curve are accepted as the modulus of `Fp` / `Fr` (and the other `FpT`).
 - The initialization of another curve or modulus fails (`*pb = false`, a nonzero return value or an exception) and does not change the current state: `initPairing(BN254)`, `initCurve<G1>(MCL_SECP256K1)`, `Fp::init(p)`, `mclBn_init(MCL_BN254, ...)`, ...
 - The default argument of `initPairing` is still `BN254`, so `initPairing()` fails. Use `initGrumpkin()`.
-- `GG` has only the group operations (add / mul / mulVec / foldVec / serialization). BN382 and Grumpkin382 have no AVX-512 kernel of MSM.
+- `GG` has only the group operations (add / mul / mulVec / foldVec / serialization).
+- The AVX-512 IFMA kernels of MSM (`mulVec`, `mulEach`) are available for `G1` and `GG` of both settings. BN382 without `MCL_USE_GRUMPKIN=2` (`MCL_FP_BIT=MCL_FR_BIT=384`) does not use the kernel.
 
 ## Thread safety
 All functions except initialization and global setting changes are thread-safe.

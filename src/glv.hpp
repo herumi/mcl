@@ -1487,7 +1487,7 @@ SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
 // ya = |a|, yb = |b| of the split y = a + b lambda by splitRaw (zero-padded to next units), updates maxBitSize and returns the sign bits (1 : a < 0, 2 : b < 0)
 inline uint32_t msmSplitRaw(Unit *ya, Unit *yb, const Unit *y, size_t next, SplitRawFunc splitRaw, size_t& maxBitSize)
 {
-	const size_t rawN = 128 / UnitBitSize; // the size of a, b of splitRaw
+	const size_t rawN = MCL_GLV_RAW_BIT / UnitBitSize; // the size of a, b of splitRaw
 	assert(next >= rawN);
 	const uint32_t neg = splitRaw(ya, yb, y);
 	for (size_t k = rawN; k < next; k++) {
@@ -1702,7 +1702,7 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 	local::MsmSlotHolder slot(0);
 	// the fixed-width split (no mpz) if available
 	const local::SplitRawFunc splitRaw = (splitN == 2) ? local::getSplitRaw((const GLV*)0) : 0;
-	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
+	size_t maxBitSize = 0; // of the split scalars (about MCL_GLV_RAW_BIT bits for G1 of BN / BLS12)
 	/*
 		the fused path : the SIMD kernel converts xVec and lambda(xVec) with the signs of the split scalars directly to its layout (cvtBaseGLV),
 		so the copy of 2 n G (normalizeVec, mulLambda and neg) and its conversion (cvtBase in mulVecCore) are not needed
@@ -2136,18 +2136,19 @@ struct GLV1T {
 	static bool isBLS12;
 	/*
 		the fixed-width split without mpz (0 if not available, then split() uses mpz)
-		x = a + b lambda mod r, |a|, |b| < 2^128 (a, b : rawN Unit), return the sign bits (bit0 : a < 0, bit1 : b < 0)
-		x : the lower 256 bits of the scalar (x < r < 2^256)
+		x = a + b lambda mod r, |a|, |b| < 2^H (a, b : rawN Unit), return the sign bits (bit0 : a < 0, bit1 : b < 0)
+		x : the lower 2H bits of the scalar (x < r < 2^(2H))
+		H = MCL_GLV_RAW_BIT = 128 (192 if MCL_USE_GRUMPKIN=2 : the 382-bit r)
 	*/
 	typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
 	static SplitRawFunc splitRaw;
-	static const size_t rawN = 128 / UnitBitSize;
+	static const size_t rawN = MCL_GLV_RAW_BIT / UnitBitSize;
 	// the parameters of splitRawTbl (see src/glv_param.hpp)
-	static const size_t xn = 256 / UnitBitSize; // the size of x of splitRaw
-	static const size_t bn = 192 / UnitBitSize; // the size of BU
+	static const size_t xn = rawN * 2; // the size of x of splitRaw
+	static const size_t bn = (MCL_GLV_RAW_BIT + 64) / UnitBitSize; // the size of BU
 	static Unit v0U[xn];
 	static Unit v1U[xn];
-	static Unit BU[2][2][bn]; // |B[i][j]| < 2^(128 + UnitBitSize) : BU[i][j][rawN] is the top Unit, BU[i][j][k] = 0 for k > rawN
+	static Unit BU[2][2][bn]; // |B[i][j]| < 2^(H + UnitBitSize) : BU[i][j][rawN] is the top Unit, BU[i][j][k] = 0 for k > rawN
 	static uint32_t Bneg; // the bit (i * 2 + j) is set if B[i][j] < 0
 	static Unit LU[rawN]; // L = z^2 - 1 for BLS12
 	static Unit qU[rawN]; // floor(2^rBitSize / L) for BLS12
@@ -2241,7 +2242,7 @@ public:
 		}
 		return 0;
 	}
-	// y[rawN] = (x >> s) mod 2^128 ; x must have (s / UnitBitSize) + rawN + 1 Unit
+	// y[rawN] = (x >> s) mod 2^H ; x must have (s / UnitBitSize) + rawN + 1 Unit (+ rawN if s is a multiple of UnitBitSize)
 	static void shrRaw(Unit *y, const Unit *x, size_t s)
 	{
 		const size_t q = s / UnitBitSize;
@@ -2254,7 +2255,7 @@ public:
 			bint::copyT<rawN>(y, t);
 		}
 	}
-	// y[rawN] = |x[xn]| (x is two's complement and |x| < 2^128), return 1 if x < 0
+	// y[rawN] = |x[xn]| (x is two's complement and |x| < 2^H), return 1 if x < 0
 	static uint32_t absRaw(Unit *y, Unit *x)
 	{
 		const uint32_t neg = uint32_t(x[xn - 1] >> (UnitBitSize - 1));
@@ -2271,10 +2272,10 @@ public:
 		return neg;
 	}
 	/*
-		the fixed-width version of split for BN and secp256k1 in glv1ParamBNTbl
-		t = (x v0 + 2^(rBitSize-1)) >> rBitSize, b0 = (x v1 + 2^(rBitSize-1)) >> rBitSize (rounding, rBitSize = 256 + 64)
-		a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11) (mod 2^256)
-		|a|, |b| < 2^128 is verified in src/gen_glv.py (the intermediate values may wrap mod 2^256)
+		the fixed-width version of split for BN and secp256k1 in glv1ParamBNTbl (H = 128) and for glv1ParamWideTbl (H = 192)
+		t = (x v0 + 2^(rBitSize-1)) >> rBitSize, b0 = (x v1 + 2^(rBitSize-1)) >> rBitSize (rounding, rBitSize = 2H + 64)
+		a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11) (mod 2^(2H))
+		|a|, |b| < 2^H is verified in src/gen_glv.py (the intermediate values may wrap mod 2^(2H))
 	*/
 	static uint32_t splitRawTbl(Unit *a, Unit *b, const Unit *x)
 	{
@@ -2303,7 +2304,7 @@ public:
 		neg |= absRaw(b, acc) << 1;
 		return neg;
 	}
-	// y[xn] = (t[rawN] * B) mod 2^256 where B = B[rawN] 2^128 + B[0..rawN)
+	// y[xn] = (t[rawN] * B) mod 2^(2H) where B = B[rawN] 2^H + B[0..rawN)
 	static void mulB(Unit *y, const Unit *t, const Unit *B)
 	{
 		bint::mulT<rawN>(y, t, B);
@@ -2314,7 +2315,7 @@ public:
 			bint::addT<rawN>(y + rawN, y + rawN, q);
 		}
 	}
-	// y[rawN] = ((x[xn * 2] + 2^(s-1)) >> s) mod 2^128 ; x is broken
+	// y[rawN] = ((x[xn * 2] + 2^(s-1)) >> s) mod 2^H ; x is broken
 	static void roundShrRaw(Unit *y, Unit *x, size_t s)
 	{
 		const size_t q = (s - 1) / UnitBitSize;
@@ -2338,8 +2339,8 @@ public:
 	static void setMpz(mpz_class& z, const uint64_t *x, size_t xn, bool neg)
 	{
 		const size_t m = 64 / UnitBitSize;
-		Unit u[4 * m];
-		assert(xn <= 4);
+		Unit u[6 * m];
+		assert(xn <= 6);
 		cvtU64ToUnit(u, xn * m, x, xn);
 		bool b;
 		gmp::setArray(&b, z, u, xn * m);
@@ -2356,7 +2357,7 @@ public:
 		if (curveType < 0) return false;
 		bool b;
 		if (Fr::getOp().bitSize > 256) {
-			// split() by mpz (no splitRaw)
+			// MCL_GLV_RAW_BIT = 192 (MCL_USE_GRUMPKIN=2) : splitRawTbl, otherwise split() by mpz (no splitRaw)
 			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(glv1ParamWideTbl); i++) {
 				const GLV1ParamWide& prm = glv1ParamWideTbl[i];
 				if (prm.curveType != curveType) continue;
@@ -2364,18 +2365,33 @@ public:
 				if (!b) return false;
 				isBLS12 = false;
 				rBitSize = prm.shift;
-				setMpz(v0, prm.v0, 4, false);
-				setMpz(v1, prm.v1, 4, false);
+				setMpz(v0, prm.v0, 6, false);
+				setMpz(v1, prm.v1, 6, false);
 				for (int j = 0; j < 2; j++) {
 					for (int k = 0; k < 2; k++) {
 						setMpz(B[j][k], prm.B[j][k], 4, (prm.Bneg & (1 << (j * 2 + k))) != 0);
 					}
 				}
 				splitRaw = 0;
+#if MCL_GLV_RAW_BIT == 192
+				for (int j = 0; j < 2; j++) {
+					for (int k = 0; k < 2; k++) {
+						cvtU64ToUnit(BU[j][k], bn, prm.B[j][k], 4);
+					}
+				}
+				cvtU64ToUnit(v0U, xn, prm.v0, 6);
+				cvtU64ToUnit(v1U, xn, prm.v1, 6);
+				Bneg = prm.Bneg;
+				splitRaw = splitRawTbl;
+#endif
 				return true;
 			}
 			return false;
 		}
+#if MCL_GLV_RAW_BIT != 128
+		// the tables of r <= 256 bits are for the split of 128 bits
+		return false;
+#else
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(glv1ParamBNTbl); i++) {
 			const GLV1ParamBN& prm = glv1ParamBNTbl[i];
 			if (prm.curveType != curveType) continue;
@@ -2415,6 +2431,7 @@ public:
 			return true;
 		}
 		return false;
+#endif
 	}
 };
 

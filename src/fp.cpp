@@ -806,9 +806,9 @@ void initGrumpkin(bool *pb, int mode)
 	if (!*pb) return;
 	GG::setMulVecGLV(mcl::ec::mulVecGLVT<GLVGG, GG>);
 	GG::setFoldVecOpti(mcl::ec::foldVecGLV1T<GG>);
-#if MCL_MSM == 1 && MCL_USE_GRUMPKIN == 1 // no kernel for Grumpkin382
+#if MCL_MSM == 1
 	if (bint::getCpuType() & bint::tAVX512_IFMA) {
-		mcl::msm::initMsmGG(MCL_GRUMPKIN, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)
+		mcl::msm::initMsmGG(MCL_FIXED_GG_TYPE, GLVGG::splitRaw); // the second kernel of msm_avx.cpp (GG::setMsmKernel, GG::setMulEachOpti)
 	}
 #endif
 }

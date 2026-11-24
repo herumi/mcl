@@ -20,7 +20,8 @@ glvCurves = [
   ('secp256k1', 'generic', None, 7),
   ('Grumpkin', 'generic', None, -17),
 ]
-# r > 256 bits : the split by mpz (GLV1T::split without splitRaw), |a|, |b| < 2^193
+# r > 256 bits : the fixed-width split of 192 bits (GLV1T::splitRawTbl if MCL_USE_GRUMPKIN=2, |a|, |b| < 2^192)
+# and the split by mpz (GLV1T::split without splitRaw otherwise, |a|, |b| < 2^193) share the parameters
 glvCurvesWide = [
   ('BN382', 'BN', -0x400011000000000000000001, 2),
   ('Grumpkin382', 'generic', None, 2),
@@ -177,8 +178,8 @@ def makeParam(name, kind, z, b, wide=False):
       c1 = -c1
     assert abs(B[0][0] * B[1][1] - B[0][1] * B[1][0]) == r
     # t = (x v0 + 2^(s-1)) >> s with v0 = floor(c0 2^s / r) : s = 256 + 64 (the error of the rounding < 2^-64, aligned to the Unit)
-    # wide : t = (x v0) >> s (floor) with s = the bit size of r (the same as GLV1T::split by mpz)
-    s = r.bit_length() if wide else 256 + 64
+    # wide : s = 384 + 64
+    s = (384 if wide else 256) + 64
     v0 = (c0 << s) // r
     v1 = (c1 << s) // r
     cofactor = 1
@@ -204,13 +205,14 @@ def makeParam(name, kind, z, b, wide=False):
   prm.v0, prm.v1, prm.B, prm.lam, prm.r = v0, v1, B, lam, r
   return prm
 
-def split(prm, x):
+def split(prm, x, floor=False):
   # the same formula as GLV1T::splitRawTbl (BN) / GLV1T::splitRawBLS12 (BLS12)
+  # floor : the split by mpz of GLV1T::split (t = (x v0) >> s without rounding)
   if prm.isBLS12:
     t = ((x >> (prm.s - 128)) * prm.v0) >> 128
     b0 = 0
   else:
-    half = 0 if prm.wide else 1 << (prm.s - 1)
+    half = 0 if floor else 1 << (prm.s - 1)
     t = (x * prm.v0 + half) >> prm.s
     b0 = (x * prm.v1 + half) >> prm.s
   B = prm.B
@@ -241,34 +243,32 @@ def verify(prm):
     aMax = xHmax * ((1 << s) - v0 * L) + ((1 << (s - 128)) - 1) * H + L * H - L # a 2^128 <= aMax
     assert aMax < 2 * L * H, prm.name
     assert r // L + 2 < H, prm.name
-  elif prm.wide:
-    # t = t* - e0, b0 = b0* - e1 with the exact t* = x c0 / r, b0* = x c1 / r and the errors e0, e1 in [0, 2)
-    # (v0 = c0 2^s / r - f with f in [0, 1) and x < r < 2^s), so |a| < 2 (|B00| + |B10|), |b| < 2 (|B01| + |B11|)
-    # the NAF of a, b must fit in sizeof(Fr) * 8 / 2 + 2 = 194 digits (mulVecGLVsmall, foldVecGLV1T) : |a|, |b| < 2^193
-    s = prm.s
-    assert r.bit_length() == s and 256 < s <= 384, prm.name
-    H = 1 << 193
-    assert 0 <= prm.v0 < (1 << 256) and 0 <= prm.v1 < (1 << 256), prm.name
-    for i in range(2):
-      for j in range(2):
-        assert abs(B[i][j]) < (1 << 256), prm.name
-    assert 2 * (abs(B[0][0]) + abs(B[1][0])) <= H, prm.name
-    assert 2 * (abs(B[0][1]) + abs(B[1][1])) <= H, prm.name
   else:
     # t = t* - e0, b0 = b0* - e1 with the exact t* = x c0 / r, b0* = x c1 / r and the errors
     # e0, e1 in [-1/2, 1/2 + d), d = (r - 1) / 2^s, so a = e0 B00 + e1 B10, b = -(e0 B01 + e1 B11)
-    # (the computation is mod 2^256 and only the final a, b must fit in 255-bit two's complement)
+    # (the computation is mod 2^xBit and only the final a, b must fit in (xBit - 1)-bit two's complement)
+    # xBit = 256, |a|, |b| < 2^128 or xBit = 384, |a|, |b| < 2^192 (wide)
     s = prm.s
+    xBit = 384 if prm.wide else 256
+    H = 1 << (xBit // 2)
+    assert s == xBit + 64, prm.name
     assert r < (1 << (s - 64)), prm.name
-    assert prm.v0 < (1 << 256) and prm.v1 < (1 << 256), prm.name
-    # |B| < 2^(128 + 32) : the top (bits >= 128) of B is one Unit (see GLV1T::splitRawTbl)
+    assert prm.v0 < (1 << xBit) and prm.v1 < (1 << xBit), prm.name
+    # |B| < 2^(xBit / 2 + 32) : the top (bits >= xBit / 2) of B is one Unit (see GLV1T::splitRawTbl)
     for i in range(2):
       for j in range(2):
-        assert abs(B[i][j]) < (1 << 160), prm.name
+        assert abs(B[i][j]) < (H << 32), prm.name
+    if prm.wide:
+      # the split by mpz (floor) : the errors e0, e1 are in [0, 2) (v0 = c0 2^s / r - f with f in [0, 1) and x < r < 2^s),
+      # so |a| < 2 (|B00| + |B10|), |b| < 2 (|B01| + |B11|)
+      # the NAF of a, b must fit in sizeof(Fr) * 8 / 2 + 2 = 194 digits (mulVecGLVsmall, foldVecGLV1T) : |a|, |b| < 2^193
+      assert 256 < r.bit_length() <= 384, prm.name
+      assert 2 * (abs(B[0][0]) + abs(B[1][0])) <= (1 << 193), prm.name
+      assert 2 * (abs(B[0][1]) + abs(B[1][1])) <= (1 << 193), prm.name
     e = (1 << (s - 1)) + r - 1 # 2^s (1/2 + d)
     assert (abs(B[0][0]) + abs(B[1][0])) * e < (H << s), prm.name
     assert (abs(B[0][1]) + abs(B[1][1])) * e < (H << s), prm.name
-    # t <= t* + 1/2 < c0 + 1/2, so t, b0 < 2^128
+    # t <= t* + 1/2 < c0 + 1/2, so t, b0 < H
     tMax = (((r - 1) * prm.v0 + (1 << (s - 1))) >> s)
     b0Max = (((r - 1) * prm.v1 + (1 << (s - 1))) >> s)
     assert tMax < H and b0Max < H, prm.name
@@ -284,7 +284,9 @@ def verify(prm):
       assert 0 <= a < B[0][0] and 0 <= b, (prm.name, hex(x))
     assert abs(a) < H and abs(b) < H, (prm.name, hex(x))
     if prm.wide:
-      assert a.bit_length() <= 192 and b.bit_length() <= 192, (prm.name, hex(x)) # the measured size (one bit less than the bound)
+      (a, b) = split(prm, x, floor=True)
+      assert (a + b * prm.lam - x) % r == 0, (prm.name, hex(x))
+      assert abs(a) < 2 * H and abs(b) < 2 * H, (prm.name, hex(x))
 
 def putParamBN(prm):
   B = prm.B
@@ -315,8 +317,8 @@ def putParamWide(prm):
   print('\t{')
   print(f'\t\t// {prm.name}')
   print(f'\t\t{prm.curveType}, "{prm.rw:x}", {prm.s},')
-  print(f'\t\t{hexArray(toArray(prm.v0, 4))},')
-  print(f'\t\t{hexArray(toArray(prm.v1, 4))},')
+  print(f'\t\t{hexArray(toArray(prm.v0, 6))},')
+  print(f'\t\t{hexArray(toArray(prm.v1, 6))},')
   print('\t\t{')
   for i in range(2):
     print(f'\t\t\t{{ {hexArray(toArray(abs(B[i][0]), 4))}, {hexArray(toArray(abs(B[i][1]), 4))} }},')
@@ -377,17 +379,19 @@ static const GLV1ParamBLS12 glv1ParamBLS12Tbl[] = {''')
       putParamBLS12(prm)
   print('''};
 /*
-	the curves with r > 256 bits (GLV1T::split by mpz, no splitRaw) : t = (x v0) >> shift, b0 = (x v1) >> shift (floor, shift = the bit size of r)
-	a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11)
-	B[i][j] is the absolute value and the bit (i * 2 + j) of Bneg is set if B[i][j] < 0
+	the curves with r > 256 bits : shift = 384 + 64, a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11)
+	B[i][j] is the absolute value (< 2^224) and the bit (i * 2 + j) of Bneg is set if B[i][j] < 0
+	MCL_USE_GRUMPKIN=2 (GLV1T::splitRawTbl, MCL_GLV_RAW_BIT = 192) : t = (x v0 + 2^(shift-1)) >> shift, b0 = (x v1 + 2^(shift-1)) >> shift (rounding, mod 2^384)
+	|a|, |b| < 2^192 for all x in [0, r)
+	otherwise (GLV1T::split by mpz, no splitRaw) : t = (x v0) >> shift, b0 = (x v1) >> shift (floor)
 	|a|, |b| < 2^193 for all x in [0, r)
 */
 struct GLV1ParamWide {
 	int curveType;
 	const char *rw; // hex
 	uint32_t shift;
-	uint64_t v0[4];
-	uint64_t v1[4];
+	uint64_t v0[6];
+	uint64_t v1[6];
 	uint64_t B[2][2][4];
 	uint32_t Bneg;
 };

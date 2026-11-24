@@ -1,7 +1,7 @@
 /**
 	@file
 	@brief multi scalar multiplication with AVX-512 IFMA
-	the kernel is in msm_avx_impl.hpp, included twice : for G1 (mcl::msm) and for GG (Grumpkin, mcl::msm_gg, only if MCL_FP_BIT=256)
+	the kernel is in msm_avx_impl.hpp, included twice : for G1 (mcl::msm) and for GG (Grumpkin / Grumpkin382, mcl::msm_gg, only if MCL_USE_GRUMPKIN != 0)
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
@@ -69,8 +69,8 @@ namespace {
 #undef MCL_MSM_FP_BIT
 #undef MCL_MSM_FR_BIT
 
-#if MCL_USE_GRUMPKIN == 1
-// the kernel of GG (Grumpkin, mcl::msm_gg) : the base field is Fr and the scalar field is Fp
+#if MCL_USE_GRUMPKIN != 0
+// the kernel of GG (Grumpkin / Grumpkin382, mcl::msm_gg) : the base field is Fr and the scalar field is Fp
 #define MCL_MSM_FP mcl::Fr
 #define MCL_MSM_FR mcl::Fp
 #define MCL_MSM_G1 mcl::GG
@@ -1214,10 +1214,10 @@ mpz_class getGLVLambda()
 	CYBOZU_TEST_ASSERT(Fr::squareRoot(s, Fr(-3)));
 	Fr lambda = (s - 1) / 2;
 	for (int i = 0; i < 2; i++) {
-		Unit a[2] = {}, b[2] = {}, x[4] = {};
+		Unit a[glvRawN] = {}, b[glvRawN] = {}, x[MCL_FR_BIT / 64] = {};
 		Fr::getOp().fromMont(x, lambda.getUnit());
 		const uint32_t neg = g_splitRaw(a, b, x);
-		if (neg == 0 && a[0] == 0 && a[1] == 0 && b[0] == 1 && b[1] == 0) {
+		if (neg == 0 && mcl::bint::isZeroN(a, glvRawN) && b[0] == 1 && mcl::bint::isZeroN(b + 1, glvRawN - 1)) {
 			mpz_class ret;
 			lambda.getMpz(ret);
 			return ret;
@@ -1228,17 +1228,17 @@ mpz_class getGLVLambda()
 	return 0;
 }
 
-#if MCL_USE_GRUMPKIN == 1
-// the kernel of GG (Grumpkin, mcl::msm_gg) registered by initGrumpkin together with the kernel of G1 (BN_SNARK1)
+#if MCL_USE_GRUMPKIN != 0
+// the kernel of GG (Grumpkin / Grumpkin382, mcl::msm_gg) registered by initGrumpkin together with the kernel of G1 (BN_SNARK1 / BN382)
 CYBOZU_TEST_AUTO(kernelGG)
 {
 	const int orgCurveType = g_rt.curveType;
-	initPairing(mcl::BN_SNARK1);
+	const int bnType = (MCL_USE_GRUMPKIN == 1) ? MCL_BN_SNARK1 : MCL_BN382;
 	initGrumpkin();
 	CYBOZU_TEST_EQUAL(G1::msmKernel, getMsmKernelAVX512());
 	CYBOZU_TEST_EQUAL(GG::msmKernel, mcl::msm_gg::getMsmKernelAVX512());
 	CYBOZU_TEST_ASSERT(GG::mulEachOpti == mcl::msm_gg::mulEachAVX512);
-	CYBOZU_TEST_EQUAL(g_rt.curveType, MCL_BN_SNARK1); // the constants of G1 are not changed by initGrumpkin
+	CYBOZU_TEST_EQUAL(g_rt.curveType, bnType); // the constants of G1 are those of the BN curve
 	const size_t n = 4096 + 3;
 	std::vector<GG> P(n), P2(n), P3(n);
 	std::vector<mcl::Fp> x(n); // the scalar field of GG is Fp
@@ -1272,7 +1272,7 @@ CYBOZU_TEST_AUTO(kernelGG)
 		GG::mul(P3[i], P[i], x[i]);
 	}
 	CYBOZU_TEST_EQUAL_ARRAY(P2, P3, n);
-	// the kernel of G1 (BN_SNARK1) still works
+	// the kernel of G1 still works
 	{
 		const size_t m = 1000;
 		std::vector<G1> Q(m);
@@ -1303,6 +1303,10 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		int curveType;
 		const char *name;
 	} tbl[] = {
+#if MCL_USE_GRUMPKIN == 2
+		{ MCL_BN382, "BN382" },
+		{ MCL_GRUMPKIN382, "Grumpkin382" }, // G1 as Grumpkin382 by initCurve<G1> (the class GG uses the second kernel)
+#else
 #if MCL_USE_GRUMPKIN != 1
 		{ MCL_BN254, "BN254" },
 		{ MCL_SECP256K1, "secp256k1" },
@@ -1313,6 +1317,7 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		{ MCL_BLS12_381, "BLS12_381" },
 		{ MCL_BLS12_377, "BLS12_377" },
 #endif
+#endif
 	};
 	const int orgCurveType = g_rt.curveType;
 	for (size_t ti = 0; ti < CYBOZU_NUM_OF_ARRAY(tbl); ti++) {
@@ -1321,7 +1326,7 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
 		Fr x[n];
 		cybozu::XorShift rg;
-		if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN) {
+		if (curveType == MCL_SECP256K1 || curveType == MCL_GRUMPKIN || curveType == MCL_GRUMPKIN382) {
 			G1 P0;
 			initCurve<G1>(curveType, &P0); // no hashAndMapToG1 without initPairing
 			for (size_t i = 0; i < n; i++) {
@@ -1339,7 +1344,7 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		P[5].clear();
 		P[20].clear();
 		const mpz_class& r = Fr::getOp().mp;
-		const mpz_class L = mpz_class(1) << 128;
+		const mpz_class L = mpz_class(1) << MCL_GLV_RAW_BIT;
 		const mpz_class lambda = getGLVLambda();
 		const mpz_class scalarTbl[] = {
 			0, 1, 2, L - 1, L, L + 1, (r - 1) / 2, (r + 1) / 2, r - 2, r - 1,
@@ -1438,7 +1443,10 @@ int main(int argc, char *argv[])
 	if (de == 0) {
 		de = d;
 	}
-#if MCL_USE_GRUMPKIN == 1
+#if MCL_USE_GRUMPKIN == 2
+	puts("BN382");
+	mcl::initPairing(mcl::BN382);
+#elif MCL_USE_GRUMPKIN == 1
 	puts("BN_SNARK1");
 	mcl::initPairing(mcl::BN_SNARK1);
 #elif MCL_FP_BIT == 256

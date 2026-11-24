@@ -5,10 +5,11 @@ import sys
 import random
 from montgomery import Montgomery
 from primetbl import curveTbl
-from gen_glv import glvCurves, makeParam, sqrtMod
+from gen_glv import glvCurves, glvCurvesWide, makeParam, sqrtMod
 
 # rw of the GLV method verified on a point of G1 by gen_glv.py (mulLambda of msm_avx.cpp must use the same root)
 glvRw = {e[0]: makeParam(*e).rw for e in glvCurves}
+glvRw.update({e[0]: makeParam(*e, wide=True).rw for e in glvCurvesWide})
 
 W = 52
 
@@ -110,7 +111,7 @@ def putTable(fpBit, N):
   print(f'#if MCL_FP_BIT == {fpBit}')
   print(f'static const size_t MSM_N = {N}; // the number of 52-bit limbs')
   print('static const MsmCurvePara g_msmCurveTbl[] = {')
-  for name in ['BN254', 'BN-SNARK', 'BLS12-381', 'BLS12-377', 'secp256k1', 'Grumpkin']:
+  for name in ['BN254', 'BN-SNARK', 'BLS12-381', 'BLS12-377', 'secp256k1', 'Grumpkin', 'BN382', 'Grumpkin382']:
     cv = curveTbl[name]
     if cv.p.bit_length() > W * N - 2:
       continue

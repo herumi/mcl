@@ -95,14 +95,13 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(mpz_class(para->n), Fp::getOp().mp);
 }
 
-// MCL_USE_GRUMPKIN=1 : the AVX-512 IFMA kernels of G1 (BN_SNARK1) and GG are registered at the same time (the two instances of src/msm_avx_impl.hpp)
-// MCL_USE_GRUMPKIN=2 : no kernel
+// the AVX-512 IFMA kernels of G1 (BN_SNARK1 / BN382) and GG are registered at the same time (the two instances of src/msm_avx_impl.hpp)
 CYBOZU_TEST_AUTO(msmKernel)
 {
 	const bool ifma = (mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA) != 0;
 	printf("AVX-512 IFMA=%d G1::msmKernel=%d GG::msmKernel=%d G1::mulEachOpti=%d GG::mulEachOpti=%d\n",
 		ifma, G1::msmKernel != 0, GG::msmKernel != 0, G1::mulEachOpti != 0, GG::mulEachOpti != 0);
-#if MCL_MSM == 1 && MCL_USE_GRUMPKIN == 1
+#if MCL_MSM == 1
 	CYBOZU_TEST_EQUAL(G1::msmKernel != 0, ifma);
 	CYBOZU_TEST_EQUAL(GG::msmKernel != 0, ifma);
 	CYBOZU_TEST_EQUAL(GG::mulEachOpti != 0, ifma);
@@ -113,9 +112,6 @@ CYBOZU_TEST_AUTO(msmKernel)
 #else
 	CYBOZU_TEST_ASSERT(GG::msmKernel == 0);
 	CYBOZU_TEST_ASSERT(GG::mulEachOpti == 0);
-#endif
-#if MCL_USE_GRUMPKIN == 2
-	CYBOZU_TEST_ASSERT(G1::msmKernel == 0);
 #endif
 }
 

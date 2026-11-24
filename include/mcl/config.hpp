@@ -77,6 +77,15 @@
 	#error "MCL_USE_GRUMPKIN=2 requires MCL_FP_BIT=384 and MCL_FR_BIT=384"
 #endif
 /*
+	the bit size of a, b of the fixed-width GLV split x = a + b lambda of G1 / GG (GLV1T::splitRaw in src/glv.hpp)
+	192 for the 382-bit curves fixed by MCL_USE_GRUMPKIN=2, otherwise 128 (r <= 256 bits)
+*/
+#if MCL_USE_GRUMPKIN == 2
+	#define MCL_GLV_RAW_BIT 192
+#else
+	#define MCL_GLV_RAW_BIT 128
+#endif
+/*
 	the max bit size of MCL_FP_BIT and MCL_FR_BIT (= the bit size of the generated mul/sqr functions, see MCL_BINT_MUL_N)
 	To enlarge it (up to 576), change MCL_BINT_MAX_BIT and BINT_MUL_N in Makefile, and run `make update_all_asm` and `make header`.
 */
