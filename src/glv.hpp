@@ -850,6 +850,7 @@ struct MsmBatch {
 	struct Work {
 		ec::MsmKernel kn;
 		void *base;
+		Work() : kn(), base(0) {}
 		size_t prepare(size_t, size_t, const ec::MsmKernel *, bool = false) { return 0; }
 		void setBuf(void *) {}
 	};
@@ -1405,13 +1406,17 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	tblN = size_t(1) << b;
 	// the batch affine addition has its own bucket table (wk.tbl in the layout of the kernel), so tbl is allocated only for the generic path
 	typename local::MsmBatch<G>::Work wk;
-	wk.base = 0; // read below only if useBatch
+	// the buffer and the function to convert xVec (0 if the batch affine addition is not used or the kernel uses the layout of G)
+	void *cvtBuf = 0;
+	void (*cvtBase)(void *, const void *, size_t) = 0;
 	bool useBatch = false;
 	if (local::MsmBatch<G>::enabled && n >= batchMinN) {
 		const size_t bytes = wk.prepare(n, tblN, kernel, baseArg != 0);
 		void *bp = bytes ? slot.get(local::MsmSlot::WORK, bytes) : 0;
 		if (bp) {
 			wk.setBuf(bp);
+			cvtBuf = wk.base;
+			cvtBase = wk.kn.cvtBase;
 			useBatch = true;
 		}
 	}
@@ -1445,9 +1450,9 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 
 	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
 	const void *base = baseArg ? baseArg : xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
-	if (useBatch && wk.base) {
-		wk.kn.cvtBase(wk.base, xVec, n);
-		base = wk.base;
+	if (cvtBuf) {
+		cvtBase(cvtBuf, xVec, n);
+		base = cvtBuf;
 	}
 	// z = sum_w 2^(b w) win[w] from the top window
 	local::msmWindow(z, winN - 1, winN, b, rem, xVec, base, yVec, yUnitSize, next, n, useBatch, &wk, tbl);
@@ -2002,7 +2007,7 @@ bool foldVecGLV1T(G *z, const G *xVec, const void *yVec, size_t yn, size_t zn, s
 #else
 	typedef GLV1T<G> GLV;
 	typedef typename G::Fr F;
-	typedef typename G::Fp Fp;
+	typedef typename G::Fp BaseF;
 	typedef local::MsmPtXY<G> T;
 	typedef typename T::Pt Pt;
 	const int w = MCL_MSM_FOLD_W;
@@ -2034,14 +2039,14 @@ bool foldVecGLV1T(G *z, const G *xVec, const void *yVec, size_t yn, size_t zn, s
 	const size_t idxN = yn * B;
 	const size_t workN = 3 * MCL_MSM_BATCH_SUB;
 	mcl::Array<Pt> ptsArr;
-	mcl::Array<Fp> workArr;
+	mcl::Array<BaseF> workArr;
 	mcl::Array<uint32_t> idxArr;
 	if (!ptsArr.resize(ptN) || !workArr.resize(workN) || !idxArr.resize(idxN * 2)) return false;
 	Pt *pts = ptsArr.data();
-	Fp *work = workArr.data();
+	BaseF *work = workArr.data();
 	uint32_t *ia = idxArr.data();
 	uint32_t *ib = ia + idxN;
-	const Fp& rw = GLV::rw;
+	const BaseF& rw = GLV::rw;
 	bool ok = true;
 	for (size_t begin = 0; begin < zn && ok; begin += B) {
 		const size_t L = (zn - begin < B) ? zn - begin : B;
@@ -2078,7 +2083,7 @@ bool foldVecGLV1T(G *z, const G *xVec, const void *yVec, size_t yn, size_t zn, s
 			const Pt *src = pts + L * (1 + j * 2 * yn);
 			Pt *dst = pts + L * (1 + j * 2 * yn + yn);
 			for (size_t k = 0; k < yn * L; k++) {
-				Fp::mul(dst[k].x, src[k].x, rw);
+				BaseF::mul(dst[k].x, src[k].x, rw);
 				dst[k].y = src[k].y;
 			}
 		}
