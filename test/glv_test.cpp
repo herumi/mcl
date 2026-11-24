@@ -366,7 +366,7 @@ CYBOZU_TEST_AUTO(glv)
 	the cost model of the window size b (glvGetBucketSizeByCost) vs the measured one
 	measured on Xeon w9-3495X by sweeping b (misc/msm_sweep.cpp, 2026-11-04, the batch rows on 2026-11-05 with the batched reduction) :
 	n (split) scalars of 128 bits of G1, [lo, hi] is the range of b whose time is within 6% of the best (the valley is shallow)
-	n >= 2^19 is bounded by MCL_MSM_MAX_TBL_BYTES, so it is not tested here
+	n >= 2^19 is bounded by MCL_MSM_MAX_TBL_BYTE, so it is not tested here
 */
 CYBOZU_TEST_AUTO(bucketSizeModel)
 {
@@ -383,7 +383,7 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 		{ "batch BLS12-381", &mcl::ec::msmCostParamBatch(), { 5, 5, 6, 7, 8, 9, 10, 10, 11, 12, 12, 15 }, { 6, 6, 8, 9, 10, 11, 11, 13, 13, 14, 15, 16 } },
 		{ "batch BN254", &mcl::ec::msmCostParamBatch(), { 5, 6, 6, 7, 7, 9, 9, 10, 12, 12, 13, 14 }, { 6, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 16 } },
 	};
-	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTES
+	// sizeof(G1) of the measurement (the MCL_FP_BIT = 384 build) : the model depends on it only through the bound MCL_MSM_MAX_TBL_BYTE
 	const size_t pointSize = 144;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		for (size_t j = 0; j < N; j++) {
@@ -394,10 +394,10 @@ CYBOZU_TEST_AUTO(bucketSizeModel)
 			if (!ok) printf("%s n=%zd model b=%zd measured [%zd, %zd]\n", tbl[i].name, n, b, tbl[i].lo[j], tbl[i].hi[j]);
 		}
 	}
-	// the window size is bounded by MCL_MSM_MAX_TBL_BYTES : 2^(b-1) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES
+	// the window size is bounded by MCL_MSM_MAX_TBL_BYTE : 2^(b-1) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTE
 	for (size_t n = 1 << 19; n <= (size_t(1) << 24); n *= 4) {
 		const size_t b = mcl::ec::glvGetBucketSizeByCost(n, 128, sizeof(G1), mcl::ec::msmCostParamBatch());
-		CYBOZU_TEST_ASSERT((size_t(1) << (b - 1)) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTES);
+		CYBOZU_TEST_ASSERT((size_t(1) << (b - 1)) * sizeof(G1) <= MCL_MSM_MAX_TBL_BYTE);
 	}
 	// the generic path : b = 16 (8 windows of 128-bit scalars) is 5-20% faster than b = 13 for n >= 2^19 and 7-8% slower at n = 2^18 (Xeon w9-3495X, i9-13900H, Apple M4 Pro)
 	// the batch affine addition with the batched reduction : b = 16 from n = 2^18 (BLS12-381 : the best, BN254 : 1.1% slower than b = 14 on Xeon w9-3495X)

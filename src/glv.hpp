@@ -49,11 +49,11 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	return x;
 }
 
-#ifndef MCL_MSM_MAX_TBL_BYTES
+#ifndef MCL_MSM_MAX_TBL_BYTE
 	// the max byte size of the bucket table 2^(b-1) * sizeof(G) of mulVecCore (the generic path) : b <= 16 for G1 (144 bytes)
 	// the cost model (not the cache) selects b <= 13 for n <= 2^18 split scalars and b = 16 for n >= 2^19 on Xeon w9-3495X, i9-13900H and Apple M4 Pro,
 	// so the bound is loose for the generic path. The AVX-512 kernel passes its own bound (see getBucketSizeAffM in src/msm_avx.cpp).
-	#define MCL_MSM_MAX_TBL_BYTES (size_t(8) << 20)
+	#define MCL_MSM_MAX_TBL_BYTE (size_t(8) << 20)
 #endif
 #ifndef MCL_MSM_REDUCE_MIN_B
 	// use the batched bucket reduction (mulVecReduceTableBatch) if the number of the buckets of a window >= MCL_MSM_REDUCE_MIN_B
@@ -130,7 +130,7 @@ inline uint64_t glvCostModel(size_t n, size_t b, size_t maxBitSize, const MsmCos
 	argmin_b glvCostModel for b in [2, bMax] where 2^(bMax-1) * pointSize <= maxTblBytes (bMax <= 16)
 	pointSize : sizeof(G) of the bucket table
 */
-inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSize, const MsmCostParam& prm, size_t maxTblBytes = MCL_MSM_MAX_TBL_BYTES)
+inline size_t glvGetBucketSizeByCost(size_t n, size_t maxBitSize, size_t pointSize, const MsmCostParam& prm, size_t maxTblBytes = MCL_MSM_MAX_TBL_BYTE)
 {
 	size_t bMax = 2;
 	while (bMax < 16 && (size_t(1) << bMax) * pointSize <= maxTblBytes) bMax++;
@@ -167,11 +167,11 @@ inline const MsmCostParam& msmCostParamBatch() { static const MsmCostParam prm =
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
-#ifndef MCL_MSM_MAX_STACK_TBL_BYTES
+#ifndef MCL_MSM_MAX_STACK_TBL_BYTE
 	// the max byte size of the bucket table (1 << b) * sizeof(G) on the stack
 	// b of the cost model is at most 9 for n <= 1024 but b of the argument of mulVec may be large (b = 16 : 9.4MiB for G1),
 	// then malloc is tried first and b is reduced if it fails
-	#define MCL_MSM_MAX_STACK_TBL_BYTES (size_t(256) << 10)
+	#define MCL_MSM_MAX_STACK_TBL_BYTE (size_t(256) << 10)
 #endif
 
 /*
@@ -287,13 +287,13 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 		#define MCL_MSM_PREFETCH_DIST 16
 	#endif
 #endif
-#ifndef MCL_MSM_PREFETCH_MIN_BYTES
+#ifndef MCL_MSM_PREFETCH_MIN_BYTE
 	/*
 		use the software prefetch if the byte size of the points (n * sizeof(G)) >= this value
 		(the reads of the points at the level 0 are random ; on Apple M4 Pro (L2 16 MiB) the prefetch is neutral
 		if the points are in the L2 and saves 11-15% from 2^17 points (BLS12-381 18 MiB, BN254 12 MiB), 2-5% at 2^16)
 	*/
-	#define MCL_MSM_PREFETCH_MIN_BYTES (6u << 20)
+	#define MCL_MSM_PREFETCH_MIN_BYTE (6u << 20)
 #endif
 #ifndef MCL_CACHE_LINE_SIZE
 	// the size of a cache line (used by the software prefetch ; Apple silicon has 128-byte lines)
@@ -597,7 +597,7 @@ struct MsmGenericKernel {
 		kn.pointSize = sizeof(G);
 		kn.workSize = sizeof(typename G::Fp) * 3 * MCL_MSM_BATCH_SUB;
 		kn.cvtBase = 0;
-		kn.addPairs = (n * sizeof(G) >= MCL_MSM_PREFETCH_MIN_BYTES) ? addPairs<true> : addPairs<false>;
+		kn.addPairs = (n * sizeof(G) >= MCL_MSM_PREFETCH_MIN_BYTE) ? addPairs<true> : addPairs<false>;
 		kn.addToBucket = addToBucket;
 		kn.getBucketSize = 0;
 		kn.batchMinN = 0;
@@ -691,7 +691,7 @@ struct MsmXYKernel {
 			{ sizeof(Pt), sizeof(F) * 3 * MCL_MSM_BATCH_SUB, cvtBase, addPairs<false>, addToBucket, getBucketSize, 0, cvtBaseGLV },
 			{ sizeof(Pt), sizeof(F) * 3 * MCL_MSM_BATCH_SUB, cvtBase, addPairs<true>, addToBucket, getBucketSize, 0, cvtBaseGLV },
 		};
-		return &kn[n * sizeof(Pt) >= MCL_MSM_PREFETCH_MIN_BYTES ? 1 : 0];
+		return &kn[n * sizeof(Pt) >= MCL_MSM_PREFETCH_MIN_BYTE ? 1 : 0];
 	}
 };
 
@@ -1423,7 +1423,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	if (baseArg && !useBatch) return 0; // the caller gives only the converted points
 	if (!useBatch) {
 		// the table is put on the stack if n and the table are small (b of the argument may be large even if n is small)
-		const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTES;
+		const bool useStack = n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC && sizeof(G) * tblN <= MCL_MSM_MAX_STACK_TBL_BYTE;
 		(void)useStack;
 #ifndef MCL_DONT_USE_MALLOC
 		// if n or the table is large then try to use the kept buffer (malloc)
@@ -1437,7 +1437,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 				if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), msmCostParamGeneric());
 			}
 			// reduce b (of the argument) so that the table fits in the stack
-			while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTES) b--;
+			while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTE) b--;
 			tblN = size_t(1) << b;
 			tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 		}
