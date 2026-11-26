@@ -184,6 +184,136 @@ CYBOZU_TEST_AUTO(G2)
 	testPar("G2", Q, nTbl, CYBOZU_NUM_OF_ARRAY(nTbl));
 }
 
+/*
+	the scalars of skewed sizes (a witness of zkSNARK : almost all are 0, 1 or -1 with a few small or large values) :
+	mulVec sorts the scalars by the bit size and each window scans only the scalars which have a digit in it (MsmSchedule in src/glv.hpp),
+	y > r / 2 is processed as -(r - y) and the points of the zero (split) scalars are not converted.
+	the result is compared with the sum of the scalar multiplications.
+*/
+static void setBitFr(Fr& y, size_t bit, cybozu::XorShift& rg)
+{
+	if (bit == 0) {
+		y.clear();
+		return;
+	}
+	mpz_class v = 1;
+	for (size_t i = 1; i < bit; i++) v = (v << 1) | (rg.get32() & 1);
+	v %= Fr::getOp().mp;
+	y.setMpz(v);
+}
+
+static void setSmallVec(std::vector<Fr>& yVec, size_t n, int mode, cybozu::XorShift& rg)
+{
+	yVec.resize(n);
+	const mpz_class& r = Fr::getOp().mp;
+	for (size_t i = 0; i < n; i++) {
+		Fr& y = yVec[i];
+		const uint32_t v = rg.get32() % 1000;
+		switch (mode) {
+		case 0: y = 0; break;
+		case 1: y = 1; break;
+		case 2: y = -1; break;
+		case 3: y = v < 400 ? 1 : 0; break;
+		case 4: // 0 / 1 / -1 and a few random values
+			if (v < 500) y = 0; else if (v < 900) y = 1; else if (v < 990) y = -1; else y.setByCSPRNG(rg);
+			break;
+		case 5: // like the witness of a circuit of bit operations and big integers
+			if (v < 550) y = 0;
+			else if (v < 940) y = 1;
+			else if (v < 960) setBitFr(y, 8, rg);
+			else if (v < 965) { setBitFr(y, 8, rg); Fr::neg(y, y); }
+			else if (v < 975) setBitFr(y, 32, rg);
+			else if (v < 980) setBitFr(y, 64, rg);
+			else if (v < 990) setBitFr(y, 128, rg);
+			else if (v < 995) y = -1;
+			else y.setByCSPRNG(rg);
+			break;
+		case 6: // small values and one large value
+			setBitFr(y, 8, rg);
+			if (i == n / 2) y.setByCSPRNG(rg);
+			break;
+		case 7: // all the bit sizes
+			setBitFr(y, i % (Fr::getBitSize() + 1), rg);
+			if (i & 256) Fr::neg(y, y);
+			break;
+		case 8: // the boundaries of the split (2^64) and of the sign (r / 2)
+			{
+				const mpz_class tbl[] = {
+					(mpz_class(1) << 64) - 1, mpz_class(1) << 64, (mpz_class(1) << 64) + 1,
+					r - (mpz_class(1) << 64) + 1, r - (mpz_class(1) << 64), r - (mpz_class(1) << 64) - 1,
+					(r - 1) / 2, (r + 1) / 2, (r + 3) / 2, r - 1, r - 2, 1, 2, 0,
+					(mpz_class(1) << 127) - 1, mpz_class(1) << 127, mpz_class(1) << 128,
+				};
+				y.setMpz(tbl[(i + v) % CYBOZU_NUM_OF_ARRAY(tbl)]);
+			}
+			break;
+		case 9: y.setByCSPRNG(rg); break; // all the windows scan all the scalars
+		default: // one non-zero scalar
+			y = 0;
+			if (i == n - 1) y = (mode & 1) ? -1 : 5;
+			break;
+		}
+	}
+}
+
+template<class G>
+void testSmallScalar(const char *name, const G& P, const size_t *nTbl, size_t nTblN)
+{
+	cybozu::XorShift rg;
+	std::vector<G> xVec;
+	std::vector<Fr> yVec, yTmp;
+	for (size_t ni = 0; ni < nTblN; ni++) {
+		const size_t n = nTbl[ni];
+		setVec(xVec, yTmp, P, n, rg); // with zero points, the same points and non-normalized points
+		for (int mode = 0; mode <= 11; mode++) {
+			setSmallVec(yVec, n, mode, rg);
+			G Q0, Q1, T;
+			Q0.clear();
+			for (size_t i = 0; i < n; i++) {
+				if (yVec[i].isZero()) continue;
+				G::mul(T, xVec[i], yVec[i]);
+				Q0 += T;
+			}
+			for (int par = 0; par < 3; par++) {
+				if (par == 0) {
+					mcl::ec::setParallelFor(0, 0);
+				} else if (par == 1) {
+					g_parts = 3;
+					mcl::ec::setParallelFor(parallelForSeq, g_parts);
+				} else {
+					mcl::ec::setParallelFor(mcl::ec::parallelForThread, 4);
+				}
+				G::mulVecConstRef(Q1, xVec.data(), yVec.data(), n);
+				CYBOZU_TEST_EQUAL(Q0, Q1);
+				std::vector<G> xVec2 = xVec;
+				G::mulVec(Q1, xVec2.data(), yVec.data(), n);
+				CYBOZU_TEST_EQUAL(Q0, Q1);
+				// the bucket size of the argument
+				G::mulVecConstRef(Q1, xVec.data(), yVec.data(), n, 3);
+				CYBOZU_TEST_EQUAL(Q0, Q1);
+			}
+			mcl::ec::setParallelFor(0, 0);
+		}
+		printf("%s small n=%zd ok\n", name, n);
+	}
+}
+
+CYBOZU_TEST_AUTO(smallScalarG1)
+{
+	G1 P;
+	hashAndMapToG1(P, "abc", 3);
+	const size_t nTbl[] = { 17, 40, 48, 64, 100, 500, 1025, 4096, 5000, 9000 };
+	testSmallScalar("G1", P, nTbl, CYBOZU_NUM_OF_ARRAY(nTbl));
+}
+
+CYBOZU_TEST_AUTO(smallScalarG2)
+{
+	G2 Q;
+	hashAndMapToG2(Q, "abc", 3);
+	const size_t nTbl[] = { 20, 100, 1025, 5000 };
+	testSmallScalar("G2", Q, nTbl, CYBOZU_NUM_OF_ARRAY(nTbl));
+}
+
 // GT (GroupMtoA) : the generic path without the batch affine addition
 CYBOZU_TEST_AUTO(GT)
 {

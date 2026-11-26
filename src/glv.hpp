@@ -227,13 +227,17 @@ void mulVecReduceTable(G& win, const G *tbl, size_t tblN, bool first)
 
 } // mcl::ec::local
 
+/*
+	perm : the indexes of the m scalars which may have a non-zero digit in this window (see msmSortByBitSize), 0 : all the m scalars
+*/
 template<class G>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop)
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, const uint32_t *perm, size_t m, bool first, bool isTop)
 {
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
 	}
-	for (size_t i = 0; i < n; i++) {
+	for (size_t j = 0; j < m; j++) {
+		const size_t i = perm ? perm[j] : j;
 		const uint32_t d = local::getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
 		if (d == local::msmNone) continue;
 		const size_t k = d & local::msmIdxMask;
@@ -667,17 +671,26 @@ struct MsmXYKernel {
 			const G& P = x[i];
 			Pt& d0 = d[i];
 			Pt& d1 = d[n + i];
+			const uint32_t f = neg[i];
+			// the points of the zero (split) scalars are not read (many in a witness of zkSNARK), so they are not converted
+			const bool useA = (f & msmZeroA) == 0;
+			const bool useB = (f & msmZeroB) == 0;
 			if (P.z.isZero()) {
 				T::clear(d0);
 				T::clear(d1);
 				continue;
 			}
-			d0.x = P.x;
-			F::mul(d1.x, P.x, rw);
+			if (!useA && !useB) continue;
 			F negY;
-			F::neg(negY, P.y);
-			d0.y = (neg[i] & 1) ? negY : P.y;
-			d1.y = (neg[i] & 2) ? negY : P.y;
+			F::neg(negY, P.y); // always (the signs of random scalars are not predictable)
+			if (useA) {
+				d0.x = P.x;
+				d0.y = (f & 1) ? negY : P.y;
+			}
+			if (useB) {
+				F::mul(d1.x, P.x, rw);
+				d1.y = (f & 2) ? negY : P.y;
+			}
 		}
 	}
 	static size_t getBucketSize(size_t n, size_t maxBitSize, size_t)
@@ -980,9 +993,10 @@ void mulVecReduceTableBatch(G& win, local::MsmBatchWork<G>& wk, size_t B, bool f
 	The number of additions is the same as mulVecUpdateTable (n - the number of non-empty buckets)
 	and the batches do not degenerate even if all scalars are equal.
 	base : xVec in the layout of the kernel wk.kn (xVec itself for the generic kernel)
+	perm : the indexes of the n scalars which may have a non-zero digit in this window (see msmSortByBitSize), 0 : all the n scalars
 */
 template<class G>
-void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
+void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, const uint32_t *perm, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
 {
 	using namespace local;
 	const size_t CHUNK = wk.chunk;
@@ -993,7 +1007,7 @@ void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, con
 	for (size_t k = 0; k <= tblN; k++) off[k] = 0;
 	// off[k + 1] = the number of the scalars in the bucket k
 	for (size_t i = 0; i < n; i++) {
-		const uint32_t d = getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		const uint32_t d = getSignedDigit(yVec + next * (perm ? perm[i] : i), yUnitSize, pos, b, isTop);
 		wk.D[i] = d;
 		if (d == msmNone) continue;
 		const size_t k = d & msmIdxMask;
@@ -1008,7 +1022,7 @@ void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, con
 		const uint32_t d = wk.D[i];
 		if (d == msmNone) continue;
 		const size_t k = d & msmIdxMask;
-		wk.idx[off[k]++] = uint32_t(i) | (d & msmSign);
+		wk.idx[off[k]++] = uint32_t(perm ? perm[i] : i) | (d & msmSign);
 	}
 	for (size_t k = tblN; k > 0; k--) off[k] = off[k - 1];
 	off[0] = 0;
@@ -1105,34 +1119,190 @@ void mulVecUpdateTableBatch(G& win, size_t tblN, size_t b, const void *base, con
 
 namespace local {
 
+#ifndef MCL_MSM_SMALL_MAX_B
+	// the max window size of the Jacobi addition for a window of a few scalars (mulVecUpdateTableSmall : 2^b G on the stack)
+	#define MCL_MSM_SMALL_MAX_B 6
+#endif
+
+/*
+	the window of a few (m < the threshold of the batch affine addition) scalars of the batch path :
+	the points (in the layout of the kernel kn) are added to the Jacobi buckets by kn.addToBucket (no inversion, no sort)
+	tblN <= 2^MCL_MSM_SMALL_MAX_B
+*/
+template<class G>
+void mulVecUpdateTableSmall(G& win, size_t tblN, size_t b, const ec::MsmKernel& kn, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, const uint32_t *perm, size_t m, bool isTop)
+{
+	G tbl[size_t(1) << MCL_MSM_SMALL_MAX_B];
+	assert(tblN <= (size_t(1) << MCL_MSM_SMALL_MAX_B));
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t j = 0; j < m; j++) {
+		const size_t i = perm ? perm[j] : j;
+		const uint32_t d = getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		if (d == msmNone) continue;
+		const size_t k = d & msmIdxMask;
+		assert(k < tblN);
+		kn.addToBucket(&tbl[k], base, uint32_t(i) | (d & msmSign));
+	}
+	mulVecReduceTable(win, tbl, tblN, true);
+}
+
 template<class G>
 struct mulVecUpdateTableBatchT {
 	template<class W>
-	static void call(G&, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
+	static void call(G&, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, const uint32_t *, size_t, bool, bool, W&) {}
 };
 template<class Fp, class Fr>
 struct mulVecUpdateTableBatchT<EcT<Fp, Fr> > {
 	typedef EcT<Fp, Fr> G;
-	static void call(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
+	static void call(G& win, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, const uint32_t *perm, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
 	{
-		mulVecUpdateTableBatch(win, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
+		if (n < msmBatchMinN(&wk.kn) && tblN <= (size_t(1) << MCL_MSM_SMALL_MAX_B)) {
+			mulVecUpdateTableSmall(win, tblN, b, wk.kn, base, yVec, yUnitSize, next, pos, perm, n, isTop);
+			return;
+		}
+		mulVecUpdateTableBatch(win, tblN, b, base, yVec, yUnitSize, next, pos, perm, n, first, isTop, wk);
 	}
 };
 
 /*
-	win = the sum of the window w of the bucket method (pos = b w ; w = winN - 1 is the top window of rem bits) of
-	the n (split) scalars yVec and the points xVec (generic) or base (the batch affine addition ; the layout of wk->kn)
+	win = the sum of the window [pos, pos + b) of the bucket method (isTop : the top window, which has no carry out) of
+	the m (split) scalars yVec[perm[j]] (yVec[j] if perm = 0) and the points xVec (generic) or base (the batch affine addition ; the layout of wk->kn)
 */
 template<class G>
-void msmWindow(G& win, size_t w, size_t winN, size_t b, size_t rem, const G *xVec, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool useBatch, typename MsmBatch<G>::Work *wk, G *tbl)
+void msmWindow(G& win, size_t pos, size_t b, bool isTop, const G *xVec, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, const uint32_t *perm, size_t m, bool useBatch, typename MsmBatch<G>::Work *wk, G *tbl)
 {
-	const bool isTop = w == winN - 1;
-	const size_t tblN = size_t(1) << (isTop ? rem : b - 1);
-	const size_t pos = b * w;
+	if (m == 0) {
+		win.clear();
+		return;
+	}
+	const size_t tblN = size_t(1) << (isTop ? b : b - 1);
 	if (useBatch) {
-		mulVecUpdateTableBatchT<G>::call(win, tblN, b, base, yVec, yUnitSize, next, pos, n, true, isTop, *wk);
+		mulVecUpdateTableBatchT<G>::call(win, tblN, b, base, yVec, yUnitSize, next, pos, perm, m, true, isTop, *wk);
 	} else {
-		mulVecUpdateTable(win, tbl, tblN, b, xVec, yVec, yUnitSize, next, pos, n, true, isTop);
+		mulVecUpdateTable(win, tbl, tblN, b, xVec, yVec, yUnitSize, next, pos, perm, m, true, isTop);
+	}
+}
+
+/*
+	the windows of the bucket method : the window w is [pos[w], pos[w] + b[w]) and the top window (w = winN - 1) ends at maxBit.
+	m[w] = the number of the scalars whose bit size >= pos[w] (the others have no digit in the window w : the carry into pos[w]
+	comes from the bit pos[w] - 1), so only the first m[w] scalars sorted by the bit size (msmSortByBitSize) are scanned.
+	the window size is chosen by the cost model for m[w] scalars of the remaining bits, so a few large scalars in many small ones
+	(e.g. a witness of zkSNARK : almost all are 0 or 1) are processed by small windows and the reduction of the buckets of each window
+	does not depend on the number of the small scalars.
+	b[w] is kept while m[w] does not decrease much, so it is the uniform window of the model if all the scalars have the same size.
+*/
+struct MsmSchedule {
+	static const size_t maxBitSize = maxUnitSize * UnitBitSize;
+	uint16_t pos[maxBitSize];
+	uint8_t b[maxBitSize];
+	uint32_t m[maxBitSize];
+	size_t winN;
+	size_t maxB;
+	/*
+		true if almost all the n scalars have a digit in almost all the windows (e.g. uniformly random scalars) :
+		then the windows scan all the scalars in the original order (perm = 0), which is a little faster than the sorted order
+	*/
+	// all the n scalars are scanned by all the windows (perm = 0)
+	void setAll(size_t n)
+	{
+		for (size_t w = 0; w < winN; w++) m[w] = uint32_t(n);
+	}
+	bool isDense(size_t n) const
+	{
+		uint64_t sum = 0;
+		for (size_t w = 0; w < winN; w++) sum += m[w];
+		return sum * 16 >= uint64_t(n) * winN * 15;
+	}
+	/*
+		hist[k] = the number of the scalars of the bit size k (k <= maxBit)
+		C : the number of the chunks of the parallel run (the window size is chosen for m / C scalars)
+		bArg : the window size of the caller (0 : the cost model), bLimit : the max window size (0 : no limit)
+	*/
+	template<class G>
+	void init(const uint32_t *hist, size_t maxBit, size_t C, size_t bArg, size_t bLimit, bool tryBatch, const ec::MsmKernel *kernel, size_t batchMinN, const G* = 0)
+	{
+		assert(0 < maxBit && maxBit <= maxBitSize);
+		winN = 0;
+		maxB = 0;
+		size_t ge = 0; // the number of the scalars of the bit size >= max(pos, 1)
+		for (size_t k = 1; k <= maxBit; k++) ge += hist[k];
+		size_t p = 0;
+		size_t prevM = 0;
+		size_t curB = 0;
+		while (p < maxBit) {
+			const size_t rest = maxBit - p;
+			const size_t mc = (ge + C - 1) / C;
+			if (bArg) {
+				curB = bArg;
+			} else if (curB == 0 || (rest > curB && mc * 8 < prevM * 7)) {
+				if (tryBatch && mc >= batchMinN) {
+					if (kernel && kernel->getBucketSize) {
+						curB = kernel->getBucketSize(mc, rest, sizeof(G));
+					} else {
+						curB = glvGetBucketSizeByCost(mc, rest, sizeof(G), msmCostParamBatch());
+					}
+				} else {
+					curB = glvGetBucketSizeByCost(mc, rest, sizeof(G), msmCostParamGeneric());
+					if (tryBatch && curB > MCL_MSM_SMALL_MAX_B) curB = MCL_MSM_SMALL_MAX_B;
+				}
+				prevM = mc;
+			}
+			if (bLimit && curB > bLimit) curB = bLimit;
+			const size_t bw = curB < rest ? curB : rest;
+			pos[winN] = uint16_t(p);
+			b[winN] = uint8_t(bw);
+			m[winN] = uint32_t(ge);
+			winN++;
+			if (bw > maxB) maxB = bw;
+			// the scalars of the bit size < p + bw have no digit in the next window
+			const size_t np = p + bw;
+			for (size_t k = (p == 0 ? 1 : p); k < np; k++) ge -= hist[k];
+			p = np;
+		}
+	}
+};
+
+/*
+	the sort of the scalars by the bit size in two steps :
+	1. msmSortByBitSize : bits[i] = the bit size of the scalar i, hist[k] = the number of the scalars of the bit size k
+	2. msmMakePerm : perm = the indexes of the non-zero scalars sorted by the bit size in descending order (stable)
+	(the first m[w] of perm are the scalars of the window w : see MsmSchedule. the step 2 is skipped if MsmSchedule::isDense)
+	perm = 0 : hist[maxBit] = n (all the scalars are scanned by all the windows)
+	return the max bit size (<= maxBitSize, the bound of the caller)
+*/
+inline size_t msmSortByBitSize(uint32_t *perm, uint16_t *bits, uint32_t *hist, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t maxBitSize)
+{
+	for (size_t k = 0; k <= maxBitSize; k++) hist[k] = 0;
+	if (perm == 0) {
+		hist[maxBitSize] = uint32_t(n);
+		return maxBitSize;
+	}
+	size_t maxBit = 0;
+	for (size_t i = 0; i < n; i++) {
+		const size_t bit = fp::getBitSize(yVec + next * i, yUnitSize);
+		assert(bit <= maxBitSize);
+		bits[i] = uint16_t(bit);
+		hist[bit]++;
+		if (bit > maxBit) maxBit = bit;
+	}
+	return maxBit;
+}
+// the second half of msmSortByBitSize : make perm from bits and hist
+inline void msmMakePerm(uint32_t *perm, const uint16_t *bits, const uint32_t *hist, size_t n, size_t maxBit)
+{
+	// off[k] = the position of the first scalar of the bit size k in perm (k = maxBit first)
+	uint32_t off[MsmSchedule::maxBitSize + 1];
+	uint32_t sum = 0;
+	for (size_t k = maxBit; k > 0; k--) {
+		off[k] = sum;
+		sum += hist[k];
+	}
+	for (size_t i = 0; i < n; i++) {
+		const size_t bit = bits[i];
+		if (bit) perm[off[bit]++] = uint32_t(i);
 	}
 }
 
@@ -1193,9 +1363,12 @@ struct MsmParCtx {
 	size_t n; // the number of the (split) scalars
 	size_t C; // the number of the chunks
 	size_t winN;
-	size_t b;
-	size_t rem;
-	size_t tblN; // 2^b
+	MsmSchedule sched; // the windows (the window size is chosen for the scalars of a chunk)
+	size_t maxBitSize; // the upper bound of the bit size of the scalars
+	uint32_t *perm; // [n] the indexes (in the chunk) of the scalars of each chunk sorted by the bit size (see msmSortByBitSize)
+	uint16_t *bits; // [n] the work of msmSortByBitSize
+	uint32_t *cnt; // [C * (maxBitSize + 2)] cnt[c * (maxBitSize + 2) + k] = the number of the scalars of the chunk c whose bit size >= k
+	size_t tblN; // 2^b (b = the max window size)
 	size_t yUnitSize;
 	size_t next;
 	G *xVec; // normalized in place if doNormalize
@@ -1212,18 +1385,34 @@ struct MsmParCtx {
 	char *workBuf; // [workN * workBytes] the work buffer (the slot) : the thread tid uses [tid * workBytes, (tid + 1) * workBytes)
 	size_t workBytes; // the byte size of the work of a thread (a multiple of 64)
 	uint8_t *ok; // [C winN] 1 if the task is done
+	uint8_t *prepared; // [C] the number of times the chunk is prepared
+	bool dense; // all the scalars of the chunk are scanned in the original order by all the windows (see MsmSchedule::isDense)
 	size_t chunkBegin(size_t c) const { return n * c / C; }
-	// normalize and convert the chunks of the points
+	// normalize and convert the chunks of the points, and sort the scalars of the chunks by the bit size
 	static void prepareTask(size_t begin, size_t end, size_t, void *arg)
 	{
 		MsmParCtx& ctx = *(MsmParCtx*)arg;
 		assert(begin < end && end <= ctx.C);
-		if (begin >= end || end > ctx.C) return; // the parallel-for violates the contract (the chunks are left unprepared, then the windows see non-normalized points : ok = 0 is not set here, see windowTask)
+		if (begin >= end || end > ctx.C) return; // the parallel-for violates the contract (detected by prepared[], then the caller runs the sequential one)
+		uint32_t hist[MsmSchedule::maxBitSize + 1];
+		const size_t K = ctx.maxBitSize + 2;
 		for (size_t c = begin; c < end; c++) {
+			ctx.prepared[c]++;
 			const size_t off = ctx.chunkBegin(c);
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			if (ctx.doNormalize) G::normalizeVec(ctx.xVec + off, ctx.xVec + off, nc);
 			if (ctx.baseW) ctx.kernel->cvtBase((char*)ctx.baseW + off * ctx.pointSize, ctx.xVec + off, nc);
+			const size_t maxBit = msmSortByBitSize(ctx.perm + off, ctx.bits + off, hist, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.maxBitSize);
+			// perm is not used if dense, but the scatter of the chunk is cheap in its thread (the scalars are in the cache)
+			msmMakePerm(ctx.perm + off, ctx.bits + off, hist, nc, maxBit);
+			uint32_t *cnt = ctx.cnt + c * K;
+			uint32_t sum = 0;
+			cnt[ctx.maxBitSize + 1] = 0;
+			for (size_t k = ctx.maxBitSize; k > 0; k--) {
+				sum += hist[k];
+				cnt[k] = sum;
+			}
+			cnt[0] = sum;
 		}
 	}
 	static void windowTask(size_t begin, size_t end, size_t tid, void *arg)
@@ -1254,7 +1443,11 @@ struct MsmParCtx {
 			const size_t nc = ctx.chunkBegin(c + 1) - off;
 			const void *base = ctx.base ? (const char*)ctx.base + off * ctx.pointSize : 0;
 			const G *xVec = ctx.xVec ? ctx.xVec + off : 0; // xVec = 0 if the caller gives base
-			msmWindow(ctx.res[i], w, ctx.winN, ctx.b, ctx.rem, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, nc, ctx.useBatch, &tw.wk, tw.tbl);
+			// the scalars of the chunk which may have a digit in the window : the bit size >= pos (see MsmSchedule)
+			const size_t pos = ctx.sched.pos[w];
+			const size_t m = ctx.dense ? nc : ctx.cnt[c * (ctx.maxBitSize + 2) + (pos ? pos : 1)];
+			assert(m <= nc);
+			msmWindow(ctx.res[i], pos, ctx.sched.b[w], w == ctx.winN - 1, xVec, base, ctx.yVec + off * ctx.next, ctx.yUnitSize, ctx.next, ctx.dense ? (const uint32_t*)0 : ctx.perm + off, m, ctx.useBatch, &tw.wk, tw.tbl);
 			ctx.ok[i] = 1;
 		}
 	}
@@ -1274,14 +1467,15 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 	const size_t maxThreads = par.maxThreads;
 	typedef typename Ctx::ThreadWork ThreadWork;
 	Ctx ctx;
-	ctx.b = 0;
-	ctx.C = msmParChunks<G>(n, maxThreads, ctx.b, bArg, maxBitSize, tryBatch, kernel, batchMinN);
-	ctx.winN = (maxBitSize + ctx.b - 1) / ctx.b;
-	ctx.rem = maxBitSize - ctx.b * (ctx.winN - 1);
-	ctx.tblN = size_t(1) << ctx.b;
-	const size_t numTasks = ctx.C * ctx.winN;
-	if (numTasks < 2) return 0;
+	size_t bUniform = 0;
+	ctx.C = msmParChunks<G>(n, maxThreads, bUniform, bArg, maxBitSize, tryBatch, kernel, batchMinN);
+	if (bUniform == 0 || ctx.C * ((maxBitSize + bUniform - 1) / bUniform) < 2) return 0;
+	if (maxBitSize > MsmSchedule::maxBitSize || n >= msmIdxMask) return 0;
+	// the windows are made after the sort of the scalars (prepareTask), so the buffers are taken for the max number of the windows
+	const size_t maxWinN = bArg ? (maxBitSize + bArg - 1) / bArg : maxBitSize;
+	const size_t maxTasks = ctx.C * maxWinN;
 	ctx.n = n;
+	ctx.maxBitSize = maxBitSize;
 	ctx.yUnitSize = yUnitSize;
 	ctx.next = next;
 	ctx.xVec = xVec;
@@ -1293,9 +1487,54 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 	const bool needCvt = tryBatch && kernel && kernel->cvtBase && baseArg == 0;
 	const size_t align = 64;
 	const size_t baseBytes = needCvt ? (ctx.pointSize * n + align - 1) / align * align : 0;
-	const size_t resBytes = (sizeof(G) * numTasks + align - 1) / align * align;
+	const size_t permBytes = ((sizeof(uint32_t) + sizeof(uint16_t)) * n + align - 1) / align * align;
+	const size_t cntBytes = (sizeof(uint32_t) * ctx.C * (maxBitSize + 2) + align - 1) / align * align;
+	const size_t maxWorkN = maxThreads < maxTasks ? maxThreads : maxTasks;
+	const size_t worksBytes = (sizeof(ThreadWork) * maxWorkN + align - 1) / align * align;
+	const size_t flagBytes = (ctx.C + maxTasks + align - 1) / align * align;
+	// res is the last (only the part of the actual windows is touched)
+	void *bp = slot.get(MsmSlot::PAR, align + baseBytes + permBytes + cntBytes + worksBytes + flagBytes + sizeof(G) * maxTasks);
+	if (bp == 0) return 0;
+	char *p = (char*)(((uintptr_t)bp + align - 1) & ~(uintptr_t)(align - 1));
+	ctx.baseW = needCvt ? p : 0; p += baseBytes;
+	ctx.perm = (uint32_t*)p;
+	ctx.bits = (uint16_t*)(ctx.perm + n); p += permBytes;
+	ctx.cnt = (uint32_t*)p; p += cntBytes;
+	ctx.works = (ThreadWork*)p; p += worksBytes;
+	ctx.prepared = (uint8_t*)p;
+	ctx.ok = ctx.prepared + ctx.C; p += flagBytes;
+	ctx.res = (G*)p;
+	ctx.base = baseArg ? baseArg : needCvt ? ctx.baseW : tryBatch ? (const void*)xVec : 0;
+	memset(ctx.prepared, 0, ctx.C);
+	par.run(Ctx::prepareTask, &ctx, ctx.C);
+	for (size_t c = 0; c < ctx.C; c++) {
+		if (ctx.prepared[c] != 1) return 0;
+	}
+	// the histogram of all the chunks and the windows
+	{
+		uint32_t hist[MsmSchedule::maxBitSize + 1];
+		const size_t K = maxBitSize + 2;
+		size_t maxBit = 0;
+		hist[0] = 0;
+		for (size_t k = 1; k <= maxBitSize; k++) {
+			uint32_t sum = 0;
+			for (size_t c = 0; c < ctx.C; c++) sum += ctx.cnt[c * K + k] - ctx.cnt[c * K + k + 1];
+			hist[k] = sum;
+			if (sum) maxBit = k;
+		}
+		if (maxBit == 0) {
+			z.clear();
+			return n;
+		}
+		ctx.sched.template init<G>(hist, maxBit, ctx.C, bArg, 0, tryBatch, kernel, batchMinN);
+	}
+	ctx.dense = ctx.sched.isDense(n);
+	ctx.winN = ctx.sched.winN;
+	ctx.tblN = size_t(1) << ctx.sched.maxB;
+	const size_t numTasks = ctx.C * ctx.winN;
+	assert(numTasks <= maxTasks);
+	if (numTasks < 2) return 0;
 	ctx.workN = maxThreads < numTasks ? maxThreads : numTasks;
-	const size_t worksBytes = (sizeof(ThreadWork) * ctx.workN + align - 1) / align * align;
 	// the work of a thread : the work of the batch affine addition or the bucket table of the generic path (the same parameters as windowTask)
 	{
 		const size_t nMax = (n + ctx.C - 1) / ctx.C;
@@ -1309,20 +1548,11 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 		}
 		ctx.workBytes = (bytes + align - 1) / align * align;
 	}
-	void *bp = slot.get(MsmSlot::PAR, align + baseBytes + resBytes + worksBytes + numTasks);
-	if (bp == 0) return 0;
 	ctx.workBuf = (char*)slot.get(MsmSlot::WORK, align + ctx.workBytes * ctx.workN);
 	if (ctx.workBuf == 0) return 0;
 	ctx.workBuf = (char*)(((uintptr_t)ctx.workBuf + align - 1) & ~(uintptr_t)(align - 1));
-	char *p = (char*)(((uintptr_t)bp + align - 1) & ~(uintptr_t)(align - 1));
-	ctx.baseW = needCvt ? p : 0; p += baseBytes;
-	ctx.res = (G*)p; p += resBytes;
-	ctx.works = (ThreadWork*)p; p += worksBytes;
-	ctx.ok = (uint8_t*)p;
 	memset(ctx.ok, 0, numTasks);
 	for (size_t i = 0; i < ctx.workN; i++) new(&ctx.works[i]) ThreadWork();
-	ctx.base = baseArg ? baseArg : needCvt ? ctx.baseW : tryBatch ? (const void*)xVec : 0;
-	if (doNormalize || needCvt) par.run(Ctx::prepareTask, &ctx, ctx.C);
 	par.run(Ctx::windowTask, &ctx, numTasks);
 	bool ok = true;
 	for (size_t i = 0; i < numTasks; i++) {
@@ -1332,10 +1562,10 @@ size_t mulVecCorePar(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t n
 		}
 	}
 	if (ok) {
-		// z = sum_w 2^(b w) sum_c res[c winN + w]
+		// z = sum_w 2^pos[w] sum_c res[c winN + w]
 		for (size_t w = ctx.winN; w > 0; w--) {
 			if (w < ctx.winN) {
-				for (size_t i = 0; i < ctx.b; i++) G::dbl(z, z);
+				for (size_t i = 0; i < ctx.sched.b[w - 1]; i++) G::dbl(z, z);
 			}
 			for (size_t c = 0; c < ctx.C; c++) {
 				const G& r = ctx.res[c * ctx.winN + w - 1];
@@ -1377,7 +1607,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	}
 	if (maxBitSize == 0) maxBitSize = sizeof(Unit) * yUnitSize * 8;
 
-	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
+	size_t tblN; // 2^b (b = the max window size)
 	G *tbl = 0;
 	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own cost model of the window size
 	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel(n);
@@ -1386,13 +1616,6 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	assert(baseArg == 0 || (kernel && n >= batchMinN));
 	const bool tryBatch = local::MsmBatch<G>::enabled && n >= batchMinN;
 	const size_t bArg = b;
-	if (b == 0) {
-		if (tryBatch && kernel && kernel->getBucketSize) {
-			b = kernel->getBucketSize(n, maxBitSize, sizeof(G));
-		} else {
-			b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), tryBatch ? msmCostParamBatch() : msmCostParamGeneric());
-		}
-	}
 
 	// the slot of the kept work buffers (taken here if the caller does not give one)
 	local::MsmSlotHolder slot(slotArg);
@@ -1403,7 +1626,38 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		if (done) return done;
 	}
 
-	tblN = size_t(1) << b;
+	/*
+		sort the scalars by the bit size and make the windows (see MsmSchedule)
+		perm is on the stack for small n, otherwise in the kept buffer (PAR is not used by the sequential run). perm = 0 (all the scalars are scanned) if malloc fails
+	*/
+	assert(maxBitSize <= local::MsmSchedule::maxBitSize);
+	uint32_t hist[local::MsmSchedule::maxBitSize + 1];
+	uint32_t *perm = 0;
+	uint16_t *bits = 0;
+	const size_t permBytes = (sizeof(uint32_t) + sizeof(uint16_t)) * n;
+	if (n <= MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+		perm = (uint32_t*)CYBOZU_ALLOCA(permBytes);
+	} else if (n < local::msmIdxMask) {
+		perm = (uint32_t*)slot.get(local::MsmSlot::PAR, permBytes);
+	}
+	if (perm) bits = (uint16_t*)(perm + n);
+	maxBitSize = local::msmSortByBitSize(perm, bits, hist, yVec, yUnitSize, next, n, maxBitSize);
+	if (maxBitSize == 0) {
+		z.clear();
+		return n;
+	}
+	local::MsmSchedule sched;
+	sched.template init<G>(hist, maxBitSize, 1, bArg, 0, tryBatch, kernel, batchMinN);
+	if (perm) {
+		if (sched.isDense(n)) {
+			perm = 0;
+			sched.setAll(n);
+		} else {
+			local::msmMakePerm(perm, bits, hist, n, maxBitSize);
+		}
+	}
+
+	tblN = size_t(1) << sched.maxB;
 	// the batch affine addition has its own bucket table (wk.tbl in the layout of the kernel), so tbl is allocated only for the generic path
 	typename local::MsmBatch<G>::Work wk;
 	// the buffer and the function to convert xVec (0 if the batch affine addition is not used or the kernel uses the layout of G)
@@ -1433,17 +1687,22 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 			// n is small or malloc fails so use stack
 			if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 				n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-				// recompute b for the reduced n (the generic model : the batch affine addition is not used)
-				if (bArg == 0) b = glvGetBucketSizeByCost(n, maxBitSize, sizeof(G), msmCostParamGeneric());
+				maxBitSize = local::msmSortByBitSize(perm, bits, hist, yVec, yUnitSize, next, n, maxBitSize);
+				if (maxBitSize == 0) {
+					z.clear();
+					return n;
+				}
+				if (perm) local::msmMakePerm(perm, bits, hist, n, maxBitSize);
 			}
-			// reduce b (of the argument) so that the table fits in the stack
-			while (b > 2 && (sizeof(G) << b) > MCL_MSM_MAX_STACK_TBL_BYTE) b--;
-			tblN = size_t(1) << b;
+			// the windows for the (reduced) n by the generic model (the batch affine addition is not used), whose tables fit in the stack
+			size_t bLimit = 2;
+			while (bLimit < 16 && (sizeof(G) << (bLimit + 1)) <= MCL_MSM_MAX_STACK_TBL_BYTE) bLimit++;
+			sched.template init<G>(hist, maxBitSize, 1, bArg, bLimit, false, kernel, batchMinN);
+			if (perm == 0) sched.setAll(n);
+			tblN = size_t(1) << sched.maxB;
 			tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 		}
 	}
-	const size_t winN = (maxBitSize + b-1) / b;
-	const size_t rem = maxBitSize - b * (winN-1); // the bit size of the top window in [1, b]
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
@@ -1454,14 +1713,15 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		cvtBase(cvtBuf, xVec, n);
 		base = cvtBuf;
 	}
-	// z = sum_w 2^(b w) win[w] from the top window
-	local::msmWindow(z, winN - 1, winN, b, rem, xVec, base, yVec, yUnitSize, next, n, useBatch, &wk, tbl);
+	// z = sum_w 2^pos[w] win[w] from the top window
+	const size_t winN = sched.winN;
+	local::msmWindow(z, sched.pos[winN - 1], sched.b[winN - 1], true, xVec, base, yVec, yUnitSize, next, perm, sched.m[winN - 1], useBatch, &wk, tbl);
 	for (size_t w = winN - 1; w > 0; w--) {
-		for (size_t i = 0; i < b; i++) {
+		for (size_t i = 0; i < sched.b[w - 1]; i++) {
 			G::dbl(z, z);
 		}
 		G t;
-		local::msmWindow(t, w - 1, winN, b, rem, xVec, base, yVec, yUnitSize, next, n, useBatch, &wk, tbl);
+		local::msmWindow(t, sched.pos[w - 1], sched.b[w - 1], false, xVec, base, yVec, yUnitSize, next, perm, sched.m[w - 1], useBatch, &wk, tbl);
 		z += t;
 	}
 	return n;
@@ -1489,20 +1749,50 @@ inline SplitRawFunc getSplitRaw(const void *) { return 0; }
 template<class Ec>
 SplitRawFunc getSplitRaw(const GLV1T<Ec> *) { return GLV1T<Ec>::splitRaw; }
 
-// ya = |a|, yb = |b| of the split y = a + b lambda by splitRaw (zero-padded to next units), updates maxBitSize and returns the sign bits (1 : a < 0, 2 : b < 0)
-inline uint32_t msmSplitRaw(Unit *ya, Unit *yb, const Unit *y, size_t next, SplitRawFunc splitRaw, size_t& maxBitSize)
+/*
+	y = min(y, r - y) for y < r of n units (the smaller absolute value of the residue class). return true if r - y is taken (then the sign of y is negative)
+	so a small negative scalar such as -1 is as cheap as the positive one
+	(without this, -1 is split into two scalars of the full size by splitRawBLS12 because its a and b are non-negative)
+*/
+inline bool msmFoldSign(Unit *y, const Unit *r, size_t n)
+{
+	Unit t[maxUnitSize];
+	bint::subN(t, r, y, n);
+	if (!bint::cmpLtN(t, y, n)) return false;
+	for (size_t i = 0; i < n; i++) y[i] = t[i];
+	return true;
+}
+
+/*
+	ya = |a|, yb = |b| of the split y = a + b lambda by splitRaw (zero-padded to next units), updates maxBitSize and
+	returns the sign bits (1 : a < 0, 2 : b < 0) and the zero bits (msmZeroA : a = 0, msmZeroB : b = 0, then the point is not used)
+	y is folded to min(y, r - y) (y is modified), and y < 2^64 is not split (a = y, b = 0)
+*/
+inline uint32_t msmSplitRaw(Unit *ya, Unit *yb, Unit *y, size_t next, SplitRawFunc splitRaw, size_t& maxBitSize, const Unit *r)
 {
 	const size_t rawN = MCL_GLV_RAW_BIT / UnitBitSize; // the size of a, b of splitRaw
+	const size_t smallN = 64 / UnitBitSize;
 	assert(next >= rawN);
-	const uint32_t neg = splitRaw(ya, yb, y);
-	for (size_t k = rawN; k < next; k++) {
-		ya[k] = 0;
-		yb[k] = 0;
+	const uint32_t sign = msmFoldSign(y, r, next) ? 3 : 0;
+	uint32_t neg;
+	if (bint::getRealSize(y, next) <= smallN) {
+		for (size_t k = 0; k < smallN; k++) ya[k] = y[k];
+		for (size_t k = smallN; k < next; k++) ya[k] = 0;
+		for (size_t k = 0; k < next; k++) yb[k] = 0;
+		neg = sign & 1;
+	} else {
+		neg = splitRaw(ya, yb, y) ^ sign;
+		for (size_t k = rawN; k < next; k++) {
+			ya[k] = 0;
+			yb[k] = 0;
+		}
 	}
 	size_t bitSize = fp::getBitSize(ya, rawN);
 	if (bitSize > maxBitSize) maxBitSize = bitSize;
+	if (bitSize == 0) neg |= msmZeroA;
 	bitSize = fp::getBitSize(yb, rawN);
 	if (bitSize > maxBitSize) maxBitSize = bitSize;
+	if (bitSize == 0) neg |= msmZeroB;
 	return neg;
 }
 
@@ -1543,6 +1833,7 @@ struct MsmSplitCtx {
 	G *tbl;
 	size_t *maxBit; // [C] the max bit size of the split scalars of each chunk
 	uint8_t *done; // [C]
+	const Unit *r; // the order of the group (next units)
 	size_t chunkBegin(size_t c) const { return n * c / C; }
 	static void task(size_t begin, size_t end, size_t, void *arg)
 	{
@@ -1556,7 +1847,6 @@ struct MsmSplitCtx {
 			size_t maxBitSize = 0;
 			for (size_t j = 0; j < nc; j++) {
 				const size_t i = off + j;
-				ctx.getUnitAt(y, ctx.yVec, i);
 				Unit *ya, *yb;
 				if (ctx.neg) {
 					ya = ctx.yp + (2 * off + j) * ctx.next;
@@ -1565,7 +1855,17 @@ struct MsmSplitCtx {
 					ya = ctx.yp + i * ctx.next;
 					yb = ctx.yp + (ctx.n + i) * ctx.next;
 				}
-				const uint32_t r = msmSplitRaw(ya, yb, y, ctx.next, ctx.splitRaw, maxBitSize);
+				// a zero scalar (many in a witness of zkSNARK) : no conversion and no split
+				if (((const F*)ctx.yVec)[i].isZero()) {
+					for (size_t k = 0; k < ctx.next; k++) {
+						ya[k] = 0;
+						yb[k] = 0;
+					}
+					if (ctx.neg) ctx.neg[i] = uint8_t(msmZeroA | msmZeroB);
+					continue;
+				}
+				ctx.getUnitAt(y, ctx.yVec, i);
+				const uint32_t r = msmSplitRaw(ya, yb, y, ctx.next, ctx.splitRaw, maxBitSize, ctx.r);
 				if (ctx.neg) {
 					ctx.neg[i] = uint8_t(r);
 				} else {
@@ -1741,7 +2041,7 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 			xVec = tmp;
 		}
 		{
-			local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, neg, 0, maxBit, done };
+			local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, neg, 0, maxBit, done, F::getOp().p };
 			if (!ctx.run(par, &maxBitSize)) return -1;
 		}
 		if (maxBitSize == 0) {
@@ -1769,14 +2069,16 @@ int mulVecGLVlargeCore(G& z, const G *xVec, const void *yVec, size_t n, size_t b
 		}
 	}
 	if (splitRaw) {
-		local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, 0, tbl, maxBit, done };
+		local::MsmSplitCtx<G> ctx = { getUnitAt, yVec, n, next, C, splitRaw, yp, 0, tbl, maxBit, done, F::getOp().p };
 		if (!ctx.run(par, &maxBitSize)) return -1;
 	}
 	for (size_t i = 0; splitRaw == 0 && i < n; i++) {
 		getUnitAt(y, yVec, i);
+		const bool folded = local::msmFoldSign(y, F::getOp().p, next);
 		GLV::split(u, y);
 		for (size_t j = 0; j < splitN; j++) {
 			size_t idx = j * n + i;
+			if (folded) u[j] = -u[j];
 			if (u[j] < 0) {
 				u[j] = -u[j];
 				G::neg(tbl[idx], tbl[idx]);

@@ -1005,6 +1005,9 @@ namespace local {
 const uint32_t msmSign = uint32_t(1) << 31; // the sign bit of a digit or an index
 const uint32_t msmIdxMask = msmSign - 1;
 const uint32_t msmNone = uint32_t(-1); // d = 0 (no bucket) or no point
+// the bits of neg[i] of MsmKernel::cvtBaseGLV other than the signs (1 : a < 0, 2 : b < 0)
+const uint32_t msmZeroA = 4; // a = 0 : dst[i] is not read
+const uint32_t msmZeroB = 8; // b = 0 : dst[n + i] is not read
 } // local
 struct MsmKernel {
 	size_t pointSize; // the byte size of a point in the layout of the kernel (the all-zero bytes must be the zero point : the bucket table is cleared by memset)
@@ -1025,6 +1028,7 @@ struct MsmKernel {
 		the conversion of the GLV split (0 : not supported, then mulVecGLVlarge in src/glv.hpp copies xVec and uses cvtBase)
 		dst[i] = s(neg[i] & 1) xVec[i], dst[n + i] = s(neg[i] & 2) lambda(xVec[i]) for i in [0, n) where s(c) = c ? -1 : 1 and
 		lambda(x, y) = (rw x, y) is the GLV endomorphism (see GLV1T::mulLambda in src/glv.hpp). xVec (EcT) must be affine or zero
+		dst[i] (resp. dst[n + i]) is not read if neg[i] has msmZeroA (resp. msmZeroB), so the kernel may leave it as it is
 	*/
 	void (*cvtBaseGLV)(void *dst, const void *xVec, size_t n, const uint8_t *neg);
 };
